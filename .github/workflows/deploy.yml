@@ -3,7 +3,6 @@ name: Déploiement Hostinger
 on:
   push:
     branches:
-      - claude/hostinger-responsive-site-wxjupm
       - main
     paths:
       - "public_html/**"
@@ -19,7 +18,7 @@ jobs:
       # Envoie uniquement les fichiers nouveaux/modifiés vers public_html.
       # Pas de --delete : rien n'est jamais supprimé côté serveur.
       - name: Déploiement via rsync/SSH
-        uses: easingthemes/ssh-deploy@v5
+        uses: easingthemes/ssh-deploy@v5.1.0
         with:
           SSH_PRIVATE_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
           REMOTE_HOST: ${{ secrets.HOSTINGER_HOST }}
