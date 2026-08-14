@@ -15,6 +15,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Diagnostic SSH (structure réelle du serveur)
+        env:
+          SSH_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
+          HOST: ${{ secrets.HOSTINGER_HOST }}
+          PORT: ${{ secrets.HOSTINGER_PORT }}
+          USERNAME: ${{ secrets.HOSTINGER_USER }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh -p "$PORT" -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "$USERNAME@$HOST" '
+            echo "== HOME =="; pwd
+            echo "== ~ contents =="; ls -la ~
+            echo "== ~/domains contents =="; ls -la ~/domains 2>/dev/null || echo "(pas de dossier domains)"
+            echo "== ~/domains/myfocal.online contents =="; ls -la ~/domains/myfocal.online 2>/dev/null || echo "(introuvable)"
+            echo "== ~/domains/myfocal.online/public_html contents =="; ls -la ~/domains/myfocal.online/public_html 2>/dev/null || echo "(introuvable)"
+            echo "== ~/public_html contents =="; ls -la ~/public_html 2>/dev/null || echo "(introuvable)"
+          '
+
       # Envoie uniquement les fichiers nouveaux/modifiés vers public_html.
       # Pas de --delete : rien n'est jamais supprimé côté serveur.
       - name: Déploiement via rsync/SSH
