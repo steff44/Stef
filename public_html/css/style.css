@@ -1,18 +1,22 @@
 :root {
-  --bg: #101014;
-  --bg-alt: #17171d;
-  --surface: #1c1c24;
-  --surface-hover: #24242e;
-  --text: #f2f0eb;
-  --text-muted: #a8a6b3;
-  --accent: #d4a856;
-  --accent-soft: rgba(212, 168, 86, 0.15);
-  --border: #2c2c36;
+  --bg: #0f172a;
+  --bg-alt: #131f38;
+  --surface: #1b2b4b;
+  --surface-hover: #223460;
+  --text: #ffffff;
+  --text-muted: #c3cbe0;
+  --accent: #a855f7;
+  --accent-2: #ec4899;
+  --accent-3: #818cf8;
+  --accent-gradient: linear-gradient(90deg, var(--accent-2), var(--accent), var(--accent-3));
+  --accent-soft: rgba(168, 85, 247, 0.16);
+  --border: rgba(255, 255, 255, 0.1);
   --radius: 14px;
-  --shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.5);
+  --radius-btn: 10px;
+  --shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.6);
   --container: 1180px;
-  --font-heading: Georgia, "Times New Roman", serif;
-  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-heading: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 * {
@@ -78,7 +82,7 @@ a {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(16, 16, 20, 0.85);
+  background: rgba(15, 15, 40, 0.85);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border);
 }
@@ -105,9 +109,19 @@ a {
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: conic-gradient(from 180deg, var(--accent), #8b5e2b, var(--accent));
+  background: var(--accent-gradient);
   border: 1px solid var(--border);
   flex-shrink: 0;
+  position: relative;
+}
+.logo-mark::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z'%3E%3C/path%3E%3Ccircle cx='12' cy='13' r='4'%3E%3C/circle%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 60%;
 }
 
 .nav-links {
@@ -129,7 +143,7 @@ a {
 .nav-links a:hover,
 .nav-links a[aria-current="page"] {
   color: var(--text);
-  border-bottom-color: var(--accent);
+  border-bottom-color: var(--accent-2);
 }
 
 .nav-toggle {
@@ -180,31 +194,31 @@ a {
   justify-content: center;
   gap: 8px;
   padding: 13px 26px;
-  border-radius: 999px;
+  border-radius: var(--radius-btn);
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
   border: 1px solid transparent;
-  transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease;
+  transition: transform 0.15s ease, filter 0.2s ease, border-color 0.2s ease, background 0.2s ease;
 }
 .btn:hover {
   transform: translateY(-2px);
 }
 .btn-primary {
-  background: var(--accent);
-  color: #16130a;
+  background: var(--accent-gradient);
+  color: #fff;
 }
 .btn-primary:hover {
-  background: #e0b666;
+  filter: brightness(1.1);
 }
 .btn-ghost {
   background: transparent;
   color: var(--text);
-  border-color: var(--border);
+  border-color: rgba(255, 255, 255, 0.35);
 }
 .btn-ghost:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--accent-3);
+  color: var(--accent-3);
 }
 
 /* Hero */
@@ -213,8 +227,8 @@ a {
   padding: 110px 0 90px;
   overflow: hidden;
   background:
-    radial-gradient(circle at 15% 20%, rgba(212, 168, 86, 0.18), transparent 45%),
-    radial-gradient(circle at 85% 60%, rgba(139, 94, 43, 0.18), transparent 45%),
+    radial-gradient(circle at 15% 20%, rgba(236, 72, 153, 0.22), transparent 45%),
+    radial-gradient(circle at 85% 60%, rgba(129, 140, 248, 0.22), transparent 45%),
     var(--bg);
 }
 
@@ -234,9 +248,14 @@ a {
 
 .hero h1 {
   font-family: var(--font-heading);
-  font-size: clamp(2.2rem, 5vw, 3.4rem);
+  font-weight: 800;
+  font-size: clamp(2.4rem, 5.5vw, 3.8rem);
   line-height: 1.15;
   margin: 0 0 20px;
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .hero p {
@@ -337,7 +356,7 @@ a {
 .about-visual {
   aspect-ratio: 4 / 5;
   border-radius: var(--radius);
-  background: linear-gradient(155deg, hsl(38 55% 45%), hsl(20 40% 20%) 60%, hsl(230 30% 12%));
+  background: linear-gradient(155deg, hsl(320 70% 45%), hsl(265 55% 30%) 55%, hsl(225 45% 14%));
   box-shadow: var(--shadow);
   border: 1px solid var(--border);
 }
