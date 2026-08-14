@@ -1,0 +1,30 @@
+name: Déploiement Hostinger
+
+on:
+  push:
+    branches:
+      - claude/hostinger-responsive-site-wxjupm
+      - main
+    paths:
+      - "public_html/**"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Envoie uniquement les fichiers nouveaux/modifiés vers public_html.
+      # Pas de --delete : rien n'est jamais supprimé côté serveur.
+      - name: Déploiement via rsync/SSH
+        uses: easingthemes/ssh-deploy@v5
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
+          REMOTE_HOST: ${{ secrets.HOSTINGER_HOST }}
+          REMOTE_PORT: ${{ secrets.HOSTINGER_PORT }}
+          REMOTE_USER: ${{ secrets.HOSTINGER_USER }}
+          SOURCE: "public_html/"
+          TARGET: ${{ secrets.HOSTINGER_TARGET_DIR }}
+          ARGS: "-avzr --exclude='.git*'"

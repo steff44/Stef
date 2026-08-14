@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Galerie — Photo Club Lumière</title>
+<meta name="description" content="Galerie photo d'un adhérent du Photo Club Lumière.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%23d4a856%22/></svg>">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Aller au contenu</a>
+
+<header class="site-header">
+  <nav class="nav" aria-label="Navigation principale">
+    <a class="logo" href="index.html"><span class="logo-mark" aria-hidden="true"></span>Photo Club Lumière</a>
+    <button class="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Ouvrir le menu">
+      <span></span>
+    </button>
+    <ul class="nav-links" id="nav-links">
+      <li><a href="index.html">Accueil</a></li>
+      <li><a href="membres.html">Adhérents</a></li>
+      <li><a href="galerie.html" aria-current="page">Galerie</a></li>
+      <li><a href="contact.html">Contact</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main id="main" data-gallery-page>
+  <section class="gallery-header">
+    <div class="container">
+      <a class="back-link" href="membres.html">← Tous les adhérents</a>
+      <div class="gallery-profile">
+        <div class="gallery-avatar" data-avatar></div>
+        <div>
+          <h1 data-nom></h1>
+          <p class="member-role" data-role></p>
+          <p data-bio></p>
+        </div>
+      </div>
+      <nav class="member-switch" data-switcher aria-label="Choisir un autre adhérent"></nav>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="photo-grid" data-photos></div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <a class="logo" href="index.html"><span class="logo-mark" aria-hidden="true"></span>Photo Club Lumière</a>
+        <p>Club photo associatif — sorties, ateliers et galeries d'adhérents.</p>
+      </div>
+      <div class="footer-links">
+        <div>
+          <h4>Site</h4>
+          <ul>
+            <li><a href="index.html">Accueil</a></li>
+            <li><a href="membres.html">Adhérents</a></li>
+            <li><a href="galerie.html">Galerie</a></li>
+            <li><a href="contact.html">Contact</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <p class="footer-bottom">© 2026 Photo Club Lumière. Tous droits réservés.</p>
+  </div>
+</footer>
+
+<div class="lightbox" data-lightbox role="dialog" aria-modal="true" aria-label="Photo en grand format">
+  <button class="lightbox-close" aria-label="Fermer">✕</button>
+  <button class="lightbox-prev" aria-label="Photo précédente">‹</button>
+  <button class="lightbox-next" aria-label="Photo suivante">›</button>
+  <div class="lightbox-content">
+    <div class="lightbox-frame"></div>
+    <div class="lightbox-caption">
+      <strong class="lightbox-title"></strong>
+      <span class="lightbox-meta"></span>
+    </div>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
