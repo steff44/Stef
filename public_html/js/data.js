@@ -1,6 +1,6 @@
 /* Données du club — à modifier librement pour ajouter/retirer des adhérents ou des photos. */
 const CLUB_DATA = {
-  nom: "Photo Club Lumière",
+  nom: "Focal Club Turballais",
   accroche: "Capturer la lumière, partager le regard.",
   membres: [
     {
