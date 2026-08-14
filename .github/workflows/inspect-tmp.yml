@@ -1,0 +1,29 @@
+name: Inspection temporaire (focalclub.fr)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inspection SSH en lecture seule
+        env:
+          SSH_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
+          HOST: ${{ secrets.HOSTINGER_HOST }}
+          PORT: ${{ secrets.HOSTINGER_PORT }}
+          USERNAME: ${{ secrets.HOSTINGER_USER }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh -p "$PORT" -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "$USERNAME@$HOST" '
+            echo "== ls public_html =="
+            ls -la ~/domains/focalclub.fr/public_html
+            echo
+            echo "== wp-content/themes (si WordPress) =="
+            ls -la ~/domains/focalclub.fr/public_html/wp-content/themes 2>/dev/null || echo "(pas de wp-content/themes)"
+            echo
+            echo "== fichier de config actif (wp-config présent ?) =="
+            ls ~/domains/focalclub.fr/public_html/wp-config.php 2>/dev/null && echo "WordPress détecté" || echo "Pas de wp-config.php"
+          '
