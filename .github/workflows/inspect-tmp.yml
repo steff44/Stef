@@ -18,12 +18,9 @@ jobs:
           echo "$SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh -p "$PORT" -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "$USERNAME@$HOST" '
-            echo "== ls public_html =="
-            ls -la ~/domains/focalclub.fr/public_html
+            echo "== ls assets (recursif) =="
+            find ~/domains/focalclub.fr/public_html/assets -maxdepth 3 -type f
             echo
-            echo "== wp-content/themes (si WordPress) =="
-            ls -la ~/domains/focalclub.fr/public_html/wp-content/themes 2>/dev/null || echo "(pas de wp-content/themes)"
-            echo
-            echo "== fichier de config actif (wp-config présent ?) =="
-            ls ~/domains/focalclub.fr/public_html/wp-config.php 2>/dev/null && echo "WordPress détecté" || echo "Pas de wp-config.php"
+            echo "== index.html =="
+            cat ~/domains/focalclub.fr/public_html/index.html
           '
