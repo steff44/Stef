@@ -2,6 +2,8 @@
 
 Site statique responsive pour un club photo : présentation du club, page adhérents, galerie individuelle par adhérent, page contact.
 
+**En ligne :** https://myfocalclub.online
+
 ## Structure
 
 ```
