@@ -23,13 +23,13 @@ jobs:
           const { chromium } = require('playwright');
           (async () => {
             const browser = await chromium.launch();
-            const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+            const page = await browser.newPage({ viewport: { width: 1000, height: 800 } });
             await page.goto('https://focalclub.fr', { waitUntil: 'networkidle', timeout: 30000 });
             await page.waitForTimeout(1500);
-            await page.screenshot({ path: 'desktop.png', fullPage: true });
-            await page.setViewportSize({ width: 390, height: 844 });
+            await page.screenshot({ path: 'desktop.jpg', type: 'jpeg', quality: 45 });
+            await page.setViewportSize({ width: 390, height: 700 });
             await page.waitForTimeout(500);
-            await page.screenshot({ path: 'mobile.png', fullPage: true });
+            await page.screenshot({ path: 'mobile.jpg', type: 'jpeg', quality: 45 });
             const styles = await page.evaluate(() => {
               const cs = (el) => el ? getComputedStyle(el) : null;
               const body = cs(document.body);
@@ -55,11 +55,13 @@ jobs:
       - name: Afficher les styles dans les logs
         run: cat styles.json
 
-      - name: Upload des captures
-        uses: actions/upload-artifact@v4
-        with:
-          name: focalclub-fr-snapshot
-          path: |
-            desktop.png
-            mobile.png
-            styles.json
+      - name: Afficher les captures en base64 dans les logs
+        run: |
+          echo "===DESKTOP_JPG_BASE64_START==="
+          base64 -w 0 desktop.jpg
+          echo
+          echo "===DESKTOP_JPG_BASE64_END==="
+          echo "===MOBILE_JPG_BASE64_START==="
+          base64 -w 0 mobile.jpg
+          echo
+          echo "===MOBILE_JPG_BASE64_END==="
