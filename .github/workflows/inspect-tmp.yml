@@ -4,23 +4,62 @@ on:
   workflow_dispatch:
 
 jobs:
-  inspect:
+  screenshot:
     runs-on: ubuntu-latest
     steps:
-      - name: Inspection SSH en lecture seule
-        env:
-          SSH_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
-          HOST: ${{ secrets.HOSTINGER_HOST }}
-          PORT: ${{ secrets.HOSTINGER_PORT }}
-          USERNAME: ${{ secrets.HOSTINGER_USER }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Installer Playwright
         run: |
-          mkdir -p ~/.ssh
-          echo "$SSH_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh -p "$PORT" -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "$USERNAME@$HOST" '
-            echo "== ls assets (recursif) =="
-            find ~/domains/focalclub.fr/public_html/assets -maxdepth 3 -type f
-            echo
-            echo "== index.html =="
-            cat ~/domains/focalclub.fr/public_html/index.html
-          '
+          npm init -y
+          npm install playwright
+          npx playwright install --with-deps chromium
+
+      - name: Capture + styles calculés
+        run: |
+          node -e "
+          const { chromium } = require('playwright');
+          (async () => {
+            const browser = await chromium.launch();
+            const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+            await page.goto('https://focalclub.fr', { waitUntil: 'networkidle', timeout: 30000 });
+            await page.waitForTimeout(1500);
+            await page.screenshot({ path: 'desktop.png', fullPage: true });
+            await page.setViewportSize({ width: 390, height: 844 });
+            await page.waitForTimeout(500);
+            await page.screenshot({ path: 'mobile.png', fullPage: true });
+            const styles = await page.evaluate(() => {
+              const cs = (el) => el ? getComputedStyle(el) : null;
+              const body = cs(document.body);
+              const h1 = cs(document.querySelector('h1'));
+              const h2 = cs(document.querySelector('h2'));
+              const btn = cs(document.querySelector('button, a[class*=btn], a[href]'));
+              return {
+                title: document.title,
+                bodyBg: body ? body.backgroundColor : null,
+                bodyColor: body ? body.color : null,
+                bodyFont: body ? body.fontFamily : null,
+                h1: h1 ? { font: h1.fontFamily, size: h1.fontSize, weight: h1.fontWeight, color: h1.color } : null,
+                h2: h2 ? { font: h2.fontFamily, size: h2.fontSize, weight: h2.fontWeight, color: h2.color } : null,
+                btn: btn ? { bg: btn.backgroundColor, color: btn.color, radius: btn.borderRadius, font: btn.fontFamily } : null,
+                bodyText: document.body.innerText.slice(0, 4000)
+              };
+            });
+            require('fs').writeFileSync('styles.json', JSON.stringify(styles, null, 2));
+            await browser.close();
+          })().catch(e => { console.error(e); process.exit(1); });
+          "
+
+      - name: Afficher les styles dans les logs
+        run: cat styles.json
+
+      - name: Upload des captures
+        uses: actions/upload-artifact@v4
+        with:
+          name: focalclub-fr-snapshot
+          path: |
+            desktop.png
+            mobile.png
+            styles.json
