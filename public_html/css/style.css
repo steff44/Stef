@@ -293,12 +293,32 @@ a {
 .hero-full {
   min-height: 90vh;
   display: flex;
-  align-items: center;
-  padding: 140px 0;
+  /* Le texte se place dans le haut du hero, l'appareil photo reste visible
+     en dessous (cf. maquette validee). */
+  align-items: flex-start;
+  padding: 120px 0 140px;
+  /* Voile sombre en degrade : dense en haut pour la lisibilite du titre,
+     leger sur l'appareil, puis renforce en bas pour enchainer avec la
+     section violette suivante. */
   background:
-    linear-gradient(to bottom right, rgba(88, 28, 135, 0.8), rgba(49, 46, 129, 0.8), rgba(30, 58, 138, 0.8)),
-    url("../images/hero-photographer.jpg") center 25% / cover no-repeat,
+    linear-gradient(
+      to bottom,
+      rgba(8, 10, 22, 0.68) 0%,
+      rgba(8, 10, 22, 0.42) 32%,
+      rgba(8, 10, 22, 0.22) 55%,
+      rgba(30, 27, 75, 0.55) 100%
+    ),
+    url("../images/accueil-pleine-largeur.jpg") center 55% / cover no-repeat,
     #05040c;
+}
+/* Sur la photo, le paragraphe passe en blanc et les textes recoivent une
+   ombre portee : indispensable pour rester lisibles sur les zones claires. */
+.hero-full h1,
+.hero-full p {
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.55);
+}
+.hero-full p {
+  color: #f1f5f9;
 }
 .hero-full .container {
   width: 100%;
@@ -317,33 +337,6 @@ a {
 }
 .hero-actions-center {
   justify-content: center;
-}
-
-/* Photo pleine largeur (accueil, au-dessus de "Pourquoi nous rejoindre ?").
-   Pas de .container : l'image occupe toute la largeur de la page et garde
-   ses proportions d'origine (hauteur automatique). */
-.full-bleed-photo {
-  width: 100%;
-  line-height: 0;
-  background: var(--bg);
-}
-.full-bleed-photo img {
-  width: 100%;
-  max-width: none;
-  /* Bandeau : on ne garde qu'une tranche horizontale de la photo verticale,
-     du dessus du poignet a un peu sous le boitier. object-fit: cover recadre
-     sans jamais deformer l'image. object-position centre la tranche sur la
-     main et l'appareil. */
-  aspect-ratio: 21 / 10;
-  height: auto;
-  object-fit: cover;
-  object-position: center 51%;
-}
-@media (max-width: 720px) {
-  /* Bandeau plus haut sur mobile pour que l'appareil reste lisible. */
-  .full-bleed-photo img {
-    aspect-ratio: 8 / 5;
-  }
 }
 
 /* Cards section ("Pourquoi nous rejoindre ?") */
