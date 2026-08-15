@@ -289,6 +289,79 @@ a {
   font-size: 0.85rem;
 }
 
+/* Full-bleed hero, close to focalclub.fr's homepage */
+.hero-full {
+  min-height: 90vh;
+  display: flex;
+  align-items: center;
+  padding: 140px 0;
+  background:
+    linear-gradient(rgba(10, 8, 20, 0.55), rgba(10, 8, 20, 0.75)),
+    radial-gradient(circle at 20% 15%, rgba(236, 72, 153, 0.35), transparent 50%),
+    radial-gradient(circle at 80% 85%, rgba(129, 140, 248, 0.35), transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(168, 85, 247, 0.25), transparent 60%),
+    #05040c;
+}
+.hero-full .container {
+  width: 100%;
+}
+.hero-content-center {
+  max-width: 780px;
+  margin: 0 auto;
+  text-align: center;
+}
+.hero-content-center h1 {
+  font-size: clamp(2.6rem, 7vw, 4.4rem);
+}
+.hero-content-center p {
+  margin-left: auto;
+  margin-right: auto;
+}
+.hero-actions-center {
+  justify-content: center;
+}
+
+/* Cards section ("Pourquoi nous rejoindre ?") */
+.cards-section {
+  background: linear-gradient(135deg, var(--bg) 0%, rgba(88, 28, 135, 0.35) 50%, var(--bg) 100%);
+}
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
+  margin-top: 48px;
+}
+.feature-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px 26px;
+}
+.feature-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--accent-gradient);
+  margin-bottom: 18px;
+}
+.feature-card h3 {
+  margin: 0 0 10px;
+  font-size: 1.15rem;
+}
+.feature-card p {
+  color: var(--text-muted);
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+/* CTA section, matches focalclub.fr's closing banner */
+.cta-section {
+  background: linear-gradient(90deg, #581c87, #3730a3, #1e3a8a);
+}
+
 /* Section headers */
 .section {
   padding: 88px 0;
@@ -704,12 +777,17 @@ a {
 .site-footer {
   border-top: 1px solid var(--border);
   padding: 48px 0 32px;
-  background: var(--bg-alt);
+  background: linear-gradient(90deg, var(--bg), rgba(88, 28, 135, 0.35), var(--bg));
 }
 .footer-grid {
   display: flex;
   justify-content: space-between;
   flex-wrap: wrap;
+  gap: 32px;
+}
+.footer-grid-3 {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1fr;
   gap: 32px;
 }
 .footer-grid .logo {
@@ -720,17 +798,27 @@ a {
   max-width: 34ch;
   font-size: 0.9rem;
 }
-.footer-links {
-  display: flex;
-  gap: 48px;
-  flex-wrap: wrap;
-}
+.footer-contact h4,
 .footer-links h4 {
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-muted);
   margin: 0 0 14px;
+}
+.footer-contact-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+.footer-links {
+  display: flex;
+  gap: 48px;
+  flex-wrap: wrap;
 }
 .footer-links ul {
   list-style: none;
@@ -740,6 +828,14 @@ a {
   gap: 10px;
   font-size: 0.9rem;
 }
+.site-footer .social-row a {
+  width: 34px;
+  height: 34px;
+  border: none;
+}
+.social-fb { background: #1877f2; }
+.social-ig { background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
+.social-tw { background: #1da1f2; }
 .footer-bottom {
   text-align: center;
   color: var(--text-muted);
@@ -766,6 +862,9 @@ a {
     order: -1;
     aspect-ratio: 16 / 9;
   }
+  .footer-grid-3 {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 760px) {
@@ -790,6 +889,10 @@ a {
   }
   .hero {
     padding: 70px 0 60px;
+  }
+  .hero-full {
+    padding: 90px 0;
+    min-height: 80vh;
   }
   .hero-stats {
     grid-template-columns: repeat(3, 1fr);
