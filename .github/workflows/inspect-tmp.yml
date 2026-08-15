@@ -1,0 +1,62 @@
+name: Inspection temporaire (focalclub.fr)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  screenshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Installer Playwright
+        run: |
+          npm init -y
+          npm install playwright
+          npx playwright install --with-deps chromium
+
+      - name: Capture complète + structure
+        run: |
+          node -e "
+          const { chromium } = require('playwright');
+          (async () => {
+            const browser = await chromium.launch();
+            const page = await browser.newPage({ viewport: { width: 1000, height: 800 } });
+            await page.goto('https://focalclub.fr', { waitUntil: 'networkidle', timeout: 30000 });
+            await page.waitForTimeout(2000);
+
+            await page.screenshot({ path: 'full.jpg', type: 'jpeg', quality: 40, fullPage: true });
+
+            const structure = await page.evaluate(() => {
+              const sections = Array.from(document.querySelectorAll('section, header, footer'));
+              return sections.map(sec => ({
+                tag: sec.tagName,
+                classes: sec.className,
+                headings: Array.from(sec.querySelectorAll('h1,h2,h3')).map(h => h.tagName + ': ' + h.textContent.trim()),
+                buttons: Array.from(sec.querySelectorAll('a,button')).map(b => b.textContent.trim()).filter(Boolean),
+                text: sec.innerText.slice(0, 1500)
+              }));
+            });
+            require('fs').writeFileSync('structure.json', JSON.stringify(structure, null, 2));
+
+            const fullText = await page.evaluate(() => document.body.innerText);
+            require('fs').writeFileSync('fulltext.txt', fullText);
+
+            await browser.close();
+          })().catch(e => { console.error(e); process.exit(1); });
+          "
+
+      - name: Afficher la structure
+        run: cat structure.json
+
+      - name: Afficher le texte complet
+        run: cat fulltext.txt
+
+      - name: Afficher l'image en base64
+        run: |
+          echo "===FULL_JPG_BASE64_START==="
+          base64 -w 0 full.jpg
+          echo
+          echo "===FULL_JPG_BASE64_END==="
