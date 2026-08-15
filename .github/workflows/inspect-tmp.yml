@@ -4,50 +4,15 @@ on:
   workflow_dispatch:
 
 jobs:
-  find-image:
+  fetch-image:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Installer Playwright
+      - name: Télécharger la photo hero (Unsplash) et l'encoder
         run: |
-          npm init -y
-          npm install playwright
-          npx playwright install --with-deps chromium
-
-      - name: Trouver l'URL de la photo hero
-        run: |
-          node -e "
-          const { chromium } = require('playwright');
-          (async () => {
-            const browser = await chromium.launch();
-            const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
-            const imageUrls = new Set();
-            page.on('response', (res) => {
-              const ct = res.headers()['content-type'] || '';
-              if (ct.startsWith('image/')) imageUrls.add(res.url());
-            });
-            await page.goto('https://focalclub.fr', { waitUntil: 'networkidle', timeout: 30000 });
-            await page.waitForTimeout(1500);
-
-            const info = await page.evaluate(() => {
-              const hero = document.querySelector('section');
-              const cs = hero ? getComputedStyle(hero) : null;
-              const imgs = Array.from(document.querySelectorAll('img')).map(i => i.src);
-              const bgEls = Array.from(document.querySelectorAll('*')).filter(el => {
-                const bg = getComputedStyle(el).backgroundImage;
-                return bg && bg !== 'none';
-              }).map(el => ({ tag: el.tagName, cls: el.className, bg: getComputedStyle(el).backgroundImage }));
-              return { heroBg: cs ? cs.backgroundImage : null, imgs, bgEls: bgEls.slice(0, 10) };
-            });
-
-            console.log('=== page.evaluate info ===');
-            console.log(JSON.stringify(info, null, 2));
-            console.log('=== network image responses ===');
-            console.log(JSON.stringify(Array.from(imageUrls), null, 2));
-
-            await browser.close();
-          })().catch(e => { console.error(e); process.exit(1); });
-          "
+          curl -sL -o hero.jpg "https://images.unsplash.com/photo-1611842642932-fbec0d723eb2?auto=format&fit=crop&w=1920&q=70"
+          ls -la hero.jpg
+          file hero.jpg
+          echo "===HERO_JPG_BASE64_START==="
+          base64 -w 0 hero.jpg
+          echo
+          echo "===HERO_JPG_BASE64_END==="
