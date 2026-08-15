@@ -1,0 +1,77 @@
+name: Préversion GitHub Pages
+
+# Publie une préversion du site sur GitHub Pages, à l'adresse
+# https://steff44.github.io/Stef/ — pour regarder le résultat AVANT de
+# fusionner sur main. Ne touche jamais au site en ligne : le déploiement
+# Hostinger ne part que depuis main (voir deploy.yml).
+#
+# Une seule préversion existe à la fois : c'est toujours la branche poussée
+# le plus récemment qui est affichée.
+
+on:
+  push:
+    branches:
+      - "claude/**"
+  workflow_dispatch:
+
+# Autorisations nécessaires à la publication sur Pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Si plusieurs préversions se lancent coup sur coup, seule la dernière
+# compte ; les précédentes sont annulées.
+concurrency:
+  group: preversion
+  cancel-in-progress: true
+
+jobs:
+  publier:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploiement.outputs.page_url }}
+    steps:
+      - name: Récupération du dépôt
+        uses: actions/checkout@v4
+
+      # Prérequis, à faire une seule fois : Settings > Pages > Build and
+      # deployment > Source = "GitHub Actions". Le jeton des workflows n'a
+      # pas le droit d'activer Pages lui-même (Resource not accessible by
+      # integration), c'est réservé au propriétaire du dépôt.
+      - name: Configuration de Pages
+        uses: actions/configure-pages@v5
+
+      # La préversion ne doit surtout pas être indexée par les moteurs de
+      # recherche : sans ça, elle entrerait en concurrence avec le vrai site
+      # dans les résultats Google. Ces protections sont ajoutées ici
+      # uniquement, jamais dans les fichiers du dépôt.
+      - name: Blocage de l'indexation
+        run: |
+          set -euo pipefail
+          cp -r public_html preversion
+
+          printf 'User-agent: *\nDisallow: /\n' > preversion/robots.txt
+
+          # Insère la balise noindex en fin de <head>, pour ne pas déloger la
+          # déclaration d'encodage qui doit rester en tête de page.
+          find preversion -name '*.html' -print0 | while IFS= read -r -d '' page; do
+            perl -0pi -e 's{</head>}{<meta name="robots" content="noindex, nofollow">\n</head>}i' "$page"
+            grep -q 'name="robots"' "$page" || { echo "noindex absent de $page"; exit 1; }
+          done
+
+          echo "Pages protégées :"
+          find preversion -name '*.html' | sort
+
+      - name: Préparation de l'archive
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: preversion
+
+      - name: Mise en ligne de la préversion
+        id: deploiement
+        uses: actions/deploy-pages@v4
+
+      - name: Adresse de la préversion
+        run: echo "Préversion disponible sur ${{ steps.deploiement.outputs.page_url }}"
