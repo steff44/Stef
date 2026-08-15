@@ -319,6 +319,20 @@ a {
   justify-content: center;
 }
 
+/* Photo pleine largeur (accueil, au-dessus de "Pourquoi nous rejoindre ?").
+   Pas de .container : l'image occupe toute la largeur de la page et garde
+   ses proportions d'origine (hauteur automatique). */
+.full-bleed-photo {
+  width: 100%;
+  line-height: 0;
+  background: var(--bg);
+}
+.full-bleed-photo img {
+  width: 100%;
+  height: auto;
+  max-width: none;
+}
+
 /* Cards section ("Pourquoi nous rejoindre ?") */
 .cards-section {
   background: linear-gradient(135deg, var(--bg) 0%, rgba(88, 28, 135, 0.35) 50%, var(--bg) 100%);
