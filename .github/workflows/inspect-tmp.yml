@@ -27,6 +27,14 @@ jobs:
             await page.goto('https://focalclub.fr', { waitUntil: 'networkidle', timeout: 30000 });
             await page.waitForTimeout(2000);
 
+            const scrollHeight = await page.evaluate(() => document.body.scrollHeight);
+            for (let y = 0; y < scrollHeight; y += 300) {
+              await page.evaluate((yy) => window.scrollTo(0, yy), y);
+              await page.waitForTimeout(200);
+            }
+            await page.evaluate(() => window.scrollTo(0, 0));
+            await page.waitForTimeout(500);
+
             await page.screenshot({ path: 'full.jpg', type: 'jpeg', quality: 40, fullPage: true });
 
             const structure = await page.evaluate(() => {
