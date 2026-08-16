@@ -6,44 +6,32 @@ jobs:
   verifier:
     runs-on: ubuntu-latest
     steps:
-      - name: La migration passe-t-elle sur MySQL
+      - name: Le site repond-il encore
         shell: bash
         run: |
           set +e
-          B=https://myfocal.online
+          UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36'
 
-          echo "=== 1er appel : declenche la migration (ALTER TABLE) ==="
-          curl -s --max-time 30 -o /tmp/a -w '  installation.php -> HTTP %{http_code}\n' "$B/espace/installation.php"
-          grep -oE '<h1[^>]*>[^<]*' /tmp/a | sed 's/<h1[^>]*>/     titre : /' | head -1
+          echo "=== DNS ==="
+          dig +short myfocal.online A | sed 's/^/  /'
 
-          echo "=== 2e appel : doit repondre pareil, via le temoin ==="
-          curl -s --max-time 30 -o /tmp/b -w '  installation.php -> HTTP %{http_code}\n' "$B/espace/installation.php"
-          grep -oE '<h1[^>]*>[^<]*' /tmp/b | sed 's/<h1[^>]*>/     titre : /' | head -1
-
-          echo "  --- VERDICT MIGRATION ---"
-          if grep -qE 'Base de donn|Configuration absente|Fatal|Erreur' /tmp/b; then
-            echo "     >>> ECHEC : la base renvoie une erreur"
-            head -c 500 /tmp/b
-          elif grep -qE 'd&eacute;j&agrave; install|déjà install' /tmp/b; then
-            echo "     >>> OK : la base repond, aucune erreur — les colonnes sont en place"
-          else
-            echo "     >>> etat inattendu"; head -c 400 /tmp/b
-          fi
-
-          echo "=== Les pages de l'espace repondent-elles ? ==="
-          for u in /espace/connexion.php /espace/index.php /espace/adherents.php; do
-            printf "  %-28s -> %s\n" "$u" "$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$B$u")"
+          echo "=== Le port 443 est-il ouvert ? ==="
+          for ip in $(dig +short myfocal.online A); do
+            timeout 10 bash -c "cat < /dev/null > /dev/tcp/$ip/443" 2>/dev/null \
+              && echo "  $ip:443 ouvert" || echo "  $ip:443 INJOIGNABLE"
           done
 
-          echo "=== Le site public est-il intact ? ==="
-          for u in / /membres.html /contact.html; do
-            printf "  %-28s -> %s\n" "$u" "$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$B$u")"
-          done
+          echo "=== Requete avec identification de navigateur ==="
+          curl -s -o /tmp/n -A "$UA" --max-time 45 \
+            -w '  accueil -> HTTP %{http_code} en %{time_total}s\n' https://myfocal.online/
+          echo "  taille recue : $(wc -c < /tmp/n 2>/dev/null || echo 0) octets"
+          grep -oE '<title>[^<]*' /tmp/n 2>/dev/null | sed 's/<title>/  titre : /'
 
-          echo "=== Protections toujours en place ==="
-          for u in /espace/inc/config.local.php /espace/inc/migration.php /espace/photos/; do
-            c=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$B$u")
-            case "$c" in 403|404) v="OK";; *) v="!!! A VERIFIER !!!";; esac
-            printf "  %-34s -> %s  %s\n" "$u" "$c" "$v"
-          done
+          echo "=== Meme requete en curl nu (pour comparer) ==="
+          curl -s -o /dev/null --max-time 45 -w '  accueil -> HTTP %{http_code} en %{time_total}s\n' https://myfocal.online/
+
+          echo "=== Et l'espace ? ==="
+          curl -s -o /tmp/e -A "$UA" --max-time 45 \
+            -w '  installation.php -> HTTP %{http_code}\n' https://myfocal.online/espace/installation.php
+          grep -oE '<h1[^>]*>[^<]*|Base de donn[^<]*|Configuration absente' /tmp/e 2>/dev/null | head -2 | sed 's/^/     /'
           exit 0
