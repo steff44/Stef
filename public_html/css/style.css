@@ -1264,22 +1264,47 @@ a {
 .tableau-adherents {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.88rem;
-  min-width: 720px;
+  font-size: 0.9rem;
+  /* Assez large pour que six colonnes tiennent sans se tasser ; en dessous,
+     .tableau-defilant fait défiler horizontalement plutôt que d'écraser. */
+  min-width: 940px;
 }
+/* Chaque valeur dans sa case, bordure complète : c'est ce qui rend un tableau
+   lisible quand on balaie une colonne du regard. */
 .tableau-adherents th,
 .tableau-adherents td {
   text-align: left;
-  padding: 14px 12px;
-  border-bottom: 1px solid var(--border);
-  vertical-align: top;
+  padding: 13px 16px;
+  border: 1px solid var(--border);
+  vertical-align: middle;
 }
 .tableau-adherents th {
   color: var(--text-muted);
   font-weight: normal;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  background: var(--bg-alt);
+  white-space: nowrap;
+}
+/* Une ligne sur deux légèrement teintée : l'œil ne saute pas de ligne. */
+.tableau-adherents tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.025);
+}
+.tableau-adherents tbody tr:hover {
+  background: var(--surface-hover);
+}
+.colonne-date {
+  white-space: nowrap;
+}
+.heure-secondaire {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  margin-left: 4px;
+}
+.jamais-connecte {
+  color: var(--text-muted);
+  font-style: italic;
 }
 .compte-inactif {
   opacity: 0.55;
@@ -1338,4 +1363,10 @@ a {
 }
 .lien-deconnecter:hover {
   color: #fecaca;
+}
+
+/* Conteneur élargi pour les pages à tableau (onglet Adhérents). La largeur de
+   lecture habituelle vaut pour du texte, pas pour six colonnes de données. */
+.container-large {
+  max-width: 1460px;
 }

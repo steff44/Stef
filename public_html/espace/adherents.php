@@ -134,9 +134,15 @@ $requete->execute([DELAI_PRESENCE_MINUTES]);
 $membres = $requete->fetchAll();
 
 debut_page("Adhérents", 'adherents');
-titre_page("Gestion des adhérents", "Créer les comptes, réinitialiser les mots de passe, activer ou désactiver un accès.");
+titre_page(
+    "Gestion des adhérents",
+    "Créer les comptes, réinitialiser les mots de passe, activer ou désactiver un accès.",
+    true
+);
 ?>
-<section class="section"><div class="container">
+<!-- Conteneur élargi : ce tableau porte six colonnes, il respire mal dans la
+     largeur de lecture habituelle du site. -->
+<section class="section"><div class="container container-large">
   <?php afficher_message(); ?>
 
   <details class="depot-bloc">
@@ -209,7 +215,14 @@ titre_page("Gestion des adhérents", "Créer les comptes, réinitialiser les mot
                 <br><span class="contact-secondaire"><?= e($membre['telephone']) ?></span>
               <?php endif; ?>
             </td>
-            <td><?= $membre['derniere_connexion'] ? e(date_en_francais($membre['derniere_connexion'], false)) : 'jamais' ?></td>
+            <td class="colonne-date">
+              <?php if ($membre['derniere_connexion']): ?>
+                <?= e(date_courte($membre['derniere_connexion'])) ?>
+                <span class="heure-secondaire"><?= e(heure_courte($membre['derniere_connexion'])) ?></span>
+              <?php else: ?>
+                <span class="jamais-connecte">jamais</span>
+              <?php endif; ?>
+            </td>
             <td class="cellule-actions">
               <?php if ($en_ligne): ?>
                 <form method="post" onsubmit="return confirm(<?= $membre['id'] === $adherent['id'] ? "'Fermer votre propre session ? Vous devrez vous reconnecter.'" : "'Fermer la session de cet adhérent ?'" ?>);">

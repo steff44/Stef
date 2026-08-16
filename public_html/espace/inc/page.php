@@ -95,12 +95,16 @@ function fin_page(): void
     <?php
 }
 
-/* Bandeau de titre en haut d'une page. */
-function titre_page(string $titre, string $chapeau = ''): void
+/*
+ * Bandeau de titre en haut d'une page. $large aligne le titre sur le
+ * conteneur élargi des pages à tableau — sans quoi le titre paraîtrait
+ * décalé vers la droite par rapport au contenu.
+ */
+function titre_page(string $titre, string $chapeau = '', bool $large = false): void
 {
     ?>
   <section class="gallery-header">
-    <div class="container">
+    <div class="container<?= $large ? ' container-large' : '' ?>">
       <h1 style="font-family:var(--font-heading);font-size:clamp(1.7rem,4vw,2.3rem);margin:0;"><?= e($titre) ?></h1>
       <?php if ($chapeau !== ''): ?>
         <p style="color:var(--text-muted);max-width:65ch;margin-top:10px;"><?= e($chapeau) ?></p>
@@ -140,6 +144,28 @@ function date_en_francais(string $date_sql, bool $avec_heure = true): string
     }
 
     return $texte;
+}
+
+/*
+ * Date compacte « 16/08/26 », pour les tableaux où la forme longue prendrait
+ * toute la largeur. L'heure est renvoyée à part par heure_courte().
+ */
+function date_courte(?string $date_sql): string
+{
+    if ($date_sql === null || $date_sql === '') {
+        return '';
+    }
+    $t = strtotime($date_sql);
+    return $t === false ? (string) $date_sql : date('d/m/y', $t);
+}
+
+function heure_courte(?string $date_sql): string
+{
+    if ($date_sql === null || $date_sql === '') {
+        return '';
+    }
+    $t = strtotime($date_sql);
+    return $t === false ? '' : date('G', $t) . 'h' . date('i', $t);
 }
 
 /* Mois abrégé, pour la pastille de date de l'agenda. */
