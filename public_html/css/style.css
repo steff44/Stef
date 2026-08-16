@@ -1304,3 +1304,38 @@ a {
     align-items: flex-start;
   }
 }
+
+/* Colonne « Connecté » du tableau des adhérents */
+.pastille-en-ligne,
+.pastille-hors-ligne {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 7px;
+  vertical-align: middle;
+}
+.pastille-en-ligne {
+  background: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.22);
+}
+.pastille-hors-ligne {
+  background: var(--text-muted);
+  opacity: 0.45;
+}
+.etat-en-ligne {
+  color: #bbf7d0;
+}
+.etat-hors-ligne {
+  color: var(--text-muted);
+}
+.contact-secondaire {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+.lien-deconnecter {
+  color: #fca5a5;
+}
+.lien-deconnecter:hover {
+  color: #fecaca;
+}

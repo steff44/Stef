@@ -13,3 +13,6 @@ public_html/espace/fichiers/*
 
 # Base de test créée hors ligne, jamais déployée.
 public_html/espace/test.sqlite
+
+# Témoin de mise à niveau du schéma, écrit par le serveur.
+public_html/espace/inc/.schema-a-jour

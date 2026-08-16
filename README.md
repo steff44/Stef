@@ -72,6 +72,15 @@ Deux rôles existent : **adhérent** (consulte tout, dépose des photos, s'inscr
 4. **Verrouillage automatique** — dès qu'un compte existe, cette page refuse de servir à nouveau. Vous pouvez ensuite supprimer `espace/installation.php`.
 5. **Créer les comptes des adhérents** — connectez-vous, onglet *Adhérents*. Chaque création affiche **une seule fois** un mot de passe provisoire, à transmettre à la personne, qui pourra le changer depuis l'onglet *Annuaire*.
 
+### Suivre et déconnecter les adhérents
+
+L'onglet **Adhérents**, réservé aux responsables, affiche un tableau : *Connecté*, *Nom*, *Pseudo*, *E-mail*, *Dernière connexion*, et les actions.
+
+- La pastille verte **« en ligne »** signale une page consultée dans les **15 dernières minutes**. C'est le plus près de la réalité qu'on puisse être : rien ne prévient le serveur qu'un onglet a été fermé. Une déconnexion volontaire, elle, fait disparaître la pastille immédiatement.
+- Le bouton **Déconnecter** n'apparaît que pour les personnes en ligne. Il ferme leur session : à leur page suivante, elles reviennent à l'écran de connexion avec le message « Un responsable a fermé votre session ». **Elles peuvent se reconnecter aussitôt** avec leur mot de passe — pour barrer durablement l'accès, utilisez plutôt *Désactiver*.
+
+Utile quand quelqu'un a oublié de se déconnecter sur un poste partagé.
+
 ### Ce qui protège l'espace
 
 - Mots de passe stockés **hachés** (`password_hash`, jamais en clair) ; blocage 15 minutes après 5 essais ratés.

@@ -12,6 +12,12 @@ CREATE TABLE IF NOT EXISTS adherents (
   administrateur     TINYINT(1)   NOT NULL DEFAULT 0,
   actif              TINYINT(1)   NOT NULL DEFAULT 1,
   derniere_connexion DATETIME     DEFAULT NULL,
+  -- Horodatage rafraîchi à chaque page consultée : sert à afficher qui est
+  -- connecté en ce moment (voir DELAI_PRESENCE_MINUTES dans auth.php).
+  derniere_activite  DATETIME     DEFAULT NULL,
+  -- Posé par un responsable qui coupe la session à distance. Toute session
+  -- ouverte AVANT cet instant est refusée à la requête suivante.
+  deconnecte_le      DATETIME     DEFAULT NULL,
   cree_le            DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

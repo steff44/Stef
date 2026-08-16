@@ -92,6 +92,22 @@ Points à ne pas casser :
 - Pour tester la logique hors ligne : copier `espace/` ailleurs, remplacer le
   DSN de `db.php` par SQLite et adapter `schema.sql`. C'est ainsi qu'ont été
   validés connexion, CSRF, blocage après échecs, rôles et dépôts de fichiers.
+- **Présence et déconnexion à distance** (onglet Adhérents) : deux colonnes sur
+  `adherents`. `derniere_activite` est rafraîchie à chaque page réservée par
+  `signaler_presence()` ; « en ligne » = activité de moins de
+  `DELAI_PRESENCE_MINUTES` (15). `deconnecte_le` est posée par un responsable :
+  à sa requête suivante, toute session ouverte **avant ou pendant** cette
+  seconde est fermée. Une connexion réussie remet `deconnecte_le` à NULL, sans
+  quoi une reconnexion dans la même seconde serait éjectée à tort. La
+  comparaison des instants passe toujours par l'horloge de MySQL
+  (`UNIX_TIMESTAMP`), jamais par celle de PHP : deux fuseaux différents
+  fausseraient tout.
+- **Les migrations sont automatiques** (`inc/migration.php`, appelé depuis
+  `db.php`). C'est imposé par le contexte : `installation.php` se verrouille au
+  premier compte, et du code neuf qui interroge une colonne absente casse la
+  connexion — donc l'accès à toute page de migration. Chaque ajout de colonne
+  se déclare dans `COLONNES_ATTENDUES` **et** dans `schema.sql`. Un témoin
+  `inc/.schema-a-jour` évite de réinterroger la base à chaque requête.
 - Les `.htaccess` ne peuvent pas se tester ainsi (le serveur PHP intégré les
   ignore). Vérifiés en ligne le 16/08/2026 : `inc/`, `photos/` et `fichiers/`
   répondent bien **403**, et une page réservée renvoie **302** vers la
