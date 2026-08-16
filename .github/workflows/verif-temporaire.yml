@@ -6,42 +6,35 @@ jobs:
   verifier:
     runs-on: ubuntu-latest
     steps:
-      - name: Diagnostic DNS et acces
+      - name: Ou le site est-il servi
         shell: bash
         run: |
           set +e
-          echo "=== Resolution DNS ==="
-          for d in myfocalclub.online www.myfocalclub.online focalclub.fr myfocal.online; do
-            ip=$(dig +short "$d" A | tr '\n' ' ')
-            printf "  %-28s -> %s\n" "$d" "${ip:-AUCUNE REPONSE}"
+          for d in focalclub.fr www.focalclub.fr myfocal.online www.myfocal.online focalclub.eu focalclub.site; do
+            echo "======================= $d"
+            code=$(curl -s -o /tmp/p -w '%{http_code}' --max-time 20 -L "https://$d/")
+            titre=$(grep -oE '<title>[^<]*' /tmp/p | head -1 | sed 's/<title>//')
+            echo "  accueil        : $code   titre: ${titre:-aucun}"
+            # Est-ce NOTRE site (Focal Club Turballais, statique) ?
+            grep -q "Focal Club Turballais" /tmp/p && echo "  -> contient « Focal Club Turballais »"
+            grep -q "espace/connexion.php" /tmp/p && echo "  -> LE MENU POINTE SUR L'ESPACE (notre deploiement est ici)"
+
+            e=$(curl -s -o /tmp/e -w '%{http_code}' --max-time 20 "https://$d/espace/connexion.php")
+            echo "  espace         : $e"
+            if [ "$e" = "200" ]; then
+              grep -oE 'Configuration absente|Base de donnees injoignable|name="csrf"' /tmp/e | head -2 | sed 's/^/     etat: /'
+              echo "  --- dossiers prives (attendu 403) ---"
+              for u in /espace/inc/config.example.php /espace/inc/schema.sql /espace/inc/auth.php /espace/photos/ /espace/fichiers/; do
+                c=$(curl -s -o /tmp/x -w '%{http_code}' --max-time 20 "https://$d$u")
+                case "$c" in 403|404) v="OK (bloque)";; 200) v="!!! ACCESSIBLE !!!";; *) v="?";; esac
+                printf "     %-38s %s  %s\n" "$u" "$c" "$v"
+              done
+              curl -s --max-time 20 "https://$d/espace/inc/schema.sql" | grep -q "CREATE TABLE" \
+                && echo "     !!! FUITE : schema SQL lisible" || echo "     OK : schema non servi"
+              echo "  --- page reservee sans connexion ---"
+              printf "     galerie.php -> %s vers %s\n" \
+                "$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "https://$d/espace/galerie.php")" \
+                "$(curl -s -o /dev/null -w '%{redirect_url}' --max-time 20 "https://$d/espace/galerie.php")"
+            fi
           done
-
-          echo "=== Enregistrements NS de myfocalclub.online ==="
-          dig +short NS myfocalclub.online || echo "  aucun"
-          echo "--- le domaine existe-t-il ? ---"
-          dig myfocalclub.online | grep -E "status:|^myfocalclub" | head -5
-
-          echo "=== Test direct sur l'IP du serveur (91.108.101.117) ==="
-          for h in myfocalclub.online www.myfocalclub.online; do
-            c=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 \
-                 --resolve "$h:443:91.108.101.117" "https://$h/" )
-            printf "  Host: %-28s -> %s\n" "$h" "$c"
-          done
-
-          echo "=== Si joignable par IP : etat de l'espace ==="
-          B="https://myfocalclub.online"
-          R="--resolve myfocalclub.online:443:91.108.101.117"
-          printf "  %-40s -> %s\n" "/espace/connexion.php" "$(curl -s $R -o /dev/null -w '%{http_code}' --max-time 20 "$B/espace/connexion.php")"
-          curl -s $R --max-time 20 "$B/espace/connexion.php" | grep -oE 'Configuration absente|Base de donnees injoignable|Espace adherents|name="csrf"' | head -3
-
-          echo "=== DOSSIERS PRIVES (attendu 403) ==="
-          for u in /espace/inc/config.example.php /espace/inc/schema.sql /espace/inc/auth.php /espace/photos/ /espace/fichiers/; do
-            c=$(curl -s $R -o /dev/null -w '%{http_code}' --max-time 20 "$B$u")
-            case "$c" in 403|404) v="OK (bloque)";; 000) v="injoignable";; *) v="!!! ACCESSIBLE !!!";; esac
-            printf "  %-40s -> %s  %s\n" "$u" "$c" "$v"
-          done
-
-          echo "=== Fuite du schema SQL ? ==="
-          curl -s $R --max-time 20 "$B/espace/inc/schema.sql" | grep -q "CREATE TABLE" \
-            && echo "  !!! FUITE : schema lisible" || echo "  OK : rien servi"
           exit 0
