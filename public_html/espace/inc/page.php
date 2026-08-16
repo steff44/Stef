@@ -8,6 +8,22 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/auth.php';
 
+/*
+ * Adresse de la feuille de style, suffixée par sa date de modification.
+ *
+ * Hostinger sert le CSS avec « cache-control: max-age=604800 » : sans ce
+ * suffixe, un navigateur qui a déjà chargé la page garde l'ancienne feuille
+ * pendant SEPT JOURS et ne voit aucune modification de mise en page. Le
+ * suffixe change à chaque déploiement, ce qui force le rechargement — et lui
+ * seul, les autres fichiers restant en cache.
+ */
+function lien_css(string $prefixe = '../'): string
+{
+    $chemin  = __DIR__ . '/../../css/style.css';
+    $version = @filemtime($chemin) ?: '1';
+    return $prefixe . 'css/style.css?v=' . $version;
+}
+
 function debut_page(string $titre, string $page_active = ''): void
 {
     $adherent = adherent_connecte();
@@ -31,7 +47,7 @@ function debut_page(string $titre, string $page_active = ''): void
 <!-- L'espace adhérents n'a rien à faire dans les résultats de recherche. -->
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%23a855f7%22/></svg>">
-<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="<?= e(lien_css()) ?>">
 </head>
 <body>
 <a class="skip-link" href="#main">Aller au contenu</a>

@@ -68,6 +68,8 @@ function page_erreur(string $titre, string $message, int $code = 500): never
 {
     http_response_code($code);
     $titre = htmlspecialchars($titre, ENT_QUOTES, 'UTF-8');
+    // Même raison que lien_css() : contourner le cache de sept jours.
+    $version_css = @filemtime(__DIR__ . '/../../css/style.css') ?: '1';
     echo <<<HTML
     <!DOCTYPE html>
     <html lang="fr">
@@ -75,7 +77,7 @@ function page_erreur(string $titre, string $message, int $code = 500): never
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{$titre} — Focal Club Turballais</title>
-    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/style.css?v={$version_css}">
     </head>
     <body>
       <main id="main">
