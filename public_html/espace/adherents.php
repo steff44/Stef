@@ -79,6 +79,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             definir_message('succes', "Nouveau mot de passe provisoire de {$nom} : {$provisoire} — notez-le, il ne sera plus affiché.");
         }
 
+    } elseif ($action === 'deconnecter') {
+        // On ne supprime pas la session côté serveur — on ne peut pas
+        // atteindre celle d'un autre visiteur. On date la coupure : à sa
+        // requête suivante, signaler_presence() constate que sa session est
+        // antérieure et la ferme. La personne peut se reconnecter ensuite.
+        $requete = $pdo->prepare('SELECT nom FROM adherents WHERE id = ?');
+        $requete->execute([$id]);
+
+        if ($nom = $requete->fetchColumn()) {
+            $pdo->prepare(
+                'UPDATE adherents SET deconnecte_le = NOW(), derniere_activite = NULL WHERE id = ?'
+            )->execute([$id]);
+            $precision = $id === $adherent['id'] ? " Vous allez être renvoyé à la page de connexion." : '';
+            definir_message('succes', "Session de {$nom} fermée.{$precision}");
+        }
+
     } elseif ($action === 'basculer_actif') {
         // Un responsable ne peut pas se désactiver lui-même : ce serait le
         // meilleur moyen de se fermer la porte au nez.
@@ -102,10 +118,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-$membres = $pdo->query(
-    'SELECT id, identifiant, nom, email, telephone, administrateur, actif, derniere_connexion
-       FROM adherents ORDER BY actif DESC, nom'
-)->fetchAll();
+// « Connecté » = une page consultée dans les dernières minutes, et pas de
+// coupure demandée depuis. C'est le plus près de la vérité qu'on puisse être :
+// rien ne signale au serveur qu'un onglet vient d'être fermé.
+$requete = $pdo->prepare(
+    'SELECT id, identifiant, nom, email, telephone, administrateur, actif,
+            derniere_connexion, derniere_activite,
+            (derniere_activite IS NOT NULL
+              AND derniere_activite >= (NOW() - INTERVAL ? MINUTE)
+              AND (deconnecte_le IS NULL OR derniere_activite > deconnecte_le)) AS en_ligne
+       FROM adherents
+      ORDER BY actif DESC, nom'
+);
+$requete->execute([DELAI_PRESENCE_MINUTES]);
+$membres = $requete->fetchAll();
 
 debut_page("Adhérents", 'adherents');
 titre_page("Gestion des adhérents", "Créer les comptes, réinitialiser les mots de passe, activer ou désactiver un accès.");
@@ -150,16 +176,27 @@ titre_page("Gestion des adhérents", "Créer les comptes, réinitialiser les mot
     <table class="tableau-adherents">
       <thead>
         <tr>
+          <th>Connecté</th>
           <th>Nom</th>
-          <th>Identifiant</th>
-          <th>Contact</th>
+          <th>Pseudo</th>
+          <th>E-mail</th>
           <th>Dernière connexion</th>
           <th>Actions</th>
         </tr>
       </thead>
       <tbody>
         <?php foreach ($membres as $membre): ?>
+          <?php $en_ligne = (bool) $membre['en_ligne']; ?>
           <tr<?= $membre['actif'] ? '' : ' class="compte-inactif"' ?>>
+            <td>
+              <?php if ($en_ligne): ?>
+                <span class="pastille-en-ligne" title="Actif il y a moins de <?= DELAI_PRESENCE_MINUTES ?> minutes"></span>
+                <span class="etat-en-ligne">en ligne</span>
+              <?php else: ?>
+                <span class="pastille-hors-ligne"></span>
+                <span class="etat-hors-ligne">hors ligne</span>
+              <?php endif; ?>
+            </td>
             <td>
               <?= e($membre['nom']) ?>
               <?= $membre['administrateur'] ? ' <span class="badge-admin">responsable</span>' : '' ?>
@@ -167,11 +204,21 @@ titre_page("Gestion des adhérents", "Créer les comptes, réinitialiser les mot
             </td>
             <td><?= e($membre['identifiant']) ?></td>
             <td>
-              <?= $membre['email'] ? e($membre['email']) : '—' ?><br>
-              <?= $membre['telephone'] ? e($membre['telephone']) : '' ?>
+              <?= $membre['email'] ? e($membre['email']) : '—' ?>
+              <?php if ($membre['telephone']): ?>
+                <br><span class="contact-secondaire"><?= e($membre['telephone']) ?></span>
+              <?php endif; ?>
             </td>
             <td><?= $membre['derniere_connexion'] ? e(date_en_francais($membre['derniere_connexion'], false)) : 'jamais' ?></td>
             <td class="cellule-actions">
+              <?php if ($en_ligne): ?>
+                <form method="post" onsubmit="return confirm(<?= $membre['id'] === $adherent['id'] ? "'Fermer votre propre session ? Vous devrez vous reconnecter.'" : "'Fermer la session de cet adhérent ?'" ?>);">
+                  <?= champ_csrf() ?>
+                  <input type="hidden" name="action" value="deconnecter">
+                  <input type="hidden" name="id" value="<?= (int) $membre['id'] ?>">
+                  <button type="submit" class="lien-action lien-deconnecter">Déconnecter</button>
+                </form>
+              <?php endif; ?>
               <form method="post" onsubmit="return confirm('Générer un nouveau mot de passe provisoire ?');">
                 <?= champ_csrf() ?>
                 <input type="hidden" name="action" value="reinitialiser">

@@ -51,6 +51,12 @@ function base_de_donnees(): PDO
         );
     }
 
+    // Met la base à niveau si des colonnes ont été ajoutées depuis la dernière
+    // mise en ligne. Sans cela, le code neuf interrogerait des colonnes
+    // absentes et l'espace deviendrait inaccessible après un déploiement.
+    require_once __DIR__ . '/migration.php';
+    appliquer_migrations($pdo);
+
     return $pdo;
 }
 

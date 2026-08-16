@@ -7,18 +7,18 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/inc/auth.php';
 
+// Avant de détruire la session, on efface la trace d'activité : sans cela, la
+// personne resterait affichée comme « connectée » dans le tableau des
+// responsables pendant encore un quart d'heure.
+$adherent = adherent_connecte();
+if ($adherent !== null) {
+    $maj = base_de_donnees()->prepare('UPDATE adherents SET derniere_activite = NULL WHERE id = ?');
+    $maj->execute([$adherent['id']]);
+}
+
 deconnecter();
 demarrer_session();
-definir_message_simple("Vous êtes déconnecté.");
+$_SESSION['message'] = ['type' => 'succes', 'texte' => "Vous êtes déconnecté."];
 
 header('Location: connexion.php');
 exit;
-
-/*
- * definir_message() vit dans page.php, qu'on ne charge pas ici (aucune page
- * n'est affichée). On refait donc le strict minimum.
- */
-function definir_message_simple(string $texte): void
-{
-    $_SESSION['message'] = ['type' => 'succes', 'texte' => $texte];
-}

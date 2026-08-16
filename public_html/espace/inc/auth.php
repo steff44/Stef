@@ -10,6 +10,12 @@ require_once __DIR__ . '/db.php';
 const TENTATIVES_MAX     = 5;    // essais ratés avant blocage temporaire
 const BLOCAGE_SECONDES   = 900;  // 15 minutes
 
+// Au-delà de ce délai sans consulter une page, un adhérent n'est plus compté
+// comme « connecté » dans le tableau des responsables. Le web étant sans
+// mémoire, il n'existe aucun moyen de savoir qu'un onglet a été fermé : on
+// raisonne donc en activité récente, pas en présence certaine.
+const DELAI_PRESENCE_MINUTES = 15;
+
 function demarrer_session(): void
 {
     if (session_status() === PHP_SESSION_ACTIVE) {
@@ -54,7 +60,66 @@ function exige_connexion(): array
         header('Location: connexion.php');
         exit;
     }
+
+    signaler_presence($adherent);
+
     return $adherent;
+}
+
+/*
+ * Appelé une fois par page réservée. Deux rôles :
+ *   1. couper la session si un responsable a demandé la déconnexion ;
+ *   2. rafraîchir l'horodatage d'activité, qui alimente la colonne
+ *      « Connecté » du tableau des adhérents.
+ */
+function signaler_presence(array $adherent): void
+{
+    // Une seule vérification par requête, même si la fonction est rappelée.
+    static $deja_fait = false;
+    if ($deja_fait) {
+        return;
+    }
+    $deja_fait = true;
+
+    // L'instant de coupure est lu en secondes depuis l'horloge de MySQL, la
+    // même qui a servi à dater l'ouverture de session : comparer deux horloges
+    // différentes (PHP et MySQL) donnerait des résultats faux dès que leurs
+    // fuseaux divergent.
+    $requete = base_de_donnees()->prepare(
+        'SELECT UNIX_TIMESTAMP(deconnecte_le) AS coupure, actif FROM adherents WHERE id = ?'
+    );
+    $requete->execute([$adherent['id']]);
+    $ligne = $requete->fetch();
+
+    // Compte supprimé ou désactivé entre-temps : la session ne vaut plus rien.
+    if (!$ligne || !$ligne['actif']) {
+        fermer_session_a_distance("Votre compte a été désactivé.");
+    }
+
+    // Déconnexion demandée par un responsable : toute session ouverte avant
+    // cet instant tombe. Une reconnexion normale reste possible.
+    //
+    // La comparaison est LARGE (<=) et non stricte : MySQL date à la seconde,
+    // et un responsable qui clique dans la seconde même où quelqu'un se
+    // connecte doit voir sa demande aboutir. Le prix de ce choix est une
+    // coupure superflue si la personne se reconnecte dans cette même seconde —
+    // elle se reconnecte alors une fois de plus, sans autre conséquence.
+    $coupure = (int) ($ligne['coupure'] ?? 0);
+    if ($coupure && ($adherent['connecte_depuis'] ?? 0) <= $coupure) {
+        fermer_session_a_distance("Un responsable a fermé votre session. Reconnectez-vous.");
+    }
+
+    $maj = base_de_donnees()->prepare('UPDATE adherents SET derniere_activite = NOW() WHERE id = ?');
+    $maj->execute([$adherent['id']]);
+}
+
+function fermer_session_a_distance(string $motif): never
+{
+    deconnecter();
+    demarrer_session();
+    $_SESSION['message'] = ['type' => 'erreur', 'texte' => $motif];
+    header('Location: connexion.php');
+    exit;
 }
 
 function exige_administrateur(): array
@@ -122,17 +187,30 @@ function tenter_connexion(string $identifiant, string $mot_de_passe): ?string
     // Nouvel identifiant de session : empêche la « fixation de session ».
     session_regenerate_id(true);
 
-    $_SESSION['adherent'] = [
-        'id'             => (int) $ligne['id'],
-        'identifiant'    => $ligne['identifiant'],
-        'nom'            => $ligne['nom'],
-        'email'          => $ligne['email'],
-        'telephone'      => $ligne['telephone'],
-        'administrateur' => (bool) $ligne['administrateur'],
-    ];
-
-    $maj = base_de_donnees()->prepare('UPDATE adherents SET derniere_connexion = NOW() WHERE id = ?');
+    // deconnecte_le est remis à zéro : la coupure demandée par un responsable
+    // visait les sessions d'alors, pas celle-ci. Sans cet effacement, quelqu'un
+    // qui se reconnecte dans la seconde suivant sa déconnexion forcée serait
+    // éjecté une seconde fois, sans comprendre pourquoi.
+    $maj = base_de_donnees()->prepare(
+        'UPDATE adherents
+            SET derniere_connexion = NOW(), derniere_activite = NOW(), deconnecte_le = NULL
+          WHERE id = ?'
+    );
     $maj->execute([$ligne['id']]);
+
+    // Daté par l'horloge de MySQL, pour être comparable à deconnecte_le.
+    // Une coupure demandée AVANT cette seconde ne concerne pas cette session.
+    $ouverture = (int) base_de_donnees()->query('SELECT UNIX_TIMESTAMP()')->fetchColumn();
+
+    $_SESSION['adherent'] = [
+        'id'              => (int) $ligne['id'],
+        'identifiant'     => $ligne['identifiant'],
+        'nom'             => $ligne['nom'],
+        'email'           => $ligne['email'],
+        'telephone'       => $ligne['telephone'],
+        'administrateur'  => (bool) $ligne['administrateur'],
+        'connecte_depuis' => $ouverture,
+    ];
 
     return null;
 }
