@@ -6,35 +6,31 @@ jobs:
   verifier:
     runs-on: ubuntu-latest
     steps:
-      - name: Ou le site est-il servi
+      - name: Les 200 de focalclub.fr/.eu sont-ils de vraies fuites
         shell: bash
         run: |
           set +e
-          for d in focalclub.fr www.focalclub.fr myfocal.online www.myfocal.online focalclub.eu focalclub.site; do
-            echo "======================= $d"
-            code=$(curl -s -o /tmp/p -w '%{http_code}' --max-time 20 -L "https://$d/")
-            titre=$(grep -oE '<title>[^<]*' /tmp/p | head -1 | sed 's/<title>//')
-            echo "  accueil        : $code   titre: ${titre:-aucun}"
-            # Est-ce NOTRE site (Focal Club Turballais, statique) ?
-            grep -q "Focal Club Turballais" /tmp/p && echo "  -> contient « Focal Club Turballais »"
-            grep -q "espace/connexion.php" /tmp/p && echo "  -> LE MENU POINTE SUR L'ESPACE (notre deploiement est ici)"
-
-            e=$(curl -s -o /tmp/e -w '%{http_code}' --max-time 20 "https://$d/espace/connexion.php")
-            echo "  espace         : $e"
-            if [ "$e" = "200" ]; then
-              grep -oE 'Configuration absente|Base de donnees injoignable|name="csrf"' /tmp/e | head -2 | sed 's/^/     etat: /'
-              echo "  --- dossiers prives (attendu 403) ---"
-              for u in /espace/inc/config.example.php /espace/inc/schema.sql /espace/inc/auth.php /espace/photos/ /espace/fichiers/; do
-                c=$(curl -s -o /tmp/x -w '%{http_code}' --max-time 20 "https://$d$u")
-                case "$c" in 403|404) v="OK (bloque)";; 200) v="!!! ACCESSIBLE !!!";; *) v="?";; esac
-                printf "     %-38s %s  %s\n" "$u" "$c" "$v"
-              done
-              curl -s --max-time 20 "https://$d/espace/inc/schema.sql" | grep -q "CREATE TABLE" \
-                && echo "     !!! FUITE : schema SQL lisible" || echo "     OK : schema non servi"
-              echo "  --- page reservee sans connexion ---"
-              printf "     galerie.php -> %s vers %s\n" \
-                "$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "https://$d/espace/galerie.php")" \
-                "$(curl -s -o /dev/null -w '%{redirect_url}' --max-time 20 "https://$d/espace/galerie.php")"
-            fi
+          for d in focalclub.fr focalclub.eu; do
+            echo "=================== $d"
+            for u in /espace/inc/auth.php /espace/inc/config.example.php /espace/galerie.php /nimporte-quoi-inexistant-12345; do
+              curl -s --max-time 20 -o /tmp/c -w '' "https://$d$u"
+              taille=$(wc -c < /tmp/c)
+              type=$(curl -s --max-time 20 -o /dev/null -w '%{content_type}' "https://$d$u")
+              # signatures d'une vraie fuite de code source PHP
+              fuite=""
+              grep -q "declare(strict_types" /tmp/c && fuite="CODE PHP"
+              grep -q "MOT_DE_PASSE_DE_LA_BASE" /tmp/c && fuite="CONFIG"
+              grep -q "password_verify\|jeton_csrf" /tmp/c && fuite="CODE PHP"
+              printf "  %-38s %7s o  %-28s %s\n" "$u" "$taille" "$type" "${fuite:-pas de code source}"
+            done
+            echo "  --- signature de la page renvoyee ---"
+            curl -s --max-time 20 "https://$d/espace/inc/auth.php" | grep -oE '<title>[^<]*|Hostinger|404|introuvable' | head -2 | sed 's/^/     /'
           done
+
+          echo "=================== myfocal.online : confirmation finale"
+          for u in /espace/inc/auth.php /espace/inc/config.example.php; do
+            printf "  %-38s -> %s\n" "$u" "$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "https://myfocal.online$u")"
+          done
+          echo "  --- la page de connexion s'affiche-t-elle vraiment ? ---"
+          curl -s --max-time 20 "https://myfocal.online/espace/connexion.php" | grep -oE '<title>[^<]*|Configuration absente|Base de donnees injoignable|Identifiant' | head -4 | sed 's/^/     /'
           exit 0
