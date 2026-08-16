@@ -172,6 +172,17 @@ faut regarder.
   Vérifié le 16/08/2026 en interrogeant chaque domaine.
 - Dans `css/style.css`, les chemins d'images sont relatifs à `css/`, donc
   `url("../images/...")`.
+- **Hostinger sert le CSS avec `cache-control: max-age=604800`** — sept jours.
+  Sans précaution, une modification de style reste invisible une semaine pour
+  qui a déjà ouvert le site : le navigateur ne redemande simplement pas le
+  fichier. D'où le suffixe `?v=` sur chaque appel à `style.css` :
+  - **pages PHP** : automatique, `lien_css()` dans `inc/page.php` utilise
+    `filemtime()`, il n'y a rien à penser ;
+  - **pages HTML statiques** : `?v=AAAAMMJJ` écrit en dur. **À incrémenter à
+    la main dès qu'on touche à `style.css`**, sinon les visiteurs habituels ne
+    verront pas le changement.
+  Constaté le 16/08/2026 : le quadrillage du tableau des adhérents était bien
+  déployé, mais invisible côté navigateur pour cette raison.
 
 ## Conventions
 
