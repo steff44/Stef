@@ -6,35 +6,42 @@ jobs:
   verifier:
     runs-on: ubuntu-latest
     steps:
-      - name: Contrôle de l'espace adhérents en ligne
+      - name: Diagnostic DNS et acces
+        shell: bash
         run: |
-          B=https://myfocalclub.online
-          echo "=== Pages publiques ==="
-          for u in / /connexion.html; do
-            printf "%-42s -> %s\n" "$u" "$(curl -s -o /dev/null -w '%{http_code}' -L "$B$u")"
+          set +e
+          echo "=== Resolution DNS ==="
+          for d in myfocalclub.online www.myfocalclub.online focalclub.fr myfocal.online; do
+            ip=$(dig +short "$d" A | tr '\n' ' ')
+            printf "  %-28s -> %s\n" "$d" "${ip:-AUCUNE REPONSE}"
           done
 
-          echo "=== L'espace repond-il ? ==="
-          printf "%-42s -> %s\n" "/espace/connexion.php" "$(curl -s -o /dev/null -w '%{http_code}' "$B/espace/connexion.php")"
-          echo "--- contenu (100 premiers caracteres utiles) ---"
-          curl -s "$B/espace/connexion.php" | tr -d '\n' | grep -oE '<h1[^>]*>[^<]*|Configuration absente|Base de donnees injoignable' | head -3
+          echo "=== Enregistrements NS de myfocalclub.online ==="
+          dig +short NS myfocalclub.online || echo "  aucun"
+          echo "--- le domaine existe-t-il ? ---"
+          dig myfocalclub.online | grep -E "status:|^myfocalclub" | head -5
 
-          echo "=== DOSSIERS PRIVES : doivent etre REFUSES (403) ==="
-          for u in /espace/inc/ /espace/inc/config.example.php /espace/inc/schema.sql \
-                   /espace/inc/auth.php /espace/photos/ /espace/fichiers/; do
-            c=$(curl -s -o /dev/null -w '%{http_code}' "$B$u")
-            case "$c" in 403|404) verdict="OK (bloque)";; *) verdict="!!! ACCESSIBLE !!!";; esac
-            printf "%-42s -> %s  %s\n" "$u" "$c" "$verdict"
+          echo "=== Test direct sur l'IP du serveur (91.108.101.117) ==="
+          for h in myfocalclub.online www.myfocalclub.online; do
+            c=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 \
+                 --resolve "$h:443:91.108.101.117" "https://$h/" )
+            printf "  Host: %-28s -> %s\n" "$h" "$c"
           done
 
-          echo "=== Le schema SQL fuit-il son contenu ? ==="
-          if curl -s "$B/espace/inc/schema.sql" | grep -q "CREATE TABLE"; then
-            echo "!!! FUITE : le schema est lisible publiquement"
-          else
-            echo "OK : aucun contenu de schema servi"
-          fi
+          echo "=== Si joignable par IP : etat de l'espace ==="
+          B="https://myfocalclub.online"
+          R="--resolve myfocalclub.online:443:91.108.101.117"
+          printf "  %-40s -> %s\n" "/espace/connexion.php" "$(curl -s $R -o /dev/null -w '%{http_code}' --max-time 20 "$B/espace/connexion.php")"
+          curl -s $R --max-time 20 "$B/espace/connexion.php" | grep -oE 'Configuration absente|Base de donnees injoignable|Espace adherents|name="csrf"' | head -3
 
-          echo "=== Page reservee sans connexion (doit rediriger) ==="
-          printf "%-42s -> %s vers %s\n" "/espace/galerie.php" \
-            "$(curl -s -o /dev/null -w '%{http_code}' "$B/espace/galerie.php")" \
-            "$(curl -s -o /dev/null -w '%{redirect_url}' "$B/espace/galerie.php")"
+          echo "=== DOSSIERS PRIVES (attendu 403) ==="
+          for u in /espace/inc/config.example.php /espace/inc/schema.sql /espace/inc/auth.php /espace/photos/ /espace/fichiers/; do
+            c=$(curl -s $R -o /dev/null -w '%{http_code}' --max-time 20 "$B$u")
+            case "$c" in 403|404) v="OK (bloque)";; 000) v="injoignable";; *) v="!!! ACCESSIBLE !!!";; esac
+            printf "  %-40s -> %s  %s\n" "$u" "$c" "$v"
+          done
+
+          echo "=== Fuite du schema SQL ? ==="
+          curl -s $R --max-time 20 "$B/espace/inc/schema.sql" | grep -q "CREATE TABLE" \
+            && echo "  !!! FUITE : schema lisible" || echo "  OK : rien servi"
+          exit 0
