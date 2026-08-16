@@ -72,3 +72,19 @@ Deux rôles existent : **adhérent** (consulte tout, dépose des photos, s'inscr
 - Les pages de l'espace sont en `noindex` : elles ne remonteront pas dans les moteurs de recherche.
 
 > **À noter :** ces pages sont en PHP, elles ne fonctionnent donc **pas sur la préversion GitHub Pages**, qui ne sert que des fichiers statiques. L'espace adhérents ne peut se tester qu'une fois en ligne sur Hostinger.
+
+## Préversion : relire avant de publier
+
+Avant qu'une modification n'arrive sur le site en ligne, on peut la regarder sur une préversion : **https://steff44.github.io/Stef/**
+
+Le workflow `.github/workflows/preview.yml` y publie le contenu de `public_html/` à chaque push sur une branche `claude/**`. Il ne touche jamais au site en ligne — le déploiement Hostinger, lui, ne part que de `main`.
+
+- Une seule préversion existe à la fois : c'est toujours la branche poussée le plus récemment qui s'affiche.
+- La préversion est protégée de l'indexation (`robots.txt` + balise `noindex`), pour qu'elle ne concurrence pas le vrai site dans les résultats de recherche. Ces protections sont ajoutées à la volée lors de la publication, jamais dans les fichiers du dépôt.
+- Le workflow peut aussi être lancé manuellement : onglet **Actions** → « Préversion GitHub Pages » → *Run workflow*.
+
+### Configuration requise (une seule fois, déjà faite)
+
+**Settings → Pages → Build and deployment → Source = "GitHub Actions".** Seul le propriétaire du dépôt peut activer Pages : le jeton des workflows n'en a pas le droit (`Resource not accessible by integration`). Si la préversion échoue à l'étape « Configuration de Pages », c'est ce réglage qu'il faut vérifier.
+
+Le parcours complet est donc : brancher en `claude/**` → pousser → relire la préversion → fusionner sur `main` → mise en ligne sur Hostinger.

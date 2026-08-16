@@ -12,7 +12,9 @@ Club Turballais**, club photo associatif de La Turballe (44).
 - **Source de vérité du design :** https://focalclub.fr — un autre site du même
   club, généré avec Hostinger Horizons (React compilé, pas de source lisible).
   L'utilisateur veut que notre site s'en rapproche visuellement.
-- **Branche unique :** `main` (pas d'autre branche, historique volontairement propre)
+- **Branche de référence :** `main` — c'est elle, et elle seule, qui met le
+  site en ligne. Le travail se fait sur une branche `claude/**`, se relit sur
+  la préversion (voir « Déploiement »), puis se fusionne sur `main`.
 
 ## Structure
 
@@ -103,6 +105,28 @@ Settings → Secrets and variables → Actions. Voir le README pour le détail.
 Le workflow peut aussi être lancé à la main : onglet Actions → « Déploiement
 Hostinger » → Run workflow.
 
+### Préversion avant publication
+
+`.github/workflows/preview.yml` publie `public_html/` sur GitHub Pages à
+chaque poussée d'une branche `claude/**`, pour **relire le rendu avant de
+fusionner** :
+
+- **Adresse :** https://steff44.github.io/Stef/
+- Une seule préversion à la fois : c'est toujours la branche poussée le plus
+  récemment qui s'affiche.
+- Elle ne touche jamais au site en ligne — Hostinger ne part que de `main`.
+- Elle est protégée de l'indexation (`robots.txt` + balise `noindex` ajoutée à
+  la volée). Ces protections sont injectées **dans l'archive publiée
+  uniquement**, jamais dans les fichiers du dépôt : ne pas les y recopier.
+- Peut aussi être lancée à la main : Actions → « Préversion GitHub Pages » →
+  Run workflow.
+
+GitHub Pages est **déjà activé** (Settings → Pages → Source = GitHub Actions).
+C'est un réglage à faire une seule fois, et seul le propriétaire du dépôt le
+peut : le jeton des workflows n'en a pas le droit (« Resource not accessible by
+integration »). Si la préversion échoue un jour à cette étape, c'est là qu'il
+faut regarder.
+
 ## Pièges déjà rencontrés (ne pas refaire)
 
 - **Le sandbox Claude Code ne peut pas faire de SSH** (port 22/65002 bloqué,
@@ -112,6 +136,10 @@ Hostinger » → Run workflow.
   sandbox. Pour les inspecter : workflow GitHub Actions temporaire + Playwright,
   résultats renvoyés en base64 dans les logs (les artefacts GitHub sont sur un
   domaine bloqué, donc inutilisables ici).
+- **`steff44.github.io` est bloqué depuis le sandbox** : impossible d'aller
+  regarder la préversion soi-même. Pour vérifier qu'elle est bien en ligne,
+  lire les logs du workflow (« Reported success! » à l'étape « Mise en ligne
+  de la préversion »). C'est à l'utilisateur d'ouvrir l'adresse.
 - **Le compte Hostinger héberge plusieurs domaines.** `myfocalclub.online` est
   le domaine *principal* → il pointe sur `~/public_html/`. Les autres
   (`myfocal.online`, `focalclub.fr/.eu/.site`) ont chacun leur dossier sous
