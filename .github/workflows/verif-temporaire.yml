@@ -1,0 +1,40 @@
+name: Vérification temporaire de l'espace
+on:
+  push:
+    branches: ["claude/verif-espace"]
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Contrôle de l'espace adhérents en ligne
+        run: |
+          B=https://myfocalclub.online
+          echo "=== Pages publiques ==="
+          for u in / /connexion.html; do
+            printf "%-42s -> %s\n" "$u" "$(curl -s -o /dev/null -w '%{http_code}' -L "$B$u")"
+          done
+
+          echo "=== L'espace repond-il ? ==="
+          printf "%-42s -> %s\n" "/espace/connexion.php" "$(curl -s -o /dev/null -w '%{http_code}' "$B/espace/connexion.php")"
+          echo "--- contenu (100 premiers caracteres utiles) ---"
+          curl -s "$B/espace/connexion.php" | tr -d '\n' | grep -oE '<h1[^>]*>[^<]*|Configuration absente|Base de donnees injoignable' | head -3
+
+          echo "=== DOSSIERS PRIVES : doivent etre REFUSES (403) ==="
+          for u in /espace/inc/ /espace/inc/config.example.php /espace/inc/schema.sql \
+                   /espace/inc/auth.php /espace/photos/ /espace/fichiers/; do
+            c=$(curl -s -o /dev/null -w '%{http_code}' "$B$u")
+            case "$c" in 403|404) verdict="OK (bloque)";; *) verdict="!!! ACCESSIBLE !!!";; esac
+            printf "%-42s -> %s  %s\n" "$u" "$c" "$verdict"
+          done
+
+          echo "=== Le schema SQL fuit-il son contenu ? ==="
+          if curl -s "$B/espace/inc/schema.sql" | grep -q "CREATE TABLE"; then
+            echo "!!! FUITE : le schema est lisible publiquement"
+          else
+            echo "OK : aucun contenu de schema servi"
+          fi
+
+          echo "=== Page reservee sans connexion (doit rediriger) ==="
+          printf "%-42s -> %s vers %s\n" "/espace/galerie.php" \
+            "$(curl -s -o /dev/null -w '%{http_code}' "$B/espace/galerie.php")" \
+            "$(curl -s -o /dev/null -w '%{redirect_url}' "$B/espace/galerie.php")"
