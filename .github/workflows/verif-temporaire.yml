@@ -1,0 +1,40 @@
+name: Vérification temporaire de l'espace
+on:
+  push:
+    branches: ["claude/verif-espace"]
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Le CSS en ligne contient-il les nouvelles regles
+        shell: bash
+        run: |
+          set +e
+          UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36'
+          U=https://myfocal.online/css/style.css
+
+          echo "=== En-tetes du fichier CSS ==="
+          curl -sI -A "$UA" --max-time 40 "$U" \
+            | grep -iE '^(HTTP/|last-modified|etag|content-length|cache-control|x-litespeed|age)' | sed 's/^/  /'
+
+          curl -s -A "$UA" --max-time 40 -o /tmp/c "$U"
+          echo "  taille recue : $(wc -c < /tmp/c) octets"
+
+          echo "=== Regles attendues ==="
+          verif() {
+            if grep -qF "$2" /tmp/c; then echo "  OK      $1"; else echo "  ABSENT  $1"; fi
+          }
+          verif "quadrillage des cellules (border: 1px solid)" "  border: 1px solid var(--border);"
+          verif "largeur minimale 940px"                        "min-width: 940px;"
+          verif "conteneur elargi .container-large"             ".container-large"
+          verif "fond des en-tetes de colonne"                  "background: var(--bg-alt);"
+          verif "lignes alternees"                              "tbody tr:nth-child(even)"
+          verif "heure en retrait"                              ".heure-secondaire"
+
+          echo "=== Extrait reel du bloc .tableau-adherents th/td ==="
+          awk '/\.tableau-adherents th,/{f=1} f{print "     "$0} f&&/^}/{exit}' /tmp/c
+
+          echo "=== Le HTML demande-t-il bien ce fichier ? ==="
+          curl -s -A "$UA" --max-time 40 https://myfocal.online/espace/connexion.php \
+            | grep -oE '<link[^>]*style\.css[^>]*>' | sed 's/^/  /'
+          exit 0
