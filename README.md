@@ -56,7 +56,17 @@ Deux rôles existent : **adhérent** (consulte tout, dépose des photos, s'inscr
 ### Mise en service (une seule fois)
 
 1. **Créer la base MySQL** — hPanel → *Bases de données* → *MySQL*. Notez le nom de la base, l'utilisateur et le mot de passe.
-2. **Créer le fichier de configuration** — hPanel → *Gestionnaire de fichiers* → `public_html/espace/inc/`. Copiez `config.example.php` sous le nom **`config.local.php`** et renseignez-y les quatre valeurs.
+2. **Créer le fichier de configuration** — hPanel → *Gestionnaire de fichiers* → `public_html/espace/inc/`. Copiez `config.example.php` sous le nom **`config.local.php`**, puis remplacez-y **les trois textes en majuscules** par les valeurs de votre base. Ne touchez pas à `'hote' => 'localhost'`, déjà correct chez Hostinger. Gardez les apostrophes et la virgule de fin de ligne :
+
+   ```php
+   'hote'         => 'localhost',            // à laisser tel quel
+   'base'         => 'u912253694_focal',     // ← le nom de votre base
+   'utilisateur'  => 'u912253694_stef',      // ← l'utilisateur MySQL
+   'mot_de_passe' => 'VotreMotDePasseIci',   // ← son mot de passe
+   ```
+
+   `base` et `utilisateur` sont deux choses distinctes, même si leurs noms se ressemblent : Hostinger vous fait créer l'une *et* l'autre, et préfixe les deux par l'identifiant de votre compte.
+
    > Ce fichier se crée à la main, et jamais dans Git : **le dépôt est public**, un mot de passe de base de données y serait visible de tous. Le déploiement ne l'écrase pas (rsync tourne sans `--delete`).
 3. **Lancer l'installation** — ouvrez `https://myfocal.online/espace/installation.php`. Le formulaire crée les tables et **votre compte responsable**.
 4. **Verrouillage automatique** — dès qu'un compte existe, cette page refuse de servir à nouveau. Vous pouvez ensuite supprimer `espace/installation.php`.
