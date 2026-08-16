@@ -8,7 +8,8 @@ Il résume l'état du projet pour repartir sans avoir à tout réexpliquer.
 Site vitrine statique (HTML/CSS/JS, sans framework ni build) pour le **Focal
 Club Turballais**, club photo associatif de La Turballe (44).
 
-- **En ligne :** https://myfocalclub.online
+- **En ligne :** https://myfocal.online (et `www.myfocal.online`) — espace
+  adhérents sur https://myfocal.online/espace/connexion.php
 - **Source de vérité du design :** https://focalclub.fr — un autre site du même
   club, généré avec Hostinger Horizons (React compilé, pas de source lisible).
   L'utilisateur veut que notre site s'en rapproche visuellement.
@@ -91,6 +92,10 @@ Points à ne pas casser :
 - Pour tester la logique hors ligne : copier `espace/` ailleurs, remplacer le
   DSN de `db.php` par SQLite et adapter `schema.sql`. C'est ainsi qu'ont été
   validés connexion, CSRF, blocage après échecs, rôles et dépôts de fichiers.
+- Les `.htaccess` ne peuvent pas se tester ainsi (le serveur PHP intégré les
+  ignore). Vérifiés en ligne le 16/08/2026 : `inc/`, `photos/` et `fichiers/`
+  répondent bien **403**, et une page réservée renvoie **302** vers la
+  connexion.
 
 ## Déploiement
 
@@ -140,10 +145,15 @@ faut regarder.
   regarder la préversion soi-même. Pour vérifier qu'elle est bien en ligne,
   lire les logs du workflow (« Reported success! » à l'étape « Mise en ligne
   de la préversion »). C'est à l'utilisateur d'ouvrir l'adresse.
-- **Le compte Hostinger héberge plusieurs domaines.** `myfocalclub.online` est
-  le domaine *principal* → il pointe sur `~/public_html/`. Les autres
-  (`myfocal.online`, `focalclub.fr/.eu/.site`) ont chacun leur dossier sous
-  `~/domains/<domaine>/public_html/`. Ne pas confondre.
+- **`myfocalclub.online` N'EXISTE PAS** — le DNS répond `NXDOMAIN`. Ce fichier
+  et le README l'ont longtemps annoncé comme l'adresse du site : c'était faux.
+  Ne pas réintroduire ce domaine.
+- **Le compte Hostinger héberge plusieurs domaines**, et c'est
+  **`myfocal.online`** qui sert `~/public_html/`, donc notre déploiement. Les
+  autres (`focalclub.fr`, `.eu`) affichent un site Hostinger Horizons sans
+  rapport, qui renvoie une page « 200 » pour *n'importe quelle* adresse — un
+  faux 404. Ne pas en conclure à une fuite de nos fichiers : ils n'y sont pas.
+  Vérifié le 16/08/2026 en interrogeant chaque domaine.
 - Dans `css/style.css`, les chemins d'images sont relatifs à `css/`, donc
   `url("../images/...")`.
 
