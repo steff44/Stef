@@ -937,3 +937,370 @@ a {
     grid-template-columns: 1fr;
   }
 }
+
+/* ===========================================================================
+   ESPACE ADHÉRENTS (pages PHP du dossier espace/)
+   Réutilise les mêmes variables de couleur et la même police que le site
+   public : l'espace réservé doit ressembler au reste du site.
+   ========================================================================= */
+
+/* Barre d'onglets sous l'en-tête */
+.espace-barre {
+  background: var(--bg-alt);
+  border-bottom: 1px solid var(--border);
+  padding: 20px 0 0;
+}
+.espace-identite {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 12px;
+}
+.espace-bonjour {
+  margin: 4px 0 0;
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+}
+.espace-onglets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+}
+.espace-onglets a {
+  display: block;
+  padding: 10px 16px;
+  border-radius: 10px 10px 0 0;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  border-bottom: 2px solid transparent;
+}
+.espace-onglets a:hover {
+  background: var(--surface);
+  color: var(--text);
+}
+.espace-onglets a.actif {
+  color: var(--text);
+  background: var(--surface);
+  border-bottom-color: var(--accent);
+}
+
+/* Pastilles */
+.badge-admin,
+.badge-inactif {
+  display: inline-block;
+  font-size: 0.68rem;
+  padding: 3px 9px;
+  border-radius: 999px;
+  vertical-align: middle;
+  margin-left: 6px;
+}
+.badge-admin {
+  background: var(--accent-soft);
+  color: #e9d5ff;
+  border: 1px solid rgba(168, 85, 247, 0.45);
+}
+.badge-inactif {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+/* Messages de confirmation / d'erreur */
+.alerte {
+  padding: 14px 16px;
+  border-radius: var(--radius-btn);
+  margin-bottom: 22px;
+  font-size: 0.92rem;
+  border: 1px solid;
+}
+.alerte-succes {
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.45);
+  color: #bbf7d0;
+}
+.alerte-erreur {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.45);
+  color: #fecaca;
+}
+
+/* Bloc dépliant « Ajouter … » */
+.depot-bloc {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin-bottom: 28px;
+}
+.depot-bloc > summary {
+  cursor: pointer;
+  font-family: var(--font-heading);
+  font-size: 1.02rem;
+}
+.depot-bloc .form-card {
+  background: var(--bg-alt);
+}
+
+.titre-section {
+  font-family: var(--font-heading);
+  font-size: 1.3rem;
+  margin: 0 0 18px;
+}
+
+.case-a-cocher {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+.case-a-cocher input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
+/* Encart « prochaine sortie » du tableau de bord */
+.encart-sortie {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 24px;
+}
+
+/* Galerie privée */
+.photo-privee {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+.photo-description,
+.photo-meta {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  margin-top: 4px;
+}
+
+/* Bouton discret d'action destructrice */
+.lien-danger,
+.lien-action {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.82rem;
+  text-decoration: underline;
+}
+.lien-danger {
+  color: #fca5a5;
+}
+.lien-action {
+  color: var(--text-muted);
+}
+.lien-danger:hover {
+  color: #fecaca;
+}
+.lien-action:hover {
+  color: var(--text);
+}
+
+/* Documents */
+.liste-documents {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.document-ligne {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+}
+.document-titre {
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  text-decoration: underline;
+}
+.document-description {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+.document-meta {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+.document-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* Agenda */
+.liste-sorties {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 16px;
+}
+.sortie-carte {
+  display: flex;
+  gap: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+}
+.sortie-inscrite {
+  border-color: rgba(168, 85, 247, 0.5);
+}
+.sortie-date {
+  flex: 0 0 62px;
+  text-align: center;
+  background: var(--bg-alt);
+  border-radius: var(--radius-btn);
+  padding: 10px 0;
+  height: fit-content;
+}
+.sortie-jour {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: 1.6rem;
+  line-height: 1;
+}
+.sortie-mois {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.sortie-corps h3 {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  margin: 0 0 6px;
+}
+.sortie-quand {
+  margin: 0 0 10px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+.sortie-detail {
+  margin: 4px 0;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+.sortie-description {
+  margin: 12px 0;
+  font-size: 0.92rem;
+}
+.sortie-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.liste-sorties-passees .sortie-carte {
+  opacity: 0.62;
+  padding: 14px 20px;
+}
+
+/* Annuaire */
+.annuaire-carte .member-body {
+  padding: 20px;
+}
+.annuaire-carte h3 {
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  margin: 0 0 10px;
+}
+.annuaire-contacts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.9rem;
+}
+.annuaire-contacts li {
+  margin-bottom: 6px;
+}
+.annuaire-contacts a {
+  color: var(--text-muted);
+  text-decoration: underline;
+}
+.annuaire-contacts a:hover {
+  color: var(--text);
+}
+.annuaire-vide {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.grille-deux {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+/* Tableau de gestion des adhérents */
+.tableau-defilant {
+  overflow-x: auto;
+}
+.tableau-adherents {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  min-width: 720px;
+}
+.tableau-adherents th,
+.tableau-adherents td {
+  text-align: left;
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.tableau-adherents th {
+  color: var(--text-muted);
+  font-weight: normal;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.compte-inactif {
+  opacity: 0.55;
+}
+.cellule-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+@media (max-width: 640px) {
+  .sortie-carte {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .sortie-date {
+    flex: 0 0 auto;
+    width: 62px;
+  }
+  .document-ligne {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

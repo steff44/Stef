@@ -1,0 +1,15 @@
+# Identifiants de la base MySQL : ce fichier vit UNIQUEMENT sur le serveur.
+# Le dépôt est public — un mot de passe déposé ici serait visible de tous.
+public_html/espace/inc/config.local.php
+
+# Fichiers déposés par les adhérents (photos et documents) : ils appartiennent
+# au serveur, pas au dépôt. Les dossiers eux-mêmes sont conservés (.gitkeep).
+public_html/espace/photos/*
+public_html/espace/fichiers/*
+!public_html/espace/photos/.gitkeep
+!public_html/espace/fichiers/.gitkeep
+!public_html/espace/photos/.htaccess
+!public_html/espace/fichiers/.htaccess
+
+# Base de test créée hors ligne, jamais déployée.
+public_html/espace/test.sqlite
