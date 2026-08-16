@@ -25,7 +25,8 @@ public_html/          ← racine du site, déployée telle quelle
   evenements.html
   membres.html        ← page "Le Club" (liste des adhérents)
   contact.html
-  connexion.html      ← page d'attente (pas de vraie authentification)
+  connexion.html      ← redirection vers espace/connexion.php (ne pas supprimer)
+  espace/             ← ESPACE ADHÉRENTS en PHP + MySQL (voir plus bas)
   css/style.css       ← tout le style, variables CSS en haut du fichier
   js/data.js          ← DONNÉES : adhérents + leurs photos
   js/main.js          ← rendu des galeries, lightbox, menu mobile
@@ -50,6 +51,46 @@ public_html/          ← racine du site, déployée telle quelle
 - **Vraies photos :** les vignettes sont encore des dégradés de couleur générés
   en CSS. Pour de vraies images, les déposer dans `public_html/images/` et
   remplacer le `background` des `.photo-frame` / `.member-cover` dans `js/main.js`.
+
+## Espace adhérents (`public_html/espace/`)
+
+Vraie authentification en **PHP + MySQL** sur Hostinger (choix explicite de
+l'utilisateur). Quatre rubriques une fois connecté : galerie privée, documents,
+agenda des sorties avec inscriptions, annuaire. Deux rôles : adhérent et
+responsable (`administrateur = 1`).
+
+```
+espace/
+  connexion.php  deconnexion.php  index.php        ← tableau de bord
+  galerie.php    documents.php    agenda.php       annuaire.php
+  adherents.php      ← gestion des comptes, responsables uniquement
+  installation.php   ← à jouer UNE fois, se verrouille ensuite tout seul
+  telecharger.php    ← seule porte d'accès aux fichiers privés
+  inc/               ← code interne, fermé par .htaccess
+    config.local.php ← À CRÉER À LA MAIN SUR LE SERVEUR, jamais dans Git
+    config.example.php  db.php  auth.php  page.php  televersement.php  schema.sql
+  photos/  fichiers/  ← dépôts, fermés par .htaccess
+```
+
+Points à ne pas casser :
+
+- **`config.local.php` ne doit JAMAIS être commité** : le dépôt est public. Il
+  se crée dans le Gestionnaire de fichiers hPanel et survit aux déploiements
+  (rsync sans `--delete`).
+- Le schéma des tables est dans `inc/schema.sql`, joué par `installation.php`.
+- Les fichiers déposés sont renommés aléatoirement et leur type est déduit du
+  **contenu** (`mime_content_type` + `getimagesize`), jamais du nom : c'est ce
+  qui empêche de déposer un `.php` déguisé en `.png`.
+- `telecharger.php` ne prend jamais de nom de fichier dans l'URL, seulement un
+  identifiant en base — pas de remontée de dossier possible.
+- Toute page réservée commence par `exige_connexion()` (ou
+  `exige_administrateur()`), et tout formulaire porte `champ_csrf()` +
+  `verifier_csrf()`.
+- Les pages PHP **ne tournent pas sur la préversion GitHub Pages** (statique
+  uniquement). L'espace ne se teste qu'en ligne sur Hostinger.
+- Pour tester la logique hors ligne : copier `espace/` ailleurs, remplacer le
+  DSN de `db.php` par SQLite et adapter `schema.sql`. C'est ainsi qu'ont été
+  validés connexion, CSRF, blocage après échecs, rôles et dépôts de fichiers.
 
 ## Déploiement
 
