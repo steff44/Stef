@@ -2,7 +2,7 @@
 
 Site statique responsive pour un club photo : présentation du club, page adhérents, galerie individuelle par adhérent, page contact.
 
-**En ligne :** https://myfocalclub.online
+**En ligne :** https://myfocal.online
 
 ## Structure
 
@@ -58,7 +58,7 @@ Deux rôles existent : **adhérent** (consulte tout, dépose des photos, s'inscr
 1. **Créer la base MySQL** — hPanel → *Bases de données* → *MySQL*. Notez le nom de la base, l'utilisateur et le mot de passe.
 2. **Créer le fichier de configuration** — hPanel → *Gestionnaire de fichiers* → `public_html/espace/inc/`. Copiez `config.example.php` sous le nom **`config.local.php`** et renseignez-y les quatre valeurs.
    > Ce fichier se crée à la main, et jamais dans Git : **le dépôt est public**, un mot de passe de base de données y serait visible de tous. Le déploiement ne l'écrase pas (rsync tourne sans `--delete`).
-3. **Lancer l'installation** — ouvrez `https://myfocalclub.online/espace/installation.php`. Le formulaire crée les tables et **votre compte responsable**.
+3. **Lancer l'installation** — ouvrez `https://myfocal.online/espace/installation.php`. Le formulaire crée les tables et **votre compte responsable**.
 4. **Verrouillage automatique** — dès qu'un compte existe, cette page refuse de servir à nouveau. Vous pouvez ensuite supprimer `espace/installation.php`.
 5. **Créer les comptes des adhérents** — connectez-vous, onglet *Adhérents*. Chaque création affiche **une seule fois** un mot de passe provisoire, à transmettre à la personne, qui pourra le changer depuis l'onglet *Annuaire*.
 
