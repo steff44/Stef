@@ -41,7 +41,7 @@
     <div class="container contact-layout">
       <div class="form-card">
         <h2>Envoyez-nous un message</h2>
-        <form action="mailto:cooky44.sl@gmail.com" method="post" enctype="text/plain">
+        <form action="mailto:cooky44.sl@gmail.com" method="post" enctype="text/plain" data-contenu-mailto-action>
           <div class="field-row">
             <div class="field">
               <label for="nom">Nom complet</label>
@@ -61,7 +61,7 @@
             <textarea id="message" name="message" rows="6" required placeholder="Votre message…"></textarea>
           </div>
           <button type="submit" class="btn btn-primary" style="width:100%;">Envoyer le message</button>
-          <p class="form-note">Ce formulaire ouvre votre messagerie par défaut. Vous pouvez aussi écrire directement à cooky44.sl@gmail.com.</p>
+          <p class="form-note">Ce formulaire ouvre votre messagerie par défaut. Vous pouvez aussi écrire directement à <span data-contenu="email">cooky44.sl@gmail.com</span>.</p>
         </form>
       </div>
 
@@ -74,7 +74,7 @@
             </span>
             <div>
               <h3>E-mail</h3>
-              <p><a href="mailto:cooky44.sl@gmail.com">cooky44.sl@gmail.com</a></p>
+              <p><a href="mailto:cooky44.sl@gmail.com" data-contenu="email">cooky44.sl@gmail.com</a></p>
             </div>
           </div>
           <div class="info-card">
@@ -83,7 +83,7 @@
             </span>
             <div>
               <h3>Téléphone</h3>
-              <p><a href="tel:0617117765">06 17 11 77 65</a></p>
+              <p><a href="tel:0617117765" data-contenu="telephone">06 17 11 77 65</a></p>
             </div>
           </div>
           <div class="info-card">
@@ -92,12 +92,12 @@
             </span>
             <div>
               <h3>Adresse</h3>
-              <p>Salle François Marie Lebrun, La Turballe</p>
+              <p><span data-contenu="nom_lieu">Foyer des Vignes</span><br><span data-contenu-adresse-details>17 rue Michelet, 44420 La Turballe</span></p>
             </div>
           </div>
         </div>
 
-        <a class="map-card" href="https://www.google.com/maps/search/?api=1&amp;query=Salle+Fran%C3%A7ois+Marie+Lebrun+La+Turballe" target="_blank" rel="noopener">
+        <a class="map-card" href="https://www.google.com/maps/search/?api=1&amp;query=Foyer+des+Vignes+17+rue+Michelet+44420+La+Turballe" target="_blank" rel="noopener" data-contenu-maps>
           <span class="feature-icon" aria-hidden="true">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
           </span>
@@ -139,7 +139,7 @@
     <div class="footer-grid footer-grid-3">
       <div>
         <a class="logo" href="index.html"><span class="logo-mark" aria-hidden="true"></span>Focal Club Turballais</a>
-        <p>Passionnés de photographie, nous partageons notre amour de l'image à travers des sorties, des expositions et des moments de convivialité.</p>
+        <p data-contenu="presentation">Passionnés de photographie, nous partageons notre amour de l'image à travers des sorties, des expositions et des moments de convivialité.</p>
         <div class="social-row" aria-label="Réseaux sociaux">
           <a href="#" aria-label="Facebook" class="social-fb">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M22 12a10 10 0 1 0-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.5h-1.2c-1.2 0-1.6.8-1.6 1.6V12h2.8l-.4 2.9h-2.4v7A10 10 0 0 0 22 12Z"/></svg>
@@ -155,9 +155,9 @@
       <div class="footer-contact">
         <h4>Contact</h4>
         <ul class="footer-contact-list">
-          <li>cooky44.sl@gmail.com</li>
-          <li>06 17 11 77 65</li>
-          <li>Salle François Marie Lebrun</li>
+          <li data-contenu="email">cooky44.sl@gmail.com</li>
+          <li data-contenu="telephone">06 17 11 77 65</li>
+          <li data-contenu="nom_lieu">Foyer des Vignes</li>
         </ul>
       </div>
       <div class="footer-links">

@@ -81,6 +81,12 @@ L'onglet **Adhérents**, réservé aux responsables, affiche un tableau : *Conne
 
 Utile quand quelqu'un a oublié de se déconnecter sur un poste partagé.
 
+### Modifier les coordonnées affichées sur le site public
+
+L'onglet **Réglages du site**, réservé aux responsables, permet de modifier le lieu de réunion (nom, adresse), le téléphone, l'e-mail et le texte de présentation du pied de page — sans passer par un développeur.
+
+Ces informations apparaissent sur l'accueil, la page Contact et le pied de page de chaque page du site. Une modification met **quelques minutes** à s'afficher partout : c'est le navigateur de chaque visiteur qui va chercher la valeur à jour, pas une republication du site.
+
 ### Ce qui protège l'espace
 
 - Mots de passe stockés **hachés** (`password_hash`, jamais en clair) ; blocage 15 minutes après 5 essais ratés.

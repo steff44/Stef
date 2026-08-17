@@ -68,3 +68,14 @@ CREATE TABLE IF NOT EXISTS inscriptions (
   CONSTRAINT fk_inscription_sortie   FOREIGN KEY (sortie_id)   REFERENCES sorties(id)   ON DELETE CASCADE,
   CONSTRAINT fk_inscription_adherent FOREIGN KEY (adherent_id) REFERENCES adherents(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Coordonnées du club (adresse, téléphone, e-mail, présentation), modifiables
+-- par un responsable dans parametres.php et affichées sur les pages publiques
+-- statiques via infos-club.php. Les valeurs par défaut sont posées par
+-- appliquer_migrations() dans inc/migration.php, pas ici : ce fichier ne
+-- s'exécute qu'à l'installation, alors que la migration s'applique aussi aux
+-- bases déjà en production.
+CREATE TABLE IF NOT EXISTS parametres_site (
+  cle    VARCHAR(60) PRIMARY KEY,
+  valeur TEXT NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

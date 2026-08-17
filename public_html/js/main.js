@@ -17,6 +17,59 @@
     });
   }
 
+  /* ---------- Contenu dynamique (coordonnées, présentation) ----------
+     Un responsable peut modifier ces textes depuis l'espace adhérents
+     (« Réglages du site »). Comme le reste du site est du HTML statique, ils
+     sont chargés ici depuis infos-club.php et viennent remplacer le texte
+     déjà présent dans la page. En cas d'échec — hors ligne, ou préversion
+     GitHub Pages qui ne peut pas exécuter PHP — le texte figé dans le HTML
+     reste affiché : c'est le repli voulu, pas une erreur à corriger. */
+  (function () {
+    const cibles = document.querySelectorAll("[data-contenu]");
+    if (!cibles.length) return;
+
+    fetch("infos-club.php")
+      .then(function (reponse) {
+        return reponse.ok ? reponse.json() : Promise.reject();
+      })
+      .then(function (donnees) {
+        cibles.forEach(function (el) {
+          const cle = el.dataset.contenu;
+          const valeur = donnees[cle];
+          if (typeof valeur !== "string" || valeur === "") return;
+          el.textContent = valeur;
+          if (el.tagName === "A" && cle === "telephone") {
+            el.href = "tel:" + valeur.replace(/\s+/g, "");
+          }
+          if (el.tagName === "A" && cle === "email") {
+            el.href = "mailto:" + valeur;
+          }
+        });
+
+        const detailsAdresse = document.querySelector("[data-contenu-adresse-details]");
+        if (detailsAdresse && donnees.adresse_rue && donnees.adresse_code_postal && donnees.adresse_ville) {
+          detailsAdresse.textContent =
+            donnees.adresse_rue + ", " + donnees.adresse_code_postal + " " + donnees.adresse_ville;
+        }
+
+        const lienMaps = document.querySelector("[data-contenu-maps]");
+        if (lienMaps) {
+          const requete = [donnees.nom_lieu, donnees.adresse_rue, donnees.adresse_code_postal, donnees.adresse_ville]
+            .filter(Boolean)
+            .join(" ");
+          if (requete) {
+            lienMaps.href = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(requete);
+          }
+        }
+
+        const formulaire = document.querySelector("[data-contenu-mailto-action]");
+        if (formulaire && donnees.email) {
+          formulaire.action = "mailto:" + donnees.email;
+        }
+      })
+      .catch(function () {});
+  })();
+
   /* ---------- Utilitaires ---------- */
   function initials(nom) {
     return nom
