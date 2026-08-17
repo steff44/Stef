@@ -48,15 +48,24 @@ public_html/          ← racine du site, déployée telle quelle
 - **« Espace Adhérent » est un menu déroulant** (`.nav-dropdown` dans
   `css/style.css` + comportement dans `js/main.js` : clic pour ouvrir/fermer,
   clic extérieur, Échap, accordéon en dessous de 760px). Sur les pages
-  statiques, il ne contient qu'un lien « Connexion » vers
-  `espace/connexion.php` — le HTML statique ne connaît jamais l'état de
-  connexion. Dans `espace/inc/page.php` (`debut_page()`), ce même menu
-  déroulant remplace l'ancienne barre d'onglets sous l'en-tête : non connecté,
-  il ne contient que « Connexion » ; connecté, il affiche « Bonjour {nom} »
-  en en-tête puis Tableau de bord, Galerie privée, Documents, Agenda,
-  Annuaire (+ Adhérents, Réglages du site pour un responsable), puis « Se
-  déconnecter ». Les classes `.espace-barre`/`.espace-onglets` ont été
+  statiques, il contient « Connexion » et « S'inscrire » (toutes deux vers
+  `espace/`) — le HTML statique ne connaît jamais l'état de connexion. Dans
+  `espace/inc/page.php` (`debut_page()`), ce même menu déroulant remplace
+  l'ancienne barre d'onglets sous l'en-tête : non connecté, il propose
+  Connexion et S'inscrire ; connecté, **le libellé du menu devient
+  « {pseudo} connecté »** (au lieu de « Espace Adhérent »), et son contenu
+  affiche « Bonjour {nom} » puis, juste en dessous, **« Se déconnecter »**
+  (choix explicite de l'utilisateur : la déconnexion doit être la première
+  action visible, pas la dernière), puis Tableau de bord, Galerie privée,
+  Documents, Agenda, Annuaire (+ Adhérents, Réglages du site pour un
+  responsable). Les classes `.espace-barre`/`.espace-onglets` ont été
   supprimées avec cette bascule (17/08/2026) — ne pas les réintroduire.
+- **`js/main.js` et `js/data.js` sont versionnés comme `style.css`** (voir
+  plus bas « Hostinger sert... ») : `?v=AAAAMMJJHHmm` en dur sur les pages
+  statiques, `lien_js()` (calqué sur `lien_css()`) sur les pages PHP. Sans
+  ça, un navigateur qui a déjà visité le site garde l'ancien script sept
+  jours et ne voit aucun changement de comportement (menu déroulant resté
+  inerte au clic, constaté le 17/08/2026 — c'est ce qui a révélé l'oubli).
 - Hero plein écran : photo d'un photographe en fond (`images/hero-photographer.jpg`,
   Unsplash, la même que focalclub.fr) sous un voile dégradé, titre en overlay.
 
@@ -87,9 +96,23 @@ l'utilisateur). Quatre rubriques une fois connecté : galerie privée, documents
 agenda des sorties avec inscriptions, annuaire. Deux rôles : adhérent et
 responsable (`administrateur = 1`).
 
+**Inscription publique (`inscription.php`)** : n'importe qui peut créer un
+compte (prénom, nom, pseudo, e-mail, téléphone facultatif, code postal et
+ville facultatifs, mot de passe) — choix explicite de l'utilisateur
+(17/08/2026) : le compte est **actif immédiatement**, comme un compte créé
+par un responsable depuis `adherents.php`, pas de validation préalable. Le
+pseudo devient `identifiant` (unicité vérifiée avant l'INSERT, message
+dédié plutôt qu'une erreur SQL brute). À la création, la personne est
+connectée tout de suite via `tenter_connexion()` (réutilisée telle quelle,
+pour ne pas dupliquer sa logique de session), donc jamais besoin de
+ressaisir son mot de passe juste après l'avoir choisi. `code_postal` et
+`ville` sont des colonnes ajoutées à `adherents` (voir `schema.sql` et
+`COLONNES_ATTENDUES` dans `migration.php`) ; rien d'autre ne les affiche
+pour l'instant (l'annuaire ne montre encore que nom/identifiant/contact).
+
 ```
 espace/
-  connexion.php  deconnexion.php  index.php        ← tableau de bord
+  connexion.php  deconnexion.php  inscription.php  index.php    ← tableau de bord
   galerie.php    documents.php    agenda.php       annuaire.php
   adherents.php      ← gestion des comptes, responsables uniquement
   parametres.php     ← coordonnées du club affichées sur le site public, responsables uniquement

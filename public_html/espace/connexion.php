@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-debut_page("Se connecter");
+debut_page("Se connecter", 'connexion');
 titre_page("Espace adhérents", "Réservé aux membres du Focal Club Turballais.");
 ?>
 <section class="section"><div class="container">

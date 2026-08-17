@@ -18,6 +18,8 @@ declare(strict_types=1);
 const COLONNES_ATTENDUES = [
     'derniere_activite' => 'DATETIME DEFAULT NULL',
     'deconnecte_le'     => 'DATETIME DEFAULT NULL',
+    'code_postal'       => 'VARCHAR(10) DEFAULT NULL',
+    'ville'             => 'VARCHAR(120) DEFAULT NULL',
 ];
 
 // Coordonnées du club, modifiables par un responsable depuis parametres.php

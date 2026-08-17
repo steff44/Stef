@@ -77,7 +77,7 @@ function debut_page(string $titre, string $page_active = ''): void
       <li><a href="../contact.html">Nous Contacter</a></li>
       <li class="nav-dropdown">
         <button type="button" class="nav-dropdown-trigger" aria-expanded="false">
-          Espace Adhérent
+          <?= $adherent ? e($adherent['identifiant']) . ' connecté' : 'Espace Adhérent' ?>
           <svg class="nav-dropdown-caret" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
         </button>
         <ul class="nav-dropdown-menu">
@@ -85,13 +85,14 @@ function debut_page(string $titre, string $page_active = ''): void
             <li class="nav-dropdown-heading">
               Bonjour <strong><?= e($adherent['nom']) ?></strong><?= est_administrateur() ? ' <span class="badge-admin">responsable</span>' : '' ?>
             </li>
+            <li><a href="deconnexion.php">Se déconnecter</a></li>
+            <li class="nav-dropdown-divider"></li>
             <?php foreach ($onglets as $cle => [$libelle, $lien]): ?>
               <li><a href="<?= $lien ?>"<?= $cle === $page_active ? ' aria-current="page"' : '' ?>><?= $libelle ?></a></li>
             <?php endforeach; ?>
-            <li class="nav-dropdown-divider"></li>
-            <li><a href="deconnexion.php">Se déconnecter</a></li>
           <?php else: ?>
-            <li><a href="connexion.php" aria-current="page">Connexion</a></li>
+            <li><a href="connexion.php"<?= $page_active === 'connexion' ? ' aria-current="page"' : '' ?>>Connexion</a></li>
+            <li><a href="inscription.php"<?= $page_active === 'inscription' ? ' aria-current="page"' : '' ?>>S'inscrire</a></li>
           <?php endif; ?>
         </ul>
       </li>
