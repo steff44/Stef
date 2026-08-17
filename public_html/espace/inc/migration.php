@@ -31,6 +31,8 @@ const PARAMETRES_PAR_DEFAUT = [
     'adresse_ville'       => 'La Turballe',
     'telephone'           => '06 17 11 77 65',
     'email'               => 'cooky44.sl@gmail.com',
+    'horaires_creneau'    => 'Jeudi 20h30-23h00',
+    'horaires_frequence'  => 'Réunions hebdomadaires',
     'presentation'        => "Passionnés de photographie, nous partageons notre amour de l'image à travers des sorties, des expositions et des moments de convivialité.",
 ];
 

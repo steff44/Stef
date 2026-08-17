@@ -115,8 +115,8 @@ Points à ne pas casser :
   tout juste migrée n'affiche rien de différent tant que personne n'y touche.
   Un témoin `inc/.schema-a-jour` évite de réinterroger la base à chaque
   requête.
-- **Contenu dynamique sur les pages publiques statiques** (adresse, téléphone,
-  e-mail, texte de présentation en pied de page) : un responsable les modifie
+- **Contenu dynamique sur les pages publiques statiques** (adresse, horaires,
+  téléphone, e-mail, texte de présentation en pied de page) : un responsable les modifie
   dans `espace/parametres.php`, table `parametres_site` (clé/valeur). Les
   pages publiques restent du HTML statique — rien n'y est régénéré. C'est le
   navigateur du visiteur qui, via `js/main.js`, interroge `infos-club.php` (à

@@ -29,6 +29,8 @@ const CHAMPS = [
     'adresse_ville'       => 'Ville',
     'telephone'           => 'Téléphone',
     'email'               => 'E-mail',
+    'horaires_creneau'    => 'Jour et créneau des réunions',
+    'horaires_frequence'  => 'Fréquence',
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -131,6 +133,20 @@ titre_page(
         <label for="email">E-mail</label>
         <input type="email" id="email" name="email" required maxlength="190"
                value="<?= e($actuel['email'] ?? '') ?>">
+      </div>
+    </div>
+
+    <h2 style="font-family:var(--font-heading);font-size:1.2rem;margin:28px 0 18px;">Horaires</h2>
+    <div class="field-row">
+      <div class="field">
+        <label for="horaires_creneau">Jour et créneau</label>
+        <input type="text" id="horaires_creneau" name="horaires_creneau" required maxlength="120"
+               placeholder="Jeudi 20h30-23h00" value="<?= e($actuel['horaires_creneau'] ?? '') ?>">
+      </div>
+      <div class="field">
+        <label for="horaires_frequence">Fréquence</label>
+        <input type="text" id="horaires_frequence" name="horaires_frequence" required maxlength="120"
+               placeholder="Réunions hebdomadaires" value="<?= e($actuel['horaires_frequence'] ?? '') ?>">
       </div>
     </div>
 
