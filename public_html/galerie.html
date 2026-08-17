@@ -6,7 +6,7 @@
 <title>Galerie — Focal Club Turballais</title>
 <meta name="description" content="La galerie photo du Focal Club Turballais, classée par thème.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%23a855f7%22/></svg>">
-<link rel="stylesheet" href="css/style.css?v=202608171500">
+<link rel="stylesheet" href="css/style.css?v=202608171800">
 </head>
 <body>
 <a class="skip-link" href="#main">Aller au contenu</a>
@@ -21,9 +21,17 @@
       <li><a href="index.html">Accueil</a></li>
       <li><a href="galerie.html" aria-current="page">Galerie</a></li>
       <li><a href="evenements.html">Agenda</a></li>
-      <li><a href="membres.html">Espace Adhérent</a></li>
+      <li><a href="membres.html">Le Club</a></li>
       <li><a href="contact.html">Nous Contacter</a></li>
-      <li><a href="espace/connexion.php">Connexion</a></li>
+      <li class="nav-dropdown">
+        <button type="button" class="nav-dropdown-trigger" aria-expanded="false">
+          Espace Adhérent
+          <svg class="nav-dropdown-caret" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+        <ul class="nav-dropdown-menu">
+          <li><a href="espace/connexion.php">Connexion</a></li>
+        </ul>
+      </li>
     </ul>
   </nav>
 </header>
@@ -84,7 +92,7 @@
             <li><a href="index.html">Accueil</a></li>
             <li><a href="galerie.html">Galerie</a></li>
             <li><a href="evenements.html">Agenda</a></li>
-            <li><a href="membres.html">Espace Adhérent</a></li>
+            <li><a href="membres.html">Le Club</a></li>
             <li><a href="contact.html">Nous Contacter</a></li>
             <li><a href="espace/connexion.php">Connexion</a></li>
           </ul>

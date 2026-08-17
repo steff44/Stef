@@ -63,35 +63,33 @@ function debut_page(string $titre, string $page_active = ''): void
       <li><a href="../index.html">Accueil</a></li>
       <li><a href="../galerie.html">Galerie</a></li>
       <li><a href="../evenements.html">Agenda</a></li>
-      <li><a href="../membres.html">Espace Adhérent</a></li>
+      <li><a href="../membres.html">Le Club</a></li>
       <li><a href="../contact.html">Nous Contacter</a></li>
-      <?php if ($adherent): ?>
-        <li><a href="deconnexion.php">Connexion</a></li>
-      <?php else: ?>
-        <li><a href="connexion.php" aria-current="page">Connexion</a></li>
-      <?php endif; ?>
+      <li class="nav-dropdown">
+        <button type="button" class="nav-dropdown-trigger" aria-expanded="false">
+          Espace Adhérent
+          <svg class="nav-dropdown-caret" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+        <ul class="nav-dropdown-menu">
+          <?php if ($adherent): ?>
+            <li class="nav-dropdown-heading">
+              Bonjour <strong><?= e($adherent['nom']) ?></strong><?= est_administrateur() ? ' <span class="badge-admin">responsable</span>' : '' ?>
+            </li>
+            <?php foreach ($onglets as $cle => [$libelle, $lien]): ?>
+              <li><a href="<?= $lien ?>"<?= $cle === $page_active ? ' aria-current="page"' : '' ?>><?= $libelle ?></a></li>
+            <?php endforeach; ?>
+            <li class="nav-dropdown-divider"></li>
+            <li><a href="deconnexion.php">Se déconnecter</a></li>
+          <?php else: ?>
+            <li><a href="connexion.php" aria-current="page">Connexion</a></li>
+          <?php endif; ?>
+        </ul>
+      </li>
     </ul>
   </nav>
 </header>
 
 <main id="main">
-<?php if ($adherent): ?>
-  <section class="espace-barre">
-    <div class="container">
-      <div class="espace-identite">
-        <span class="eyebrow">Espace adhérents</span>
-        <p class="espace-bonjour">Bonjour <?= e($adherent['nom']) ?><?= est_administrateur() ? ' <span class="badge-admin">responsable</span>' : '' ?></p>
-      </div>
-      <ul class="espace-onglets">
-        <?php foreach ($onglets as $cle => [$libelle, $lien]): ?>
-          <li>
-            <a href="<?= $lien ?>"<?= $cle === $page_active ? ' class="actif" aria-current="page"' : '' ?>><?= $libelle ?></a>
-          </li>
-        <?php endforeach; ?>
-      </ul>
-    </div>
-  </section>
-<?php endif; ?>
     <?php
 }
 

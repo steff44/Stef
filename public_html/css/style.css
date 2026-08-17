@@ -146,6 +146,86 @@ a {
   border-bottom-color: var(--accent-2);
 }
 
+/* Menu déroulant "Espace Adhérent" */
+.nav-dropdown {
+  position: relative;
+}
+.nav-dropdown-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  padding: 8px 0;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+.nav-dropdown-trigger:hover {
+  color: var(--text);
+  border-bottom-color: var(--accent-2);
+}
+.nav-dropdown-caret {
+  transition: transform 0.2s ease;
+}
+.nav-dropdown.is-open .nav-dropdown-trigger {
+  color: var(--text);
+}
+.nav-dropdown.is-open .nav-dropdown-caret {
+  transform: rotate(180deg);
+}
+.nav-dropdown-menu {
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  min-width: 220px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 8px;
+  list-style: none;
+  margin: 0;
+  z-index: 150;
+}
+.nav-dropdown.is-open .nav-dropdown-menu {
+  display: flex;
+}
+.nav-dropdown-menu a {
+  display: block;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  border-bottom: none;
+}
+.nav-dropdown-menu a:hover,
+.nav-dropdown-menu a[aria-current="page"] {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.nav-dropdown-heading {
+  padding: 8px 12px 10px;
+  margin-bottom: 4px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+.nav-dropdown-heading strong {
+  color: var(--text);
+}
+.nav-dropdown-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 6px 4px;
+}
+
 .nav-toggle {
   display: none;
   background: none;
@@ -896,6 +976,22 @@ a {
   .nav-toggle {
     display: block;
   }
+  .nav-dropdown-menu {
+    position: static;
+    display: none;
+    background: none;
+    border: none;
+    box-shadow: none;
+    padding: 6px 0 0 16px;
+    margin-top: 10px;
+    border-left: 2px solid var(--border);
+  }
+  .nav-dropdown.is-open .nav-dropdown-menu {
+    display: flex;
+  }
+  .nav-dropdown-heading {
+    padding: 0 0 10px;
+  }
   .hero {
     padding: 70px 0 60px;
   }
@@ -929,54 +1025,250 @@ a {
   }
 }
 
+/* Agenda du club (calendrier) */
+.agenda-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.agenda-views {
+  display: inline-flex;
+  gap: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-btn);
+  padding: 4px;
+}
+.agenda-view-btn {
+  background: none;
+  border: none;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 8px 16px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.agenda-view-btn:hover {
+  color: var(--text);
+}
+.agenda-view-btn.is-active {
+  background: var(--accent-gradient);
+  color: #fff;
+}
+.agenda-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+}
+.agenda-select select {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-btn);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.88rem;
+  padding: 9px 14px;
+  cursor: pointer;
+}
+.agenda-zone {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.agenda-card {
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.agenda-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  padding: 22px 20px;
+}
+.agenda-period {
+  font-family: var(--font-heading);
+  font-size: 1.3rem;
+  margin: 0;
+  min-width: 220px;
+  text-align: center;
+}
+.agenda-nav-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.agenda-nav-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.agenda-grid-head {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+.agenda-grid-head span {
+  padding: 10px 8px;
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+.agenda-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+.agenda-day {
+  border-top: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+  min-height: 108px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+}
+.agenda-day:nth-child(7n) {
+  border-right: 1px solid var(--border);
+}
+.agenda-day:hover {
+  background: var(--surface);
+}
+.agenda-day.is-outside {
+  opacity: 0.4;
+}
+.agenda-day-number {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+.agenda-day.is-today .agenda-day-number {
+  color: #fff;
+  background: var(--accent-gradient);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.agenda-week .agenda-day {
+  min-height: 160px;
+}
+
+.agenda-pill {
+  font-size: 0.7rem;
+  line-height: 1.35;
+  padding: 3px 7px;
+  border-radius: 6px;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.agenda-pill--vacances {
+  background: #1d4ed8;
+}
+.agenda-pill--ferie {
+  background: #15803d;
+}
+.agenda-pill--Réunion {
+  background: linear-gradient(90deg, var(--accent), var(--accent-3));
+}
+.agenda-pill--Sortie {
+  background: linear-gradient(90deg, var(--accent-2), var(--accent));
+}
+.agenda-pill--Atelier {
+  background: #0e7490;
+}
+.agenda-pill--Exposition {
+  background: #b45309;
+}
+
+.agenda-day-list {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.agenda-day-list-empty {
+  color: var(--text-muted);
+  padding: 20px;
+  text-align: center;
+}
+.agenda-day-list-item {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-btn);
+  padding: 14px 16px;
+  background: var(--surface);
+}
+.agenda-day-list-item .agenda-pill {
+  flex-shrink: 0;
+  white-space: normal;
+}
+.agenda-day-list-item div strong {
+  display: block;
+  font-size: 0.95rem;
+}
+.agenda-day-list-item div span {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+@media (max-width: 760px) {
+  .agenda-grid-head span {
+    font-size: 0.6rem;
+    padding: 8px 2px;
+  }
+  .agenda-day {
+    min-height: 76px;
+    padding: 5px;
+  }
+  .agenda-day-number {
+    font-size: 0.72rem;
+  }
+  .agenda-pill {
+    font-size: 0.6rem;
+    padding: 2px 4px;
+  }
+  .agenda-nav {
+    gap: 12px;
+  }
+  .agenda-period {
+    min-width: 0;
+    font-size: 1.05rem;
+  }
+}
+
 /* ===========================================================================
    ESPACE ADHÉRENTS (pages PHP du dossier espace/)
    Réutilise les mêmes variables de couleur et la même police que le site
    public : l'espace réservé doit ressembler au reste du site.
    ========================================================================= */
-
-/* Barre d'onglets sous l'en-tête */
-.espace-barre {
-  background: var(--bg-alt);
-  border-bottom: 1px solid var(--border);
-  padding: 20px 0 0;
-}
-.espace-identite {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 12px;
-}
-.espace-bonjour {
-  margin: 4px 0 0;
-  font-family: var(--font-heading);
-  font-size: 1.05rem;
-}
-.espace-onglets {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  list-style: none;
-  margin: 16px 0 0;
-  padding: 0;
-}
-.espace-onglets a {
-  display: block;
-  padding: 10px 16px;
-  border-radius: 10px 10px 0 0;
-  color: var(--text-muted);
-  font-size: 0.92rem;
-  border-bottom: 2px solid transparent;
-}
-.espace-onglets a:hover {
-  background: var(--surface);
-  color: var(--text);
-}
-.espace-onglets a.actif {
-  color: var(--text);
-  background: var(--surface);
-  border-bottom-color: var(--accent);
-}
 
 /* Pastilles */
 .badge-admin,

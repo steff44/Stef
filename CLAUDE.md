@@ -42,12 +42,21 @@ public_html/          ← racine du site, déployée telle quelle
 - **Police : Comic Sans MS** partout (choix explicite de l'utilisateur, comme
   sur focalclub.fr). Pas de Google Fonts — police système avec repli.
 - Ordre du menu (imposé par l'utilisateur, à ne pas réordonner) :
-  Accueil, Galerie, Agenda, Espace Adhérent, Nous Contacter, Connexion. Les
-  libellés seuls ont changé (17/08/2026) — les pages ciblées restent les
-  mêmes : Agenda → `evenements.html`, Espace Adhérent → `membres.html`,
-  Nous Contacter → `contact.html`, Connexion → `espace/connexion.php`
-  (devient `deconnexion.php`, toujours libellé « Connexion », une fois
-  l'adhérent identifié).
+  Accueil, Galerie, Agenda, Le Club, Nous Contacter, Espace Adhérent. Agenda →
+  `evenements.html`, Le Club → `membres.html` (liste publique des adhérents),
+  Nous Contacter → `contact.html`.
+- **« Espace Adhérent » est un menu déroulant** (`.nav-dropdown` dans
+  `css/style.css` + comportement dans `js/main.js` : clic pour ouvrir/fermer,
+  clic extérieur, Échap, accordéon en dessous de 760px). Sur les pages
+  statiques, il ne contient qu'un lien « Connexion » vers
+  `espace/connexion.php` — le HTML statique ne connaît jamais l'état de
+  connexion. Dans `espace/inc/page.php` (`debut_page()`), ce même menu
+  déroulant remplace l'ancienne barre d'onglets sous l'en-tête : non connecté,
+  il ne contient que « Connexion » ; connecté, il affiche « Bonjour {nom} »
+  en en-tête puis Tableau de bord, Galerie privée, Documents, Agenda,
+  Annuaire (+ Adhérents, Réglages du site pour un responsable), puis « Se
+  déconnecter ». Les classes `.espace-barre`/`.espace-onglets` ont été
+  supprimées avec cette bascule (17/08/2026) — ne pas les réintroduire.
 - Hero plein écran : photo d'un photographe en fond (`images/hero-photographer.jpg`,
   Unsplash, la même que focalclub.fr) sous un voile dégradé, titre en overlay.
 
@@ -58,6 +67,18 @@ public_html/          ← racine du site, déployée telle quelle
 - **Vraies photos :** les vignettes sont encore des dégradés de couleur générés
   en CSS. Pour de vraies images, les déposer dans `public_html/images/` et
   remplacer le `background` des `.photo-frame` / `.member-cover` dans `js/main.js`.
+- **Agenda public (page `evenements.html`) :** calendrier mois/semaine/jour
+  entièrement rendu par `js/main.js` à partir de `CLUB_DATA.agenda` dans
+  `js/data.js` — événements ponctuels (`evenements`), une réunion
+  hebdomadaire récurrente (`recurrents`, par jour de semaine), les vacances
+  scolaires **zone B / académie de Nantes** (`vacances`, dates officielles
+  2026-2027) et quelques jours fériés (`feries`). Tout est démonstratif sauf
+  les dates de vacances/fériés, vérifiées en ligne (17/08/2026) — à remplacer
+  par les vraies sorties du club le moment venu. Le filtre par catégorie ne
+  s'applique qu'aux événements du club ; vacances et jours fériés restent
+  toujours visibles. Pas de sélecteur de zone scolaire (un seul zone gérée :
+  ajouter un vrai sélecteur fonctionnel plutôt qu'un faux si une autre zone
+  est nécessaire un jour).
 
 ## Espace adhérents (`public_html/espace/`)
 
