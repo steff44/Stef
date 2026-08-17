@@ -71,8 +71,8 @@ function debut_page(string $titre, string $page_active = ''): void
     </button>
     <ul class="nav-links" id="nav-links">
       <li><a href="../index.html">Accueil</a></li>
-      <li><a href="../galerie.html">Galerie</a></li>
-      <li><a href="../evenements.html">Agenda</a></li>
+      <li><a href="<?= $adherent ? 'galerie.php' : '../galerie.html' ?>">Galerie</a></li>
+      <li><a href="<?= $adherent ? 'agenda.php' : '../evenements.html' ?>">Agenda</a></li>
       <li><a href="../membres.html">Le Club</a></li>
       <li><a href="../contact.html">Nous Contacter</a></li>
       <li class="nav-dropdown">

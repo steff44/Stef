@@ -96,6 +96,19 @@ l'utilisateur). Quatre rubriques une fois connecté : galerie privée, documents
 agenda des sorties avec inscriptions, annuaire. Deux rôles : adhérent et
 responsable (`administrateur = 1`).
 
+**« Agenda » et « Galerie » existent en double**, publique et privée, et ce
+sont deux systèmes sans aucun lien : `evenements.html`/`galerie.html`
+(statiques, démonstratifs, alimentés par `js/data.js`) d'un côté,
+`agenda.php`/`galerie.php` (réels, table `sorties`/`photos_privees` en base)
+de l'autre. Piège déjà rencontré (17/08/2026) : le menu principal de
+`espace/inc/page.php`, même une fois connecté, pointait vers les pages
+publiques — une sortie ajoutée dans le vrai agenda semblait alors « ne pas
+apparaître », et changer de page donnait l'impression d'être déconnecté
+(la page publique ne sait jamais afficher « {pseudo} connecté »). Les liens
+Agenda/Galerie du menu principal dans `page.php` pointent donc désormais
+vers `agenda.php`/`galerie.php` **une fois connecté**, et vers les pages
+publiques sinon — ne pas revenir en arrière sur ce point.
+
 **Inscription publique (`inscription.php`)** : n'importe qui peut créer un
 compte (prénom, nom, pseudo, e-mail, téléphone facultatif, code postal et
 ville facultatifs, mot de passe) — choix explicite de l'utilisateur
