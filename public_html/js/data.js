@@ -15,67 +15,6 @@ const CLUB_DATA = {
     "Noir et Blanc",
     "Abstrait / Créatif"
   ],
-  agenda: {
-    categories: ["Réunion", "Sortie", "Atelier", "Exposition"],
-    /* Événements ponctuels — dates fixes, format AAAA-MM-JJ. */
-    evenements: [
-      {
-        titre: "Sortie photo : Marais salants au lever du soleil",
-        categorie: "Sortie",
-        date: "2026-08-22",
-        heure: "6h00",
-        lieu: "Marais salants de Guérande"
-      },
-      {
-        titre: "Atelier retouche photo",
-        categorie: "Atelier",
-        date: "2026-09-05",
-        heure: "14h00",
-        lieu: "Foyer des Vignes"
-      },
-      {
-        titre: "Sortie photo : Vieux Nantes",
-        categorie: "Sortie",
-        date: "2026-09-19",
-        heure: "9h00",
-        lieu: "Nantes"
-      },
-      {
-        titre: "Exposition annuelle du club",
-        categorie: "Exposition",
-        dateDebut: "2026-09-26",
-        dateFin: "2026-09-27",
-        lieu: "Foyer des Vignes"
-      }
-    ],
-    /* Réunion hebdomadaire : générée pour chaque jeudi du mois affiché,
-       plutôt que listée date par date. */
-    recurrents: [
-      {
-        titre: "Réunion hebdomadaire",
-        categorie: "Réunion",
-        jourSemaine: 4, // jeudi (0 = dimanche, comme Date#getDay())
-        heure: "20h30 – 23h00",
-        lieu: "Foyer des Vignes"
-      }
-    ],
-    /* Vacances scolaires zone B (académie de Nantes), dates officielles
-       2026-2027 — source : ministère de l'Éducation nationale. */
-    vacances: [
-      { titre: "Vacances d'Été", debut: "2026-07-04", fin: "2026-08-31" },
-      { titre: "Vacances de la Toussaint", debut: "2026-10-17", fin: "2026-11-02" },
-      { titre: "Vacances de Noël", debut: "2026-12-19", fin: "2027-01-04" },
-      { titre: "Vacances d'Hiver", debut: "2027-02-20", fin: "2027-03-08" },
-      { titre: "Vacances de Printemps", debut: "2027-04-17", fin: "2027-05-03" }
-    ],
-    feries: [
-      { titre: "Assomption", date: "2026-08-15" },
-      { titre: "Toussaint", date: "2026-11-01" },
-      { titre: "Armistice", date: "2026-11-11" },
-      { titre: "Noël", date: "2026-12-25" },
-      { titre: "Jour de l'An", date: "2027-01-01" }
-    ]
-  },
   membres: [
     {
       id: "claire-martin",

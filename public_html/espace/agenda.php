@@ -1,6 +1,8 @@
 <?php
 /*
- * Agenda des sorties, avec inscription des adhérents.
+ * Agenda des sorties — visible de tous, choix explicite de l'utilisateur
+ * (17/08/2026) : seuls s'inscrire/se désinscrire exigent d'être connecté, et
+ * créer/supprimer une sortie d'être responsable.
  * Les responsables créent et suppriment les sorties ; chacun s'inscrit ou se retire.
  */
 
@@ -8,7 +10,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/inc/page.php';
 
-$adherent = exige_connexion();
+$adherent = adherent_connecte();
 $pdo      = base_de_donnees();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -17,12 +19,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $id     = (int) ($_POST['id'] ?? 0);
 
     if ($action === 'inscription') {
+        $adherent = exige_connexion();
         // INSERT IGNORE : la clé unique empêche déjà la double inscription.
         $pdo->prepare('INSERT IGNORE INTO inscriptions (sortie_id, adherent_id) VALUES (?, ?)')
             ->execute([$id, $adherent['id']]);
         definir_message('succes', "Vous êtes inscrit à cette sortie.");
 
     } elseif ($action === 'desinscription') {
+        $adherent = exige_connexion();
         $pdo->prepare('DELETE FROM inscriptions WHERE sortie_id = ? AND adherent_id = ?')
             ->execute([$id, $adherent['id']]);
         definir_message('succes', "Vous n'êtes plus inscrit à cette sortie.");
@@ -70,10 +74,13 @@ $sorties = $pdo->query(
       ORDER BY s.debut ASC'
 )->fetchAll();
 
-// Sur quelles sorties suis-je inscrit ?
-$requete = $pdo->prepare('SELECT sortie_id FROM inscriptions WHERE adherent_id = ?');
-$requete->execute([$adherent['id']]);
-$mes_inscriptions = array_column($requete->fetchAll(), 'sortie_id');
+// Sur quelles sorties suis-je inscrit ? (rien à calculer pour un visiteur anonyme)
+$mes_inscriptions = [];
+if ($adherent) {
+    $requete = $pdo->prepare('SELECT sortie_id FROM inscriptions WHERE adherent_id = ?');
+    $requete->execute([$adherent['id']]);
+    $mes_inscriptions = array_column($requete->fetchAll(), 'sortie_id');
+}
 
 // Qui participe à quoi (pour afficher les noms).
 $participants = [];
@@ -166,14 +173,18 @@ titre_page("Agenda des sorties", "Les prochaines sorties du club, et qui y parti
             </p>
 
             <div class="sortie-actions">
-              <form method="post">
-                <?= champ_csrf() ?>
-                <input type="hidden" name="id" value="<?= (int) $sortie['id'] ?>">
-                <input type="hidden" name="action" value="<?= $inscrit ? 'desinscription' : 'inscription' ?>">
-                <button type="submit" class="btn <?= $inscrit ? 'btn-ghost' : 'btn-primary' ?>">
-                  <?= $inscrit ? 'Me désinscrire' : "Je participe" ?>
-                </button>
-              </form>
+              <?php if ($adherent): ?>
+                <form method="post">
+                  <?= champ_csrf() ?>
+                  <input type="hidden" name="id" value="<?= (int) $sortie['id'] ?>">
+                  <input type="hidden" name="action" value="<?= $inscrit ? 'desinscription' : 'inscription' ?>">
+                  <button type="submit" class="btn <?= $inscrit ? 'btn-ghost' : 'btn-primary' ?>">
+                    <?= $inscrit ? 'Me désinscrire' : "Je participe" ?>
+                  </button>
+                </form>
+              <?php else: ?>
+                <a class="btn btn-ghost" href="connexion.php">Se connecter pour participer</a>
+              <?php endif; ?>
               <?php if (est_administrateur()): ?>
                 <form method="post" onsubmit="return confirm('Supprimer cette sortie et ses inscriptions ?');">
                   <?= champ_csrf() ?>

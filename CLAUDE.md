@@ -23,7 +23,7 @@ Club Turballais**, club photo associatif de La Turballe (44).
 public_html/          ← racine du site, déployée telle quelle
   index.html          ← accueil : hero photo, cartes, galerie, CTA
   galerie.html        ← galerie d'un adhérent, via ?id=<identifiant>
-  evenements.html
+  evenements.html     ← redirection vers espace/agenda.php (ne pas supprimer)
   membres.html        ← page "Le Club" (liste des adhérents)
   contact.html
   connexion.html      ← redirection vers espace/connexion.php (ne pas supprimer)
@@ -43,8 +43,9 @@ public_html/          ← racine du site, déployée telle quelle
   sur focalclub.fr). Pas de Google Fonts — police système avec repli.
 - Ordre du menu (imposé par l'utilisateur, à ne pas réordonner) :
   Accueil, Galerie, Agenda, Le Club, Nous Contacter, Espace Adhérent. Agenda →
-  `evenements.html`, Le Club → `membres.html` (liste publique des adhérents),
-  Nous Contacter → `contact.html`.
+  `espace/agenda.php` (voir plus bas, page publique malgré son emplacement),
+  Le Club → `membres.html` (liste publique des adhérents), Nous Contacter →
+  `contact.html`.
 - **« Espace Adhérent » est un menu déroulant** (`.nav-dropdown` dans
   `css/style.css` + comportement dans `js/main.js` : clic pour ouvrir/fermer,
   clic extérieur, Échap, accordéon en dessous de 760px). Sur les pages
@@ -76,18 +77,7 @@ public_html/          ← racine du site, déployée telle quelle
 - **Vraies photos :** les vignettes sont encore des dégradés de couleur générés
   en CSS. Pour de vraies images, les déposer dans `public_html/images/` et
   remplacer le `background` des `.photo-frame` / `.member-cover` dans `js/main.js`.
-- **Agenda public (page `evenements.html`) :** calendrier mois/semaine/jour
-  entièrement rendu par `js/main.js` à partir de `CLUB_DATA.agenda` dans
-  `js/data.js` — événements ponctuels (`evenements`), une réunion
-  hebdomadaire récurrente (`recurrents`, par jour de semaine), les vacances
-  scolaires **zone B / académie de Nantes** (`vacances`, dates officielles
-  2026-2027) et quelques jours fériés (`feries`). Tout est démonstratif sauf
-  les dates de vacances/fériés, vérifiées en ligne (17/08/2026) — à remplacer
-  par les vraies sorties du club le moment venu. Le filtre par catégorie ne
-  s'applique qu'aux événements du club ; vacances et jours fériés restent
-  toujours visibles. Pas de sélecteur de zone scolaire (un seul zone gérée :
-  ajouter un vrai sélecteur fonctionnel plutôt qu'un faux si une autre zone
-  est nécessaire un jour).
+- **Agenda :** une seule page, `espace/agenda.php` — voir plus bas.
 
 ## Espace adhérents (`public_html/espace/`)
 
@@ -96,18 +86,28 @@ l'utilisateur). Quatre rubriques une fois connecté : galerie privée, documents
 agenda des sorties avec inscriptions, annuaire. Deux rôles : adhérent et
 responsable (`administrateur = 1`).
 
-**« Agenda » et « Galerie » existent en double**, publique et privée, et ce
-sont deux systèmes sans aucun lien : `evenements.html`/`galerie.html`
-(statiques, démonstratifs, alimentés par `js/data.js`) d'un côté,
-`agenda.php`/`galerie.php` (réels, table `sorties`/`photos_privees` en base)
-de l'autre. Piège déjà rencontré (17/08/2026) : le menu principal de
-`espace/inc/page.php`, même une fois connecté, pointait vers les pages
-publiques — une sortie ajoutée dans le vrai agenda semblait alors « ne pas
-apparaître », et changer de page donnait l'impression d'être déconnecté
-(la page publique ne sait jamais afficher « {pseudo} connecté »). Les liens
-Agenda/Galerie du menu principal dans `page.php` pointent donc désormais
-vers `agenda.php`/`galerie.php` **une fois connecté**, et vers les pages
-publiques sinon — ne pas revenir en arrière sur ce point.
+**L'Agenda est unique et public** (`espace/agenda.php`), choix explicite de
+l'utilisateur (17/08/2026). Il vivait au départ en double : une page publique
+démonstrative (`evenements.html`, alimentée par `js/data.js`) et la vraie
+page privée connectée à la table `sorties`. Piège rencontré avec ce
+doublon : une sortie ajoutée dans le vrai agenda semblait « ne pas
+apparaître » (on regardait la démo), et changer de page donnait l'impression
+d'être déconnecté (la page démo ne sait jamais afficher « {pseudo}
+connecté »). Le doublon a été supprimé : `evenements.html` est désormais une
+redirection vers `espace/agenda.php` (même principe que `connexion.html`),
+et cette page n'exige plus de connexion pour être **consultée** —
+`exige_connexion()` n'est appelée qu'au moment de s'inscrire/se désinscrire
+à une sortie (`exige_administrateur()` reste nécessaire pour en créer ou en
+supprimer). Un visiteur non connecté voit les sorties et qui y participe,
+avec un lien « Se connecter pour participer » à la place du bouton
+d'inscription. Ne pas réintroduire de calendrier public séparé.
+
+**« Galerie » existe en double**, elle, publique et privée, sans aucun lien
+entre les deux : `galerie.html` (statique, démonstrative, alimentée par
+`js/data.js`) d'un côté, `galerie.php` (réelle, table `photos_privees`) de
+l'autre. Dans `espace/inc/page.php`, le lien « Galerie » du menu principal
+pointe donc vers `galerie.php` une fois connecté, et vers `galerie.html`
+sinon — ne pas harmoniser ce point avec l'Agenda sans qu'on le demande.
 
 **Inscription publique (`inscription.php`)** : n'importe qui peut créer un
 compte (prénom, nom, pseudo, e-mail, téléphone facultatif, code postal et
