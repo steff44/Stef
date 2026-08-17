@@ -2,6 +2,19 @@
 const CLUB_DATA = {
   nom: "Focal Club Turballais",
   accroche: "Capturer la lumière, partager le regard.",
+  themes: [
+    "Portrait",
+    "Paysage",
+    "Marais salants",
+    "Nature",
+    "Architecture",
+    "Sport",
+    "Photo de rue",
+    "Macro / Proxi",
+    "Voyage / Reportage",
+    "Noir et Blanc",
+    "Abstrait / Créatif"
+  ],
   membres: [
     {
       id: "claire-martin",
@@ -25,12 +38,12 @@ const CLUB_DATA = {
       bio: "Adepte du street photography, Youssef arpente les rues de la ville à la recherche d'instants de vie spontanés.",
       hue: 15,
       photos: [
-        { titre: "Marché du samedi matin", theme: "Rue" },
-        { titre: "Passage piéton sous la pluie", theme: "Rue" },
-        { titre: "Terrasse de café", theme: "Rue" },
-        { titre: "Ombres sur le trottoir", theme: "Rue" },
-        { titre: "Vélo contre le mur", theme: "Rue" },
-        { titre: "Néons du soir", theme: "Rue" }
+        { titre: "Marché du samedi matin", theme: "Photo de rue" },
+        { titre: "Passage piéton sous la pluie", theme: "Photo de rue" },
+        { titre: "Terrasse de café", theme: "Photo de rue" },
+        { titre: "Ombres sur le trottoir", theme: "Photo de rue" },
+        { titre: "Vélo contre le mur", theme: "Photo de rue" },
+        { titre: "Néons du soir", theme: "Photo de rue" }
       ]
     },
     {
@@ -55,12 +68,12 @@ const CLUB_DATA = {
       bio: "Passionné de macrophotographie, Thomas explore l'infiniment petit dans son jardin et les parcs alentour.",
       hue: 140,
       photos: [
-        { titre: "Goutte de rosée sur pétale", theme: "Macro" },
-        { titre: "Aile de papillon", theme: "Macro" },
-        { titre: "Texture d'écorce", theme: "Macro" },
-        { titre: "Fourmi sur une feuille", theme: "Macro" },
-        { titre: "Pistils de fleur", theme: "Macro" },
-        { titre: "Toile d'araignée givrée", theme: "Macro" }
+        { titre: "Goutte de rosée sur pétale", theme: "Macro / Proxi" },
+        { titre: "Aile de papillon", theme: "Macro / Proxi" },
+        { titre: "Texture d'écorce", theme: "Macro / Proxi" },
+        { titre: "Fourmi sur une feuille", theme: "Macro / Proxi" },
+        { titre: "Pistils de fleur", theme: "Macro / Proxi" },
+        { titre: "Toile d'araignée givrée", theme: "Macro / Proxi" }
       ]
     },
     {
@@ -70,12 +83,12 @@ const CLUB_DATA = {
       bio: "Sofia travaille principalement en noir et blanc argentique, avec une attention particulière aux contrastes et aux textures.",
       hue: 45,
       photos: [
-        { titre: "Escalier en colimaçon", theme: "Noir et blanc" },
-        { titre: "Façade abandonnée", theme: "Noir et blanc" },
-        { titre: "Silhouette au port", theme: "Noir et blanc" },
-        { titre: "Vagues et rochers", theme: "Noir et blanc" },
-        { titre: "Fenêtre et ombre", theme: "Noir et blanc" },
-        { titre: "Ruelle pavée", theme: "Noir et blanc" }
+        { titre: "Escalier en colimaçon", theme: "Noir et Blanc" },
+        { titre: "Façade abandonnée", theme: "Noir et Blanc" },
+        { titre: "Silhouette au port", theme: "Noir et Blanc" },
+        { titre: "Vagues et rochers", theme: "Noir et Blanc" },
+        { titre: "Fenêtre et ombre", theme: "Noir et Blanc" },
+        { titre: "Ruelle pavée", theme: "Noir et Blanc" }
       ]
     },
     {
@@ -85,12 +98,12 @@ const CLUB_DATA = {
       bio: "Marc se consacre à la photographie animalière et anime les ateliers d'initiation du club pour les nouveaux membres.",
       hue: 265,
       photos: [
-        { titre: "Héron au bord de l'étang", theme: "Animalier" },
-        { titre: "Renard en lisière de forêt", theme: "Animalier" },
-        { titre: "Vol de mésanges", theme: "Animalier" },
-        { titre: "Biche au crépuscule", theme: "Animalier" },
-        { titre: "Écureuil roux", theme: "Animalier" },
-        { titre: "Libellule sur roseau", theme: "Animalier" }
+        { titre: "Héron au bord de l'étang", theme: "Nature" },
+        { titre: "Renard en lisière de forêt", theme: "Nature" },
+        { titre: "Vol de mésanges", theme: "Nature" },
+        { titre: "Biche au crépuscule", theme: "Nature" },
+        { titre: "Écureuil roux", theme: "Nature" },
+        { titre: "Libellule sur roseau", theme: "Nature" }
       ]
     }
   ]

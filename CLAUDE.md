@@ -42,7 +42,12 @@ public_html/          ← racine du site, déployée telle quelle
 - **Police : Comic Sans MS** partout (choix explicite de l'utilisateur, comme
   sur focalclub.fr). Pas de Google Fonts — police système avec repli.
 - Ordre du menu (imposé par l'utilisateur, à ne pas réordonner) :
-  Accueil, Galerie, Événements, Le Club, Contact, Se Connecter.
+  Accueil, Galerie, Agenda, Espace Adhérent, Nous Contacter, Connexion. Les
+  libellés seuls ont changé (17/08/2026) — les pages ciblées restent les
+  mêmes : Agenda → `evenements.html`, Espace Adhérent → `membres.html`,
+  Nous Contacter → `contact.html`, Connexion → `espace/connexion.php`
+  (devient `deconnexion.php`, toujours libellé « Connexion », une fois
+  l'adhérent identifié).
 - Hero plein écran : photo d'un photographe en fond (`images/hero-photographer.jpg`,
   Unsplash, la même que focalclub.fr) sous un voile dégradé, titre en overlay.
 

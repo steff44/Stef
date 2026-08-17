@@ -62,13 +62,13 @@ function debut_page(string $titre, string $page_active = ''): void
     <ul class="nav-links" id="nav-links">
       <li><a href="../index.html">Accueil</a></li>
       <li><a href="../galerie.html">Galerie</a></li>
-      <li><a href="../evenements.html">Événements</a></li>
-      <li><a href="../membres.html">Le Club</a></li>
-      <li><a href="../contact.html">Contact</a></li>
+      <li><a href="../evenements.html">Agenda</a></li>
+      <li><a href="../membres.html">Espace Adhérent</a></li>
+      <li><a href="../contact.html">Nous Contacter</a></li>
       <?php if ($adherent): ?>
-        <li><a href="deconnexion.php">Se déconnecter</a></li>
+        <li><a href="deconnexion.php">Connexion</a></li>
       <?php else: ?>
-        <li><a href="connexion.php" aria-current="page">Se Connecter</a></li>
+        <li><a href="connexion.php" aria-current="page">Connexion</a></li>
       <?php endif; ?>
     </ul>
   </nav>
