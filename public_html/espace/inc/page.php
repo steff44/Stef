@@ -24,6 +24,16 @@ function lien_css(string $prefixe = '../'): string
     return $prefixe . 'css/style.css?v=' . $version;
 }
 
+/* Même principe que lien_css(), pour js/main.js : sans suffixe de version, un
+   navigateur qui a déjà chargé la page garderait l'ancien script (donc les
+   anciens comportements de menu) pendant sept jours après un déploiement. */
+function lien_js(string $prefixe = '../'): string
+{
+    $chemin  = __DIR__ . '/../../js/main.js';
+    $version = @filemtime($chemin) ?: '1';
+    return $prefixe . 'js/main.js?v=' . $version;
+}
+
 function debut_page(string $titre, string $page_active = ''): void
 {
     $adherent = adherent_connecte();
@@ -104,7 +114,7 @@ function fin_page(): void
   </div>
 </footer>
 
-<script src="../js/main.js"></script>
+<script src="<?= e(lien_js()) ?>"></script>
 </body>
 </html>
     <?php
