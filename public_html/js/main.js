@@ -91,16 +91,26 @@
     return "linear-gradient(135deg, hsl(" + hue + " 70% 62%), hsl(" + ((hue + 50) % 360) + " 55% 42%))";
   }
 
-  function findMember(id) {
-    return CLUB_DATA.membres.find(function (m) {
-      return m.id === id;
-    });
-  }
-
   /* ---------- Lightbox ---------- */
   const lightbox = document.querySelector("[data-lightbox]");
   let activePhotos = [];
   let activeIndex = 0;
+  let diaporamaTimer = null;
+
+  function stopDiaporama() {
+    if (diaporamaTimer) {
+      clearInterval(diaporamaTimer);
+      diaporamaTimer = null;
+    }
+  }
+
+  function startDiaporama() {
+    stopDiaporama();
+    diaporamaTimer = setInterval(function () {
+      activeIndex = (activeIndex + 1) % activePhotos.length;
+      renderLightbox();
+    }, 3500);
+  }
 
   function openLightbox(photos, index) {
     if (!lightbox) return;
@@ -114,6 +124,7 @@
 
   function closeLightbox() {
     if (!lightbox) return;
+    stopDiaporama();
     lightbox.classList.remove("is-open");
     document.body.style.overflow = "";
   }
@@ -130,10 +141,12 @@
   if (lightbox) {
     lightbox.querySelector(".lightbox-close").addEventListener("click", closeLightbox);
     lightbox.querySelector(".lightbox-prev").addEventListener("click", function () {
+      stopDiaporama();
       activeIndex = (activeIndex - 1 + activePhotos.length) % activePhotos.length;
       renderLightbox();
     });
     lightbox.querySelector(".lightbox-next").addEventListener("click", function () {
+      stopDiaporama();
       activeIndex = (activeIndex + 1) % activePhotos.length;
       renderLightbox();
     });
@@ -195,7 +208,7 @@
     CLUB_DATA.membres.forEach(function (m) {
       const card = document.createElement("a");
       card.className = "member-card";
-      card.href = "galerie.html?id=" + encodeURIComponent(m.id);
+      card.href = "galerie.html";
       card.innerHTML =
         '<span class="member-cover" style="display:block;background:' +
         photoGradient(m.hue, 2) +
@@ -213,38 +226,62 @@
     });
   }
 
-  /* ---------- Page galerie individuelle ---------- */
+  /* ---------- Page galerie : toutes les photos, filtrées par thème ---------- */
   const galleryRoot = document.querySelector("[data-gallery-page]");
   if (galleryRoot) {
-    const params = new URLSearchParams(window.location.search);
-    const requestedId = params.get("id");
-    const membre = findMember(requestedId) || CLUB_DATA.membres[0];
-
-    document.title = membre.nom + " — Galerie — " + CLUB_DATA.nom;
-
-    document.querySelector("[data-avatar]").style.background = avatarGradient(membre.hue);
-    document.querySelector("[data-avatar]").textContent = initials(membre.nom);
-    document.querySelector("[data-nom]").textContent = membre.nom;
-    document.querySelector("[data-role]").textContent = membre.role;
-    document.querySelector("[data-bio]").textContent = membre.bio;
-
-    const switcher = document.querySelector("[data-switcher]");
+    const pool = [];
     CLUB_DATA.membres.forEach(function (m) {
-      const link = document.createElement("a");
-      link.href = "galerie.html?id=" + encodeURIComponent(m.id);
-      link.textContent = m.nom;
-      if (m.id === membre.id) link.setAttribute("aria-current", "true");
-      switcher.appendChild(link);
+      m.photos.forEach(function (p, i) {
+        pool.push(Object.assign({}, p, { hue: m.hue, membreNom: m.nom, index: i }));
+      });
     });
 
     const grid = document.querySelector("[data-photos]");
-    const photosForLightbox = membre.photos.map(function (p, i) {
-      return Object.assign({}, p, { hue: membre.hue, membreNom: membre.nom, index: i });
+    const emptyMessage = document.querySelector("[data-gallery-empty]");
+    const filtersRoot = document.querySelector("[data-theme-filters]");
+    let currentTheme = "";
+
+    function photosForCurrentTheme() {
+      return currentTheme ? pool.filter(function (p) { return p.theme === currentTheme; }) : pool;
+    }
+
+    function renderGrid() {
+      const filtered = photosForCurrentTheme();
+      grid.innerHTML = "";
+      filtered.forEach(function (photo) {
+        grid.appendChild(buildPhotoCard(photo, photo.hue, photo.membreNom, photo.index, filtered));
+      });
+      if (emptyMessage) emptyMessage.hidden = filtered.length > 0;
+    }
+
+    const toutesLesPhotos = "Toutes";
+    [toutesLesPhotos].concat(CLUB_DATA.themes).forEach(function (theme) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "theme-filter";
+      btn.textContent = theme;
+      if (theme === toutesLesPhotos) btn.classList.add("is-active");
+      btn.addEventListener("click", function () {
+        filtersRoot.querySelectorAll(".theme-filter").forEach(function (b) {
+          b.classList.remove("is-active");
+        });
+        btn.classList.add("is-active");
+        currentTheme = theme === toutesLesPhotos ? "" : theme;
+        renderGrid();
+      });
+      filtersRoot.appendChild(btn);
     });
-    photosForLightbox.forEach(function (photo) {
-      grid.appendChild(
-        buildPhotoCard(photo, membre.hue, membre.nom, photo.index, photosForLightbox)
-      );
-    });
+
+    renderGrid();
+
+    const diaporamaBtn = document.querySelector("[data-start-diaporama]");
+    if (diaporamaBtn) {
+      diaporamaBtn.addEventListener("click", function () {
+        const filtered = photosForCurrentTheme();
+        if (!filtered.length) return;
+        openLightbox(filtered, 0);
+        startDiaporama();
+      });
+    }
   }
 })();
