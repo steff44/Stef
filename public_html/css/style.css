@@ -713,26 +713,6 @@ a {
   color: var(--accent);
 }
 
-/* Contact */
-.contact-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 56px;
-}
-.contact-info dl {
-  margin: 24px 0 0;
-}
-.contact-info dt {
-  color: var(--accent);
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-top: 20px;
-}
-.contact-info dd {
-  margin: 4px 0 0;
-  font-size: 1.05rem;
-}
 .social-row {
   display: flex;
   gap: 12px;
@@ -872,8 +852,7 @@ a {
 
 /* Responsive */
 @media (max-width: 900px) {
-  .about-grid,
-  .contact-grid {
+  .about-grid {
     grid-template-columns: 1fr;
   }
   .about-visual {
@@ -1369,4 +1348,118 @@ a {
    lecture habituelle vaut pour du texte, pas pour six colonnes de données. */
 .container-large {
   max-width: 1460px;
+}
+
+/* ===========================================================================
+   PAGE CONTACT — mise en page inspirée de focalclub.fr (formulaire à gauche,
+   informations pratiques + FAQ à droite/en dessous), gardant la palette bleu
+   nuit et Comic Sans déjà en place sur tout le site.
+   ========================================================================= */
+
+.contact-layout {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 40px;
+  align-items: start;
+}
+.contact-layout .form-card h2,
+.contact-info-panel h2 {
+  font-family: var(--font-heading);
+  font-size: 1.4rem;
+  margin: 0 0 22px;
+}
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.info-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.info-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+}
+.info-card .feature-icon {
+  flex: none;
+  width: 42px;
+  height: 42px;
+  margin-bottom: 0;
+}
+.info-card .feature-icon svg {
+  width: 20px;
+  height: 20px;
+}
+.info-card h3 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+.info-card p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+.info-card a {
+  text-decoration: underline;
+}
+
+/* Carte de localisation : lien vers Google Maps plutôt qu'un plan intégré.
+   Un iframe embarqué se serait chargé silencieusement en arrière-plan sur
+   une page consultée par tous — un simple lien évite ce chargement externe
+   tant que le visiteur ne l'a pas demandé. */
+.map-card {
+  display: block;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px;
+  text-align: center;
+  color: var(--text-muted);
+}
+.map-card:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+.map-card .feature-icon {
+  margin: 0 auto 12px;
+}
+
+.faq-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-top: 40px;
+}
+.faq-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 26px;
+}
+.faq-card h3 {
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  margin: 0 0 10px;
+}
+.faq-card p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+@media (max-width: 860px) {
+  .contact-layout {
+    grid-template-columns: 1fr;
+  }
+  .field-row {
+    grid-template-columns: 1fr;
+  }
 }
