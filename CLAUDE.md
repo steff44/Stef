@@ -115,8 +115,8 @@ Points à ne pas casser :
   tout juste migrée n'affiche rien de différent tant que personne n'y touche.
   Un témoin `inc/.schema-a-jour` évite de réinterroger la base à chaque
   requête.
-- **Contenu dynamique sur les pages publiques statiques** (adresse, téléphone,
-  e-mail, texte de présentation en pied de page) : un responsable les modifie
+- **Contenu dynamique sur les pages publiques statiques** (adresse, horaires,
+  téléphone, e-mail, texte de présentation en pied de page) : un responsable les modifie
   dans `espace/parametres.php`, table `parametres_site` (clé/valeur). Les
   pages publiques restent du HTML statique — rien n'y est régénéré. C'est le
   navigateur du visiteur qui, via `js/main.js`, interroge `infos-club.php` (à
@@ -204,7 +204,10 @@ faut regarder.
     `filemtime()`, il n'y a rien à penser ;
   - **pages HTML statiques** : `?v=AAAAMMJJ` écrit en dur. **À incrémenter à
     la main dès qu'on touche à `style.css`**, sinon les visiteurs habituels ne
-    verront pas le changement.
+    verront pas le changement. En cas de second changement le même jour, la
+    date seule ne suffit plus à faire changer l'adresse : passer à
+    `AAAAMMJJHHmm` (heure UTC) le temps de cette journée-là suffit à
+    redevenir unique.
   Constaté le 16/08/2026 : le quadrillage du tableau des adhérents était bien
   déployé, mais invisible côté navigateur pour cette raison.
 

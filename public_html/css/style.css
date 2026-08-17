@@ -1417,6 +1417,10 @@ a {
    tant que le visiteur ne l'a pas demandé. */
 .map-card {
   display: block;
+  /* En dehors de .info-cards (qui espace ses propres cartes via gap), ce lien
+     n'héritait d'aucun écart avec la dernière carte au-dessus : même valeur
+     que .info-cards { gap: 16px } pour un rythme vertical cohérent. */
+  margin-top: 16px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
