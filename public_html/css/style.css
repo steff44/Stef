@@ -842,6 +842,7 @@ a {
   color: var(--text-muted);
 }
 .field input,
+.field select,
 .field textarea {
   width: 100%;
   background: var(--bg);
@@ -853,6 +854,7 @@ a {
   font-size: 0.95rem;
 }
 .field input:focus,
+.field select:focus,
 .field textarea:focus {
   outline: none;
   border-color: var(--accent);
@@ -1214,6 +1216,34 @@ a {
 .sortie-inscrite {
   border-color: rgba(168, 85, 247, 0.5);
 }
+.sortie-carte--sortie {
+  border-left: 4px solid var(--accent-2);
+}
+.sortie-carte--cours {
+  border-left: 4px solid #0e7490;
+}
+.sortie-carte--reunion {
+  border-left: 4px solid var(--accent-3);
+}
+.categorie-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  margin-left: 8px;
+  vertical-align: middle;
+  color: #fff;
+}
+.categorie-badge--sortie {
+  background: linear-gradient(90deg, var(--accent-2), var(--accent));
+}
+.categorie-badge--cours {
+  background: #0e7490;
+}
+.categorie-badge--reunion {
+  background: linear-gradient(90deg, var(--accent), var(--accent-3));
+}
 .sortie-date {
   flex: 0 0 62px;
   text-align: center;
@@ -1263,6 +1293,156 @@ a {
 .liste-sorties-passees .sortie-carte {
   opacity: 0.62;
   padding: 14px 20px;
+}
+
+/* Calendrier de l'agenda, connecté aux mêmes sorties que les listes */
+.agenda-calendrier {
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 40px;
+}
+.agenda-cal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  padding: 22px 20px;
+}
+.agenda-cal-titre {
+  font-family: var(--font-heading);
+  font-size: 1.3rem;
+  margin: 0;
+  min-width: 220px;
+  text-align: center;
+}
+.agenda-cal-nav-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.agenda-cal-nav-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.agenda-cal-grille-entetes {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+.agenda-cal-grille-entetes span {
+  padding: 10px 8px;
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+.agenda-cal-grille {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+.agenda-cal-jour {
+  border-top: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+  min-height: 100px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.agenda-cal-jour:nth-child(7n) {
+  border-right: 1px solid var(--border);
+}
+.agenda-cal-jour.hors-mois {
+  opacity: 0.35;
+}
+.agenda-cal-jour-numero {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+.agenda-cal-jour.aujourdhui .agenda-cal-jour-numero {
+  color: #fff;
+  background: var(--accent-gradient);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.agenda-cal-pastille {
+  display: block;
+  font-size: 0.7rem;
+  line-height: 1.35;
+  padding: 3px 7px;
+  border-radius: 6px;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.agenda-cal-pastille--sortie {
+  background: linear-gradient(90deg, var(--accent-2), var(--accent));
+}
+.agenda-cal-pastille--cours {
+  background: #0e7490;
+}
+.agenda-cal-pastille--reunion {
+  background: linear-gradient(90deg, var(--accent), var(--accent-3));
+}
+.agenda-cal-legende {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  align-items: center;
+  padding: 16px 20px;
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border);
+}
+.agenda-cal-legende span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+@media (max-width: 760px) {
+  .agenda-cal-grille-entetes span {
+    font-size: 0.6rem;
+    padding: 8px 2px;
+  }
+  .agenda-cal-jour {
+    min-height: 64px;
+    padding: 5px;
+  }
+  .agenda-cal-jour-numero {
+    font-size: 0.72rem;
+  }
+  .agenda-cal-pastille {
+    font-size: 0;
+    padding: 0;
+    height: 6px;
+    border-radius: 3px;
+  }
+  .agenda-cal-nav {
+    gap: 12px;
+  }
+  .agenda-cal-titre {
+    min-width: 0;
+    font-size: 1.05rem;
+  }
 }
 
 /* Annuaire */

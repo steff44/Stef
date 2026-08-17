@@ -22,6 +22,13 @@ const COLONNES_ATTENDUES = [
     'ville'             => 'VARCHAR(120) DEFAULT NULL',
 ];
 
+// Colonnes attendues sur `sorties` — même principe, table différente.
+// La valeur par défaut reprend la première catégorie de CATEGORIES_SORTIES
+// (agenda.php), pour que les sorties déjà en base restent classées.
+const COLONNES_SORTIES_ATTENDUES = [
+    'categorie' => "VARCHAR(30) NOT NULL DEFAULT 'Sortie photo'",
+];
+
 // Coordonnées du club, modifiables par un responsable depuis parametres.php
 // et affichées sur les pages publiques statiques via infos-club.php. Les
 // valeurs par défaut reprennent EXACTEMENT ce qui est déjà écrit en dur dans
@@ -58,7 +65,7 @@ function appliquer_migrations(PDO $pdo): void
     $reussi = true;
 
     foreach (COLONNES_ATTENDUES as $colonne => $definition) {
-        if (colonne_absente($pdo, $colonne)) {
+        if (colonne_absente($pdo, 'adherents', $colonne)) {
             try {
                 $pdo->exec("ALTER TABLE adherents ADD COLUMN {$colonne} {$definition}");
             } catch (PDOException $e) {
@@ -66,6 +73,17 @@ function appliquer_migrations(PDO $pdo): void
                 // schema.sql posera les colonnes lui-même. On ne pose pas le
                 // témoin, la vérification sera refaite plus tard.
                 error_log('Espace adhérents — migration ' . $colonne . ' : ' . $e->getMessage());
+                $reussi = false;
+            }
+        }
+    }
+
+    foreach (COLONNES_SORTIES_ATTENDUES as $colonne => $definition) {
+        if (colonne_absente($pdo, 'sorties', $colonne)) {
+            try {
+                $pdo->exec("ALTER TABLE sorties ADD COLUMN {$colonne} {$definition}");
+            } catch (PDOException $e) {
+                error_log('Espace adhérents — migration sorties.' . $colonne . ' : ' . $e->getMessage());
                 $reussi = false;
             }
         }
@@ -98,7 +116,9 @@ function appliquer_migrations(PDO $pdo): void
 function signature_schema(): string
 {
     return md5(
-        implode('|', array_keys(COLONNES_ATTENDUES)) . '||' . implode('|', array_keys(PARAMETRES_PAR_DEFAUT))
+        implode('|', array_keys(COLONNES_ATTENDUES)) . '||' .
+        implode('|', array_keys(COLONNES_SORTIES_ATTENDUES)) . '||' .
+        implode('|', array_keys(PARAMETRES_PAR_DEFAUT))
     );
 }
 
@@ -106,11 +126,13 @@ function signature_schema(): string
  * Test volontairement naïf mais valable pour MySQL comme pour SQLite : on
  * tente de lire la colonne. INFORMATION_SCHEMA aurait imposé du code
  * différent selon le moteur, et le banc d'essai hors ligne tourne sur SQLite.
+ * $table n'est jamais une valeur utilisateur — toujours un littéral passé
+ * par le code ci-dessus — donc l'interpoler directement est sans risque.
  */
-function colonne_absente(PDO $pdo, string $colonne): bool
+function colonne_absente(PDO $pdo, string $table, string $colonne): bool
 {
     try {
-        $pdo->query("SELECT {$colonne} FROM adherents LIMIT 1");
+        $pdo->query("SELECT {$colonne} FROM {$table} LIMIT 1");
         return false;
     } catch (PDOException) {
         return true;

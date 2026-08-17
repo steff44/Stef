@@ -10,6 +10,21 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/inc/page.php';
 
+// Catégories disponibles à la création d'une sortie ; la première sert de
+// valeur par défaut (voir COLONNES_SORTIES_ATTENDUES dans migration.php).
+const CATEGORIES_SORTIES = ['Sortie photo', 'Cours', 'Réunion'];
+
+/* Nom de classe CSS pour une catégorie — jamais interpolée telle quelle
+   dans le HTML, pour rester indépendant des accents/espaces du libellé. */
+function classe_categorie(string $categorie): string
+{
+    return match ($categorie) {
+        'Cours'    => 'cours',
+        'Réunion'  => 'reunion',
+        default    => 'sortie',
+    };
+}
+
 $adherent = adherent_connecte();
 $pdo      = base_de_donnees();
 
@@ -38,8 +53,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     } elseif ($action === 'creer') {
         exige_administrateur();
-        $titre = trim((string) ($_POST['titre'] ?? ''));
-        $debut = trim((string) ($_POST['debut'] ?? ''));
+        $titre     = trim((string) ($_POST['titre'] ?? ''));
+        $debut     = trim((string) ($_POST['debut'] ?? ''));
+        $categorie = (string) ($_POST['categorie'] ?? '');
+        if (!in_array($categorie, CATEGORIES_SORTIES, true)) {
+            $categorie = CATEGORIES_SORTIES[0];
+        }
 
         // Le champ datetime-local renvoie « 2026-09-12T14:30 ».
         $horodatage = strtotime($debut);
@@ -48,17 +67,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             definir_message('erreur', "Le titre et la date sont obligatoires.");
         } else {
             $pdo->prepare(
-                'INSERT INTO sorties (titre, description, lieu, debut, rendez_vous, covoiturage)
-                 VALUES (?, ?, ?, ?, ?, ?)'
+                'INSERT INTO sorties (titre, categorie, description, lieu, debut, rendez_vous, covoiturage)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)'
             )->execute([
                 $titre,
+                $categorie,
                 trim((string) ($_POST['description'] ?? '')) ?: null,
                 trim((string) ($_POST['lieu'] ?? '')) ?: null,
                 date('Y-m-d H:i:s', $horodatage),
                 trim((string) ($_POST['rendez_vous'] ?? '')) ?: null,
                 isset($_POST['covoiturage']) ? 1 : 0,
             ]);
-            definir_message('succes', "Sortie ajoutée à l'agenda.");
+            definir_message('succes', "Ajouté à l'agenda.");
         }
     }
 
@@ -94,6 +114,36 @@ $maintenant = time();
 $a_venir    = array_filter($sorties, static fn($s) => strtotime($s['debut']) >= $maintenant);
 $passees    = array_reverse(array_filter($sorties, static fn($s) => strtotime($s['debut']) < $maintenant));
 
+/* ---------------------------------------------------------------------------
+ * Calendrier du mois — vue d'ensemble au-dessus des listes, connectée aux
+ * mêmes sorties (aucune donnée séparée). Navigation par ?mois=AAAA-MM,
+ * rechargement de page classique : pas besoin de JavaScript ici.
+ * ------------------------------------------------------------------------- */
+$mois_parametre = (string) ($_GET['mois'] ?? '');
+if (!preg_match('/^\d{4}-\d{2}$/', $mois_parametre)) {
+    $mois_parametre = date('Y-m');
+}
+$premier_jour_mois = DateTime::createFromFormat('Y-m-d', $mois_parametre . '-01');
+
+$decalage_lundi  = ((int) $premier_jour_mois->format('N')) - 1; // 0 = lundi
+$jours_dans_mois = (int) $premier_jour_mois->format('t');
+$nb_semaines     = (int) ceil(($decalage_lundi + $jours_dans_mois) / 7);
+
+$debut_grille = (clone $premier_jour_mois)->modify("-{$decalage_lundi} days");
+$aujourdhui   = date('Y-m-d');
+
+$sorties_par_jour = [];
+foreach ($sorties as $s) {
+    $sorties_par_jour[date('Y-m-d', strtotime($s['debut']))][] = $s;
+}
+
+$mois_precedent = (clone $premier_jour_mois)->modify('-1 month')->format('Y-m');
+$mois_suivant   = (clone $premier_jour_mois)->modify('+1 month')->format('Y-m');
+$noms_mois = [
+    1 => 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+];
+
 debut_page("Agenda", 'agenda');
 titre_page("Agenda des sorties", "Les prochaines sorties du club, et qui y participe.");
 ?>
@@ -110,6 +160,14 @@ titre_page("Agenda des sorties", "Les prochaines sorties du club, et qui y parti
           <label for="titre">Titre</label>
           <input type="text" id="titre" name="titre" required maxlength="190"
                  placeholder="Sortie photo au port de La Turballe">
+        </div>
+        <div class="field">
+          <label for="categorie">Catégorie</label>
+          <select id="categorie" name="categorie">
+            <?php foreach (CATEGORIES_SORTIES as $categorie): ?>
+              <option value="<?= e($categorie) ?>"><?= e($categorie) ?></option>
+            <?php endforeach; ?>
+          </select>
         </div>
         <div class="field">
           <label for="debut">Date et heure</label>
@@ -137,6 +195,40 @@ titre_page("Agenda des sorties", "Les prochaines sorties du club, et qui y parti
     </details>
   <?php endif; ?>
 
+  <div class="agenda-calendrier">
+    <div class="agenda-cal-nav">
+      <a class="agenda-cal-nav-btn" href="?mois=<?= e($mois_precedent) ?>" aria-label="Mois précédent">‹</a>
+      <h2 class="agenda-cal-titre"><?= e($noms_mois[(int) $premier_jour_mois->format('n')]) ?> <?= e($premier_jour_mois->format('Y')) ?></h2>
+      <a class="agenda-cal-nav-btn" href="?mois=<?= e($mois_suivant) ?>" aria-label="Mois suivant">›</a>
+    </div>
+    <div class="agenda-cal-grille-entetes">
+      <span>Lun</span><span>Mar</span><span>Mer</span><span>Jeu</span><span>Ven</span><span>Sam</span><span>Dim</span>
+    </div>
+    <div class="agenda-cal-grille">
+      <?php for ($i = 0; $i < $nb_semaines * 7; $i++): ?>
+        <?php
+        $jour_courant = (clone $debut_grille)->modify("+{$i} days");
+        $iso = $jour_courant->format('Y-m-d');
+        $hors_mois = $jour_courant->format('n') !== $premier_jour_mois->format('n');
+        $evenements_du_jour = $sorties_par_jour[$iso] ?? [];
+        ?>
+        <div class="agenda-cal-jour<?= $hors_mois ? ' hors-mois' : '' ?><?= $iso === $aujourdhui ? ' aujourdhui' : '' ?>">
+          <span class="agenda-cal-jour-numero"><?= (int) $jour_courant->format('j') ?></span>
+          <?php foreach ($evenements_du_jour as $evenement): ?>
+            <span class="agenda-cal-pastille agenda-cal-pastille--<?= classe_categorie($evenement['categorie']) ?>" title="<?= e($evenement['titre']) ?>">
+              <?= e($evenement['titre']) ?>
+            </span>
+          <?php endforeach; ?>
+        </div>
+      <?php endfor; ?>
+    </div>
+    <p class="agenda-cal-legende">
+      <span><span class="agenda-cal-pastille agenda-cal-pastille--sortie" style="display:inline-block;width:12px;height:12px;padding:0;"></span> Sortie photo</span>
+      <span><span class="agenda-cal-pastille agenda-cal-pastille--cours" style="display:inline-block;width:12px;height:12px;padding:0;"></span> Cours</span>
+      <span><span class="agenda-cal-pastille agenda-cal-pastille--reunion" style="display:inline-block;width:12px;height:12px;padding:0;"></span> Réunion</span>
+    </p>
+  </div>
+
   <h2 class="titre-section">À venir</h2>
   <?php if (!$a_venir): ?>
     <div class="empty-state"><p>Aucune sortie programmée pour le moment.</p></div>
@@ -144,13 +236,15 @@ titre_page("Agenda des sorties", "Les prochaines sorties du club, et qui y parti
     <ul class="liste-sorties">
       <?php foreach ($a_venir as $sortie): ?>
         <?php $inscrit = in_array((int) $sortie['id'], array_map('intval', $mes_inscriptions), true); ?>
-        <li class="sortie-carte<?= $inscrit ? ' sortie-inscrite' : '' ?>">
+        <li class="sortie-carte sortie-carte--<?= classe_categorie($sortie['categorie']) ?><?= $inscrit ? ' sortie-inscrite' : '' ?>">
           <div class="sortie-date">
             <span class="sortie-jour"><?= (int) date('j', strtotime($sortie['debut'])) ?></span>
             <span class="sortie-mois"><?= e(mois_court($sortie['debut'])) ?></span>
           </div>
           <div class="sortie-corps">
-            <h3><?= e($sortie['titre']) ?></h3>
+            <h3><?= e($sortie['titre']) ?>
+              <span class="categorie-badge categorie-badge--<?= classe_categorie($sortie['categorie']) ?>"><?= e($sortie['categorie']) ?></span>
+            </h3>
             <p class="sortie-quand"><?= e(date_en_francais($sortie['debut'])) ?></p>
             <?php if ($sortie['lieu']): ?>
               <p class="sortie-detail">📍 <?= e($sortie['lieu']) ?></p>
@@ -204,9 +298,11 @@ titre_page("Agenda des sorties", "Les prochaines sorties du club, et qui y parti
     <h2 class="titre-section" style="margin-top:44px;">Sorties passées</h2>
     <ul class="liste-sorties liste-sorties-passees">
       <?php foreach (array_slice($passees, 0, 10) as $sortie): ?>
-        <li class="sortie-carte">
+        <li class="sortie-carte sortie-carte--<?= classe_categorie($sortie['categorie']) ?>">
           <div class="sortie-corps">
-            <h3><?= e($sortie['titre']) ?></h3>
+            <h3><?= e($sortie['titre']) ?>
+              <span class="categorie-badge categorie-badge--<?= classe_categorie($sortie['categorie']) ?>"><?= e($sortie['categorie']) ?></span>
+            </h3>
             <p class="sortie-quand"><?= e(date_en_francais($sortie['debut'], false)) ?>
               <?= $sortie['lieu'] ? ' — ' . e($sortie['lieu']) : '' ?></p>
           </div>

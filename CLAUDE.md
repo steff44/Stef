@@ -98,9 +98,25 @@ redirection vers `espace/agenda.php` (même principe que `connexion.html`),
 et cette page n'exige plus de connexion pour être **consultée** —
 `exige_connexion()` n'est appelée qu'au moment de s'inscrire/se désinscrire
 à une sortie (`exige_administrateur()` reste nécessaire pour en créer ou en
-supprimer). Un visiteur non connecté voit les sorties et qui y participe,
-avec un lien « Se connecter pour participer » à la place du bouton
-d'inscription. Ne pas réintroduire de calendrier public séparé.
+supprimer, y compris le formulaire « Ajouter une sortie » lui-même,
+invisible si on n'est pas responsable). Un visiteur non connecté voit les
+sorties et qui y participe, avec un lien « Se connecter pour participer » à
+la place du bouton d'inscription. Ne pas réintroduire de calendrier public
+séparé.
+
+`espace/agenda.php` affiche aussi un **calendrier du mois**, connecté aux
+mêmes lignes de la table `sorties` que les listes juste en dessous (aucune
+donnée séparée) — navigation par `?mois=AAAA-MM`, en rechargement de page
+classique, sans JavaScript. Chaque sortie a une **catégorie** (colonne
+`categorie` sur `sorties`, ajoutée via `COLONNES_SORTIES_ATTENDUES` dans
+`migration.php`) parmi celles listées dans `CATEGORIES_SORTIES` en haut de
+`agenda.php` — actuellement Sortie photo / Cours / Réunion, choisie à la
+création par un responsable, affichée en pastille colorée dans le
+calendrier et en badge sur chaque carte. Ajouter une catégorie se fait en
+un seul endroit : la constante `CATEGORIES_SORTIES` (le mapping couleur
+`classe_categorie()` a un cas par défaut, donc une catégorie oubliée dans
+ce mapping retombe simplement sur le style « sortie » plutôt que de
+planter).
 
 **« Galerie » existe en double**, elle, publique et privée, sans aucun lien
 entre les deux : `galerie.html` (statique, démonstrative, alimentée par
