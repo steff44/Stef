@@ -35,7 +35,8 @@ function debut_page(string $titre, string $page_active = ''): void
         'annuaire'  => ['Annuaire',        'annuaire.php'],
     ];
     if (est_administrateur()) {
-        $onglets['adherents'] = ['Adhérents', 'adherents.php'];
+        $onglets['adherents']   = ['Adhérents', 'adherents.php'];
+        $onglets['parametres']  = ['Réglages du site', 'parametres.php'];
     }
     ?>
 <!DOCTYPE html>

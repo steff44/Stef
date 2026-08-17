@@ -27,6 +27,7 @@ public_html/          ← racine du site, déployée telle quelle
   membres.html        ← page "Le Club" (liste des adhérents)
   contact.html
   connexion.html      ← redirection vers espace/connexion.php (ne pas supprimer)
+  infos-club.php      ← API publique en lecture seule (coordonnées du club, voir plus bas)
   espace/             ← ESPACE ADHÉRENTS en PHP + MySQL (voir plus bas)
   css/style.css       ← tout le style, variables CSS en haut du fichier
   js/data.js          ← DONNÉES : adhérents + leurs photos
@@ -65,6 +66,7 @@ espace/
   connexion.php  deconnexion.php  index.php        ← tableau de bord
   galerie.php    documents.php    agenda.php       annuaire.php
   adherents.php      ← gestion des comptes, responsables uniquement
+  parametres.php     ← coordonnées du club affichées sur le site public, responsables uniquement
   installation.php   ← à jouer UNE fois, se verrouille ensuite tout seul
   telecharger.php    ← seule porte d'accès aux fichiers privés
   inc/               ← code interne, fermé par .htaccess
@@ -106,8 +108,30 @@ Points à ne pas casser :
   `db.php`). C'est imposé par le contexte : `installation.php` se verrouille au
   premier compte, et du code neuf qui interroge une colonne absente casse la
   connexion — donc l'accès à toute page de migration. Chaque ajout de colonne
-  se déclare dans `COLONNES_ATTENDUES` **et** dans `schema.sql`. Un témoin
-  `inc/.schema-a-jour` évite de réinterroger la base à chaque requête.
+  se déclare dans `COLONNES_ATTENDUES` **et** dans `schema.sql`. La table
+  `parametres_site` (coordonnées du club) est créée et semée de la même
+  façon, via `PARAMETRES_PAR_DEFAUT` — les valeurs par défaut y reprennent
+  exactement ce qui était déjà écrit en dur dans le HTML, pour qu'une base
+  tout juste migrée n'affiche rien de différent tant que personne n'y touche.
+  Un témoin `inc/.schema-a-jour` évite de réinterroger la base à chaque
+  requête.
+- **Contenu dynamique sur les pages publiques statiques** (adresse, téléphone,
+  e-mail, texte de présentation en pied de page) : un responsable les modifie
+  dans `espace/parametres.php`, table `parametres_site` (clé/valeur). Les
+  pages publiques restent du HTML statique — rien n'y est régénéré. C'est le
+  navigateur du visiteur qui, via `js/main.js`, interroge `infos-club.php` (à
+  la racine, **volontairement hors de `espace/`** : ce point d'accès est
+  public par conception, sans connexion requise, puisqu'il ne renvoie que des
+  coordonnées déjà visibles de tous) et vient remplacer le texte des éléments
+  portant `data-contenu="clé"`. Le HTML garde toujours le texte réel en dur :
+  c'est le repli si l'appel échoue (hors ligne, ou **préversion GitHub Pages,
+  qui ne peut pas exécuter PHP** — vérifié : la préversion continue d'afficher
+  normalement le texte figé dans le commit). `infos-club.php` ne réutilise pas
+  `base_de_donnees()` de `db.php` : en cas de panne celle-ci affiche une page
+  d'erreur HTML via `page_erreur()`, inadaptée à un point d'accès JSON — il
+  ouvre donc sa propre connexion, et appelle lui-même `appliquer_migrations()`
+  pour fonctionner dès le premier déploiement, sans dépendre d'une visite
+  préalable d'une page de l'espace.
 - Les `.htaccess` ne peuvent pas se tester ainsi (le serveur PHP intégré les
   ignore). Vérifiés en ligne le 16/08/2026 : `inc/`, `photos/` et `fichiers/`
   répondent bien **403**, et une page réservée renvoie **302** vers la

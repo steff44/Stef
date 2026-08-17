@@ -20,6 +20,20 @@ const COLONNES_ATTENDUES = [
     'deconnecte_le'     => 'DATETIME DEFAULT NULL',
 ];
 
+// Coordonnées du club, modifiables par un responsable depuis parametres.php
+// et affichées sur les pages publiques statiques via infos-club.php. Les
+// valeurs par défaut reprennent EXACTEMENT ce qui est déjà écrit en dur dans
+// le HTML : tant que personne n'y touche, rien ne change visuellement.
+const PARAMETRES_PAR_DEFAUT = [
+    'nom_lieu'            => 'Foyer des Vignes',
+    'adresse_rue'         => '17 rue Michelet',
+    'adresse_code_postal' => '44420',
+    'adresse_ville'       => 'La Turballe',
+    'telephone'           => '06 17 11 77 65',
+    'email'               => 'cooky44.sl@gmail.com',
+    'presentation'        => "Passionnés de photographie, nous partageons notre amour de l'image à travers des sorties, des expositions et des moments de convivialité.",
+];
+
 function appliquer_migrations(PDO $pdo): void
 {
     // Une seule fois par requête.
@@ -37,6 +51,8 @@ function appliquer_migrations(PDO $pdo): void
         return;
     }
 
+    $reussi = true;
+
     foreach (COLONNES_ATTENDUES as $colonne => $definition) {
         if (colonne_absente($pdo, $colonne)) {
             try {
@@ -46,18 +62,40 @@ function appliquer_migrations(PDO $pdo): void
                 // schema.sql posera les colonnes lui-même. On ne pose pas le
                 // témoin, la vérification sera refaite plus tard.
                 error_log('Espace adhérents — migration ' . $colonne . ' : ' . $e->getMessage());
-                return;
+                $reussi = false;
             }
         }
     }
 
-    @file_put_contents($temoin, signature_schema());
+    try {
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS parametres_site (
+                cle    VARCHAR(60) PRIMARY KEY,
+                valeur TEXT NOT NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+        // INSERT IGNORE : ne pose que les clés manquantes, ne touche jamais
+        // une valeur déjà modifiée par un responsable.
+        $insertion = $pdo->prepare('INSERT IGNORE INTO parametres_site (cle, valeur) VALUES (?, ?)');
+        foreach (PARAMETRES_PAR_DEFAUT as $cle => $valeur) {
+            $insertion->execute([$cle, $valeur]);
+        }
+    } catch (PDOException $e) {
+        error_log('Espace adhérents — migration parametres_site : ' . $e->getMessage());
+        $reussi = false;
+    }
+
+    if ($reussi) {
+        @file_put_contents($temoin, signature_schema());
+    }
 }
 
-/* Change dès qu'on ajoute une colonne : invalide le témoin des installations existantes. */
+/* Change dès qu'on ajoute une colonne ou une clé : invalide le témoin des installations existantes. */
 function signature_schema(): string
 {
-    return md5(implode('|', array_keys(COLONNES_ATTENDUES)));
+    return md5(
+        implode('|', array_keys(COLONNES_ATTENDUES)) . '||' . implode('|', array_keys(PARAMETRES_PAR_DEFAUT))
+    );
 }
 
 /*
