@@ -65,6 +65,20 @@ titre_page("Bonjour " . $adherent['nom'], "Bienvenue dans l'espace réservé aux
       <p><?= $compteurs['adherents'] ?> adhérent<?= $compteurs['adherents'] > 1 ? 's' : '' ?> dans le club.</p>
       <a class="btn btn-ghost" href="annuaire.php">Ouvrir</a>
     </article>
+    <?php if (est_administrateur()): ?>
+      <article class="feature-card">
+        <div class="feature-icon" aria-hidden="true">🛠️</div>
+        <h3>Adhérents</h3>
+        <p>Gérer les comptes : créer, modifier, désactiver ou déconnecter à distance.</p>
+        <a class="btn btn-ghost" href="adherents.php">Ouvrir</a>
+      </article>
+      <article class="feature-card">
+        <div class="feature-icon" aria-hidden="true">⚙️</div>
+        <h3>Réglages du site</h3>
+        <p>Coordonnées du club affichées sur les pages publiques.</p>
+        <a class="btn btn-ghost" href="parametres.php">Ouvrir</a>
+      </article>
+    <?php endif; ?>
   </div>
 </div></section>
 <?php
