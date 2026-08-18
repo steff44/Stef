@@ -136,14 +136,11 @@ if (!$adherent && $_SERVER['REQUEST_METHOD'] === 'POST') {
         );
 
         if ($erreur_connexion === null) {
-            // Retour à la page demandée avant la connexion, si elle est bien
-            // interne à l'espace (on ne suit jamais une adresse extérieure).
-            $retour = $_SESSION['retour'] ?? 'index.php';
-            unset($_SESSION['retour']);
-            if (!preg_match('#^[a-z0-9_-]+\.php(\?[^\s]*)?$#i', (string) $retour)) {
-                $retour = 'index.php';
-            }
-            header('Location: ' . $retour);
+            // Direction unique après connexion, quelle que soit la page
+            // d'où l'on venait (choix explicite de l'utilisateur,
+            // 18/08/2026) : le tableau de bord, pas la page qui a demandé
+            // la connexion.
+            header('Location: index.php');
             exit;
         }
     }

@@ -49,14 +49,15 @@ function est_administrateur(): bool
 }
 
 /*
- * À placer en tête de chaque page réservée. Renvoie vers la page de connexion
- * si la personne n'est pas identifiée, en mémorisant où elle voulait aller.
+ * À placer en tête de chaque page réservée. Renvoie vers la page de
+ * connexion si la personne n'est pas identifiée — qui, une fois connectée,
+ * envoie toujours vers le tableau de bord (choix explicite de
+ * l'utilisateur, 18/08/2026), jamais vers cette page d'origine.
  */
 function exige_connexion(): array
 {
     $adherent = adherent_connecte();
     if ($adherent === null) {
-        $_SESSION['retour'] = $_SERVER['REQUEST_URI'] ?? 'index.php';
         header('Location: connexion.php');
         exit;
     }
