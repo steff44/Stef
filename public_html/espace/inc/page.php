@@ -86,10 +86,19 @@ function debut_page(string $titre, string $page_active = ''): void
       <li><a href="../membres.html">Le Club</a></li>
       <li><a href="../contact.html">Nous Contacter</a></li>
       <li class="nav-dropdown">
-        <button type="button" class="nav-dropdown-trigger" aria-expanded="false">
-          <?= $adherent ? e($adherent['identifiant']) . ' connecté' : 'Espace Adhérent' ?>
-          <svg class="nav-dropdown-caret" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
-        </button>
+        <?php if ($adherent): ?>
+          <a class="nav-dropdown-label" href="index.php"<?= $page_active === 'index' ? ' aria-current="page"' : '' ?>>
+            <?= e($adherent['identifiant']) ?> connecté
+          </a>
+          <button type="button" class="nav-dropdown-trigger nav-dropdown-trigger--icone" aria-expanded="false" aria-label="Ouvrir le menu Espace Adhérent">
+            <svg class="nav-dropdown-caret" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+        <?php else: ?>
+          <button type="button" class="nav-dropdown-trigger" aria-expanded="false">
+            Espace Adhérent
+            <svg class="nav-dropdown-caret" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+        <?php endif; ?>
         <ul class="nav-dropdown-menu">
           <?php if ($adherent): ?>
             <li class="nav-dropdown-heading">

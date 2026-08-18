@@ -149,6 +149,22 @@ a {
 /* Menu déroulant "Espace Adhérent" */
 .nav-dropdown {
   position: relative;
+  display: flex;
+  align-items: center;
+}
+/* Connecté : le libellé « {pseudo} connecté » est un lien direct vers le
+   tableau de bord, distinct du bouton (la seule à ouvrir/fermer le menu). */
+.nav-dropdown-label {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  padding: 8px 0;
+  border-bottom: 2px solid transparent;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+.nav-dropdown-label:hover,
+.nav-dropdown-label[aria-current="page"] {
+  color: var(--text);
+  border-bottom-color: var(--accent-2);
 }
 .nav-dropdown-trigger {
   display: inline-flex;
@@ -167,6 +183,12 @@ a {
 .nav-dropdown-trigger:hover {
   color: var(--text);
   border-bottom-color: var(--accent-2);
+}
+/* Modificateur : bouton réduit à la seule flèche (menu connecté, voir
+   nav-dropdown-label ci-dessus) — placé après la règle de base pour la
+   surcharger malgré une spécificité CSS identique. */
+.nav-dropdown-trigger--icone {
+  padding: 8px 4px;
 }
 .nav-dropdown-caret {
   transition: transform 0.2s ease;
