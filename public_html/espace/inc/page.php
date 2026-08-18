@@ -38,11 +38,12 @@ function debut_page(string $titre, string $page_active = ''): void
 {
     $adherent = adherent_connecte();
     $onglets  = [
-        'index'     => ['Tableau de bord', 'index.php'],
-        'galerie'   => ['Galerie privée',  'galerie.php'],
-        'documents' => ['Documents',       'documents.php'],
-        'agenda'    => ['Agenda',          'agenda.php'],
-        'annuaire'  => ['Annuaire',        'annuaire.php'],
+        'index'     => ['Tableau de bord',   'index.php'],
+        'galerie'   => ['Galerie privée',    'galerie.php'],
+        'documents' => ['Documents',         'documents.php'],
+        'agenda'    => ['Agenda des sorties', 'agenda.php'],
+        'sorties'   => ['Sorties à venir',   'sorties-a-venir.php'],
+        'annuaire'  => ['Annuaire',          'annuaire.php'],
     ];
     if (est_administrateur()) {
         $onglets['adherents']   = ['Adhérents', 'adherents.php'];
@@ -72,7 +73,16 @@ function debut_page(string $titre, string $page_active = ''): void
     <ul class="nav-links" id="nav-links">
       <li><a href="../index.html">Accueil</a></li>
       <li><a href="<?= $adherent ? 'galerie.php' : '../galerie.html' ?>">Galerie</a></li>
-      <li><a href="agenda.php">Agenda</a></li>
+      <li class="nav-dropdown">
+        <button type="button" class="nav-dropdown-trigger" aria-expanded="false">
+          Agenda
+          <svg class="nav-dropdown-caret" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+        <ul class="nav-dropdown-menu">
+          <li><a href="agenda.php"<?= $page_active === 'agenda' ? ' aria-current="page"' : '' ?>>Agenda des sorties</a></li>
+          <li><a href="sorties-a-venir.php"<?= $page_active === 'sorties' ? ' aria-current="page"' : '' ?>>Sorties à venir</a></li>
+        </ul>
+      </li>
       <li><a href="../membres.html">Le Club</a></li>
       <li><a href="../contact.html">Nous Contacter</a></li>
       <li class="nav-dropdown">

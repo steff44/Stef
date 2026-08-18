@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS documents (
   CONSTRAINT fk_document_adherent FOREIGN KEY (depose_par) REFERENCES adherents(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Agenda des sorties, cours et réunions (voir CATEGORIES_SORTIES dans agenda.php).
+-- Agenda des sorties, cours et réunions (voir CATEGORIES_SORTIES dans inc/agenda.php).
 CREATE TABLE IF NOT EXISTS sorties (
   id           INT AUTO_INCREMENT PRIMARY KEY,
   titre        VARCHAR(190) NOT NULL,
@@ -58,6 +58,9 @@ CREATE TABLE IF NOT EXISTS sorties (
   debut        DATETIME     NOT NULL,
   rendez_vous  VARCHAR(190) DEFAULT NULL,
   covoiturage  TINYINT(1)   NOT NULL DEFAULT 0,
+  -- Nom de fichier dans espace/photos/ (même dépôt que photos_privees),
+  -- redimensionnée en carré 400×400 à l'envoi. Facultative.
+  photo        VARCHAR(190) DEFAULT NULL,
   cree_le      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

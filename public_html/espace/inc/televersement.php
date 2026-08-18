@@ -101,3 +101,59 @@ function enregistrer_fichier_envoye(?array $envoi, string $dossier, string $cate
 
     return ['nom' => $nom, 'erreur' => null];
 }
+
+/*
+ * Recadre et redimensionne une image en carré $taille×$taille (recadrage
+ * centré, comme un « object-fit: cover »), en écrasant le fichier d'origine.
+ * Utilisé pour les photos de sortie (agenda) : toutes tiennent alors dans une
+ * vignette identique. Échoue silencieusement (photo laissée telle quelle) si
+ * l'extension GD manque ou que l'image ne peut pas être décodée — mieux vaut
+ * une vignette de taille inattendue qu'une sortie qui ne s'enregistre pas.
+ */
+function redimensionner_en_carre(string $chemin, int $taille): void
+{
+    if (!extension_loaded('gd')) {
+        return;
+    }
+
+    $info = @getimagesize($chemin);
+    if ($info === false) {
+        return;
+    }
+    [$largeur, $hauteur, $type] = $info;
+
+    $source = match ($type) {
+        IMAGETYPE_JPEG => @imagecreatefromjpeg($chemin),
+        IMAGETYPE_PNG  => @imagecreatefrompng($chemin),
+        IMAGETYPE_WEBP => function_exists('imagecreatefromwebp') ? @imagecreatefromwebp($chemin) : false,
+        IMAGETYPE_GIF  => @imagecreatefromgif($chemin),
+        default        => false,
+    };
+    if (!$source) {
+        return;
+    }
+
+    $cote       = min($largeur, $hauteur);
+    $decalage_x = (int) (($largeur - $cote) / 2);
+    $decalage_y = (int) (($hauteur - $cote) / 2);
+
+    $destination = imagecreatetruecolor($taille, $taille);
+    // Fond transparent plutôt que noir pour les formats qui gèrent l'alpha.
+    imagealphablending($destination, false);
+    imagesavealpha($destination, true);
+    $transparent = imagecolorallocatealpha($destination, 0, 0, 0, 127);
+    imagefill($destination, 0, 0, $transparent);
+
+    imagecopyresampled($destination, $source, 0, 0, $decalage_x, $decalage_y, $taille, $taille, $cote, $cote);
+
+    match ($type) {
+        IMAGETYPE_JPEG => imagejpeg($destination, $chemin, 85),
+        IMAGETYPE_PNG  => imagepng($destination, $chemin),
+        IMAGETYPE_WEBP => function_exists('imagewebp') ? imagewebp($destination, $chemin, 85) : null,
+        IMAGETYPE_GIF  => imagegif($destination, $chemin),
+        default        => null,
+    };
+
+    imagedestroy($source);
+    imagedestroy($destination);
+}
