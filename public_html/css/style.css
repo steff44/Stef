@@ -105,6 +105,16 @@ a {
   letter-spacing: 0.03em;
 }
 
+/* Titre sur deux lignes : « Focal Club » puis « Turballais » centré dessous
+   (choix explicite de l'utilisateur) — un <br> fixe la coupure plutôt que de
+   compter sur le retour à la ligne automatique, qui dépend de la largeur
+   disponible et pourrait couper ailleurs. */
+.logo-text {
+  display: inline-block;
+  text-align: center;
+  line-height: 1.15;
+}
+
 .logo-mark {
   width: 34px;
   height: 34px;
@@ -885,6 +895,20 @@ a {
   font-size: 0.8rem;
   color: var(--text-muted);
   margin-top: 14px;
+}
+
+/* Flèche « page précédente », en tête de la page de connexion. */
+.lien-retour {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 18px;
+  cursor: pointer;
+}
+.lien-retour:hover {
+  color: var(--text);
 }
 
 /* Footer */

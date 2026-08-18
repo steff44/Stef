@@ -66,7 +66,7 @@ function debut_page(string $titre, string $page_active = ''): void
 
 <header class="site-header">
   <nav class="nav" aria-label="Navigation principale">
-    <a class="logo" href="../index.html"><span class="logo-mark" aria-hidden="true"></span>Focal Club Turballais</a>
+    <a class="logo" href="../index.html"><span class="logo-mark" aria-hidden="true"></span><span class="logo-text">Focal Club<br>Turballais</span></a>
     <button class="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Ouvrir le menu">
       <span></span>
     </button>
@@ -83,7 +83,7 @@ function debut_page(string $titre, string $page_active = ''): void
           <li><a href="sorties-a-venir.php"<?= $page_active === 'sorties' ? ' aria-current="page"' : '' ?>>Sorties à venir</a></li>
         </ul>
       </li>
-      <li><a href="../membres.html">Le Club</a></li>
+      <li><a href="le-club.php"<?= $page_active === 'le-club' ? ' aria-current="page"' : '' ?>>Le Club</a></li>
       <li><a href="../contact.html">Nous Contacter</a></li>
       <li class="nav-dropdown">
         <?php if ($adherent): ?>

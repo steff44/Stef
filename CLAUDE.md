@@ -24,7 +24,7 @@ public_html/          ← racine du site, déployée telle quelle
   index.html          ← accueil : hero photo, cartes, galerie, CTA
   galerie.html        ← galerie d'un adhérent, via ?id=<identifiant>
   evenements.html     ← redirection vers espace/agenda.php (ne pas supprimer)
-  membres.html        ← page "Le Club" (liste des adhérents)
+  membres.html        ← redirection vers espace/le-club.php (ne pas supprimer)
   contact.html
   connexion.html      ← redirection vers espace/connexion.php (ne pas supprimer)
   infos-club.php      ← API publique en lecture seule (coordonnées du club, voir plus bas)
@@ -42,25 +42,62 @@ public_html/          ← racine du site, déployée telle quelle
 - **Police : Comic Sans MS** partout (choix explicite de l'utilisateur, comme
   sur focalclub.fr). Pas de Google Fonts — police système avec repli.
 - Ordre du menu (imposé par l'utilisateur, à ne pas réordonner) :
-  Accueil, Galerie, Agenda, Le Club, Nous Contacter, Espace Adhérent. Agenda →
-  `espace/agenda.php` (voir plus bas, page publique malgré son emplacement),
-  Le Club → `membres.html` (liste publique des adhérents), Nous Contacter →
-  `contact.html`.
-- **« Espace Adhérent » est un menu déroulant** (`.nav-dropdown` dans
-  `css/style.css` + comportement dans `js/main.js` : clic pour ouvrir/fermer,
-  clic extérieur, Échap, accordéon en dessous de 760px). Sur les pages
-  statiques, il contient « Connexion » et « S'inscrire » (toutes deux vers
-  `espace/`) — le HTML statique ne connaît jamais l'état de connexion. Dans
+  Accueil, Galerie, Agenda, Le Club, Nous Contacter, Espace Adhérent.
+  **Agenda et Espace Adhérent sont tous deux des menus déroulants**
+  (`.nav-dropdown`, voir juste en dessous) ; Le Club et Nous Contacter sont
+  des liens simples.
+  - Agenda → deux sous-pages, ajoutées le 18/08/2026 : « Agenda des
+    sorties » (`espace/agenda.php`, le calendrier — page publique malgré son
+    emplacement) et « Sorties à venir » (`espace/sorties-a-venir.php`, les
+    listes, inscriptions, et le formulaire d'ajout pour un responsable).
+    Cliquer sur une sortie dans le calendrier renvoie sur sa carte dans
+    Sorties à venir (ancre `#sortie-{id}`). Une sortie peut avoir une photo
+    (facultative), recadrée en carré 400×400 à l'envoi
+    (`redimensionner_en_carre()` dans `inc/televersement.php`), publique via
+    `telecharger.php?type=sortie`.
+  - Le Club → `espace/le-club.php` (voir « Le Club » plus bas) : **réservé
+    aux adhérents connectés depuis le 18/08/2026** — ce n'est plus la liste
+    publique des adhérents. `membres.html` est désormais une redirection
+    (même principe qu'`evenements.html`).
+  - Nous Contacter → `contact.html`.
+- **« Agenda » et « Espace Adhérent » sont des menus déroulants**
+  (`.nav-dropdown` dans `css/style.css` + comportement dans `js/main.js` :
+  clic pour ouvrir/fermer, clic extérieur, Échap, accordéon en dessous de
+  760px — générique, fonctionne pour n'importe quel nombre de
+  `.nav-dropdown` sur la page). Sur les pages statiques, « Espace Adhérent »
+  contient « Connexion » et « S'inscrire » (toutes deux vers `espace/`) — le
+  HTML statique ne connaît jamais l'état de connexion. Dans
   `espace/inc/page.php` (`debut_page()`), ce même menu déroulant remplace
   l'ancienne barre d'onglets sous l'en-tête : non connecté, il propose
-  Connexion et S'inscrire ; connecté, **le libellé du menu devient
-  « {pseudo} connecté »** (au lieu de « Espace Adhérent »), et son contenu
-  affiche « Bonjour {nom} » puis, juste en dessous, **« Se déconnecter »**
-  (choix explicite de l'utilisateur : la déconnexion doit être la première
-  action visible, pas la dernière), puis Tableau de bord, Galerie privée,
-  Documents, Agenda, Annuaire (+ Adhérents, Réglages du site pour un
-  responsable). Les classes `.espace-barre`/`.espace-onglets` ont été
-  supprimées avec cette bascule (17/08/2026) — ne pas les réintroduire.
+  Connexion et S'inscrire ; connecté, **le libellé devient
+  « {pseudo} connecté »**. Depuis le 18/08/2026, ce libellé n'est plus le
+  bouton qui ouvrit/ferme le menu : c'est un `<a class="nav-dropdown-label">`
+  qui renvoie **directement** vers `index.php` (Tableau de bord) au clic ; la
+  flèche à côté (`.nav-dropdown-trigger.nav-dropdown-trigger--icone`, seule à
+  porter `aria-expanded`) reste le bouton qui ouvre/ferme le sous-menu.
+  Celui-ci affiche « Bonjour {nom} » puis, juste en dessous, **« Se
+  déconnecter »** (choix explicite de l'utilisateur : la déconnexion doit
+  être la première action visible, pas la dernière), puis Tableau de bord,
+  Galerie privée, Documents, Agenda des sorties, Sorties à venir, Annuaire,
+  Le Club (+ Adhérents, Réglages du site pour un responsable). Les classes
+  `.espace-barre`/`.espace-onglets` ont été supprimées avec cette bascule
+  (17/08/2026) — ne pas les réintroduire.
+- **`espace/connexion.php` ne redirige plus en silence quand on est déjà
+  connecté** (choix explicite de l'utilisateur, 18/08/2026) : la page
+  s'affiche, avec le formulaire remplacé par « Vous êtes déjà connecté… » et
+  un bouton **« Retour au tableau de bord »** (`index.php`) — valable pour un
+  adhérent comme pour un responsable, quelle que soit la page d'où il vient.
+  La page porte aussi désormais une flèche **« ← Page précédente »**
+  (`.lien-retour`, en haut de la carte), qui utilise `history.back()` avec un
+  repli statique vers `../index.html` si l'historique est vide (JS
+  désactivé, arrivée directe). C'est ce même mécanisme qui affiche
+  « Adhérents seulement. » (`definir_message()`) quand on est renvoyé ici
+  depuis `le-club.php` sans être connecté.
+- **Le titre du logo est sur deux lignes** depuis le 18/08/2026 : « Focal
+  Club » puis « Turballais » centré dessous (`<span class="logo-text">Focal
+  Club<br>Turballais</span>`, à côté de `.logo-mark`). La coupure est un
+  `<br>` volontaire, pas un retour à la ligne automatique — sans ça, le point
+  de coupure dépendrait de la largeur disponible.
 - **`js/main.js` et `js/data.js` sont versionnés comme `style.css`** (voir
   plus bas « Hostinger sert... ») : `?v=AAAAMMJJHHmm` en dur sur les pages
   statiques, `lien_js()` (calqué sur `lien_css()`) sur les pages PHP. Sans
@@ -124,6 +161,19 @@ entre les deux : `galerie.html` (statique, démonstrative, alimentée par
 l'autre. Dans `espace/inc/page.php`, le lien « Galerie » du menu principal
 pointe donc vers `galerie.php` une fois connecté, et vers `galerie.html`
 sinon — ne pas harmoniser ce point avec l'Agenda sans qu'on le demande.
+
+**« Le Club » (`espace/le-club.php`)** est réservé aux adhérents connectés
+depuis le 18/08/2026 (choix explicite de l'utilisateur) : `exige_connexion()`
+protège la page, avec un message dédié — « Adhérents seulement. » posé par
+`definir_message()` avant le renvoi vers `connexion.php`, plutôt que le
+silence habituel de `exige_connexion()` — pour qu'un visiteur non connecté
+comprenne pourquoi il atterrit sur la page de connexion. Le contenu a été
+volontairement réduit à deux cartes (`.cards-grid`/`.feature-card`, même
+présentation que le tableau de bord) : **Documents du Club** → `documents.php`
+et **Galerie Privée** → `galerie.php`. L'ancienne liste publique des
+adhérents qui vivait ici (`membres.html`) a été entièrement effacée — le
+contenu détaillé des sous-pages reste à définir plus tard, ne pas
+l'anticiper.
 
 **Inscription publique (`inscription.php`)** : n'importe qui peut créer un
 compte (prénom, nom, pseudo, e-mail, téléphone facultatif, code postal et
