@@ -23,10 +23,14 @@ const COLONNES_ATTENDUES = [
 ];
 
 // Colonnes attendues sur `sorties` — même principe, table différente.
-// La valeur par défaut reprend la première catégorie de CATEGORIES_SORTIES
-// (agenda.php), pour que les sorties déjà en base restent classées.
+// La valeur par défaut de `categorie` reprend la première catégorie de
+// CATEGORIES_SORTIES (inc/agenda.php), pour que les sorties déjà en base
+// restent classées. `photo` est facultative : nom de fichier dans
+// espace/photos/, posée par sorties-a-venir.php, redimensionnée en carré
+// 400×400 à l'envoi.
 const COLONNES_SORTIES_ATTENDUES = [
     'categorie' => "VARCHAR(30) NOT NULL DEFAULT 'Sortie photo'",
+    'photo'     => 'VARCHAR(190) DEFAULT NULL',
 ];
 
 // Coordonnées du club, modifiables par un responsable depuis parametres.php

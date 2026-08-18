@@ -1264,6 +1264,13 @@ a {
   color: var(--text-muted);
   margin-top: 4px;
 }
+.sortie-photo {
+  flex: 0 0 96px;
+  width: 96px;
+  height: 96px;
+  border-radius: var(--radius-btn);
+  object-fit: cover;
+}
 .sortie-corps h3 {
   font-family: var(--font-heading);
   font-size: 1.15rem;
