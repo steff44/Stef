@@ -20,6 +20,9 @@ const COLONNES_ATTENDUES = [
     'deconnecte_le'     => 'DATETIME DEFAULT NULL',
     'code_postal'       => 'VARCHAR(10) DEFAULT NULL',
     'ville'             => 'VARCHAR(120) DEFAULT NULL',
+    // Distinct de `actif` — voir schema.sql. DEFAULT 1 pour que les comptes
+    // déjà en base (créés avant ce champ) restent utilisables sans y toucher.
+    'valide'            => 'TINYINT(1) NOT NULL DEFAULT 1',
 ];
 
 // Colonnes attendues sur `sorties` — même principe, table différente.

@@ -175,19 +175,54 @@ adhérents qui vivait ici (`membres.html`) a été entièrement effacée — le
 contenu détaillé des sous-pages reste à définir plus tard, ne pas
 l'anticiper.
 
-**Inscription publique (`inscription.php`)** : n'importe qui peut créer un
-compte (prénom, nom, pseudo, e-mail, téléphone facultatif, code postal et
-ville facultatifs, mot de passe) — choix explicite de l'utilisateur
-(17/08/2026) : le compte est **actif immédiatement**, comme un compte créé
-par un responsable depuis `adherents.php`, pas de validation préalable. Le
-pseudo devient `identifiant` (unicité vérifiée avant l'INSERT, message
-dédié plutôt qu'une erreur SQL brute). À la création, la personne est
-connectée tout de suite via `tenter_connexion()` (réutilisée telle quelle,
-pour ne pas dupliquer sa logique de session), donc jamais besoin de
-ressaisir son mot de passe juste après l'avoir choisi. `code_postal` et
-`ville` sont des colonnes ajoutées à `adherents` (voir `schema.sql` et
-`COLONNES_ATTENDUES` dans `migration.php`) ; rien d'autre ne les affiche
-pour l'instant (l'annuaire ne montre encore que nom/identifiant/contact).
+**Connexion et inscription cohabitent sur `connexion.php`** (choix explicite
+de l'utilisateur, 18/08/2026, remplace deux pages séparées) : deux onglets,
+« Connexion » et « Inscription », affichés/masqués côté client
+(`.auth-tabs`/`.auth-panel`, script inline en bas de la page — pas touché à
+`main.js`, ce n'est utile que sur cette page). `?onglet=inscription` dans
+l'URL présélectionne l'onglet côté serveur (utilisé par le lien « S'inscrire »
+du menu et par `inscription.php`, qui n'est plus qu'une redirection vers
+`connexion.php?onglet=inscription` — même principe que
+`membres.html`/`evenements.html`). Les deux formulaires postent sur la même
+page, distingués par un champ caché `formulaire` (`connexion` ou
+`inscription`). N'importe qui peut créer un compte (prénom, nom, pseudo,
+e-mail **obligatoire**, téléphone/code postal/ville facultatifs, mot de
+passe) ; le pseudo devient `identifiant` (unicité vérifiée avant l'INSERT,
+message dédié plutôt qu'une erreur SQL brute).
+
+**Un compte auto-inscrit doit être validé par un responsable avant de
+pouvoir se connecter** (choix explicite de l'utilisateur, 18/08/2026 —
+remplace l'activation immédiate décidée la veille). Colonne `valide` sur
+`adherents`, **distincte de `actif`** (qui sert à désactiver/bannir un
+compte existant) : DEFAULT 1, pour qu'un compte créé par un responsable
+depuis `adherents.php` (et les comptes déjà en base avant l'ajout de cette
+colonne) reste immédiatement utilisable ; l'inscription publique force
+explicitement `valide = 0` à l'INSERT. `tenter_connexion()` (`inc/auth.php`)
+refuse la connexion tant que `valide = 0`, avec un message dédié — « Votre
+inscription est en attente de validation par un responsable. » — qui ne
+compte pas comme un échec dans le compteur de blocage (le mot de passe était
+correct). Dans `adherents.php`, une case **Valider/Invalider**
+(`basculer_valide`, même schéma que `basculer_actif`/`basculer_admin`) à
+côté des autres actions, avec un badge ambre « en attente de validation »
+sur la ligne (les comptes non validés remontent en tête de liste, `ORDER BY
+valide ASC, actif DESC, nom`).
+
+Trois e-mails accompagnent ce cycle, envoyés par `envoyer_mail()`
+(`inc/mail.php`, `mail()` natif de PHP — pas de PHPMailer/Composer, cohérent
+avec un projet sans build ; un échec d'envoi est seulement consigné dans
+`error_log`, il ne doit jamais faire échouer l'inscription ou la
+validation) :
+1. à l'inscription, vers l'e-mail du club (`parametres_site.email`, réglable
+   dans `parametres.php`) — nouvelle inscription à valider ;
+2. à l'inscription, vers la personne inscrite — confirmation que son compte
+   est enregistré et en attente ;
+3. à la validation (bascule de `valide` 0→1 dans `adherents.php`), vers la
+   personne — son compte est actif, elle peut se connecter.
+
+`code_postal` et `ville` sont des colonnes ajoutées à `adherents` (voir
+`schema.sql` et `COLONNES_ATTENDUES` dans `migration.php`) ; rien d'autre ne
+les affiche pour l'instant (l'annuaire ne montre encore que
+nom/identifiant/contact).
 
 ```
 espace/
@@ -199,7 +234,8 @@ espace/
   telecharger.php    ← seule porte d'accès aux fichiers privés
   inc/               ← code interne, fermé par .htaccess
     config.local.php ← À CRÉER À LA MAIN SUR LE SERVEUR, jamais dans Git
-    config.example.php  db.php  auth.php  page.php  televersement.php  schema.sql
+    config.example.php  db.php  auth.php  page.php  televersement.php
+    mail.php  schema.sql
   photos/  fichiers/  ← dépôts, fermés par .htaccess
 ```
 

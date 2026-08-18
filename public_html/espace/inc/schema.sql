@@ -13,6 +13,10 @@ CREATE TABLE IF NOT EXISTS adherents (
   ville              VARCHAR(120) DEFAULT NULL,
   administrateur     TINYINT(1)   NOT NULL DEFAULT 0,
   actif              TINYINT(1)   NOT NULL DEFAULT 1,
+  -- Distinct de `actif` : un compte créé par inscription.php démarre à 0
+  -- (en attente qu'un responsable valide), un compte créé par un
+  -- responsable depuis adherents.php démarre à 1 (défaut de la colonne).
+  valide             TINYINT(1)   NOT NULL DEFAULT 1,
   derniere_connexion DATETIME     DEFAULT NULL,
   -- Horodatage rafraîchi à chaque page consultée : sert à afficher qui est
   -- connecté en ce moment (voir DELAI_PRESENCE_MINUTES dans auth.php).

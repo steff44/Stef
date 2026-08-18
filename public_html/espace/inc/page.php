@@ -111,7 +111,7 @@ function debut_page(string $titre, string $page_active = ''): void
             <?php endforeach; ?>
           <?php else: ?>
             <li><a href="connexion.php"<?= $page_active === 'connexion' ? ' aria-current="page"' : '' ?>>Connexion</a></li>
-            <li><a href="inscription.php"<?= $page_active === 'inscription' ? ' aria-current="page"' : '' ?>>S'inscrire</a></li>
+            <li><a href="connexion.php?onglet=inscription">S'inscrire</a></li>
           <?php endif; ?>
         </ul>
       </li>

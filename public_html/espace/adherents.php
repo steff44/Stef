@@ -10,6 +10,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/inc/page.php';
+require_once __DIR__ . '/inc/mail.php';
 
 $adherent = exige_administrateur();
 $pdo      = base_de_donnees();
@@ -112,6 +113,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->prepare('UPDATE adherents SET administrateur = 1 - administrateur WHERE id = ?')->execute([$id]);
             definir_message('succes', "Rôle modifié.");
         }
+
+    } elseif ($action === 'basculer_valide') {
+        $requete = $pdo->prepare('SELECT nom, email, valide FROM adherents WHERE id = ?');
+        $requete->execute([$id]);
+        $ligne = $requete->fetch();
+
+        if ($ligne) {
+            $pdo->prepare('UPDATE adherents SET valide = 1 - valide WHERE id = ?')->execute([$id]);
+
+            // On ne prévient par e-mail que le passage de non-validé à
+            // validé : c'est l'instant où le compte devient utilisable.
+            if (!$ligne['valide'] && $ligne['email']) {
+                envoyer_mail(
+                    $ligne['email'],
+                    valeur_parametre($pdo, 'email') ?: 'cooky44.sl@gmail.com',
+                    "Votre inscription au Focal Club Turballais a été validée",
+                    "Bonjour,\n\n"
+                    . "Bonne nouvelle : votre inscription à l'espace adhérents du Focal Club "
+                    . "Turballais vient d'être validée par un responsable. Vous pouvez dès à "
+                    . "présent vous connecter avec l'identifiant et le mot de passe que vous "
+                    . "avez choisis à l'inscription.\n\n"
+                    . "À bientôt,\nLe Focal Club Turballais"
+                );
+            }
+            definir_message('succes', "Validation de {$ligne['nom']} modifiée.");
+        }
     }
 
     header('Location: adherents.php');
@@ -122,13 +149,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // coupure demandée depuis. C'est le plus près de la vérité qu'on puisse être :
 // rien ne signale au serveur qu'un onglet vient d'être fermé.
 $requete = $pdo->prepare(
-    'SELECT id, identifiant, nom, email, telephone, administrateur, actif,
+    'SELECT id, identifiant, nom, email, telephone, administrateur, actif, valide,
             derniere_connexion, derniere_activite,
             (derniere_activite IS NOT NULL
               AND derniere_activite >= (NOW() - INTERVAL ? MINUTE)
               AND (deconnecte_le IS NULL OR derniere_activite > deconnecte_le)) AS en_ligne
        FROM adherents
-      ORDER BY actif DESC, nom'
+      ORDER BY valide ASC, actif DESC, nom'
 );
 $requete->execute([DELAI_PRESENCE_MINUTES]);
 $membres = $requete->fetchAll();
@@ -207,6 +234,7 @@ titre_page(
               <?= e($membre['nom']) ?>
               <?= $membre['administrateur'] ? ' <span class="badge-admin">responsable</span>' : '' ?>
               <?= $membre['actif'] ? '' : ' <span class="badge-inactif">désactivé</span>' ?>
+              <?= $membre['valide'] ? '' : ' <span class="badge-attente">en attente de validation</span>' ?>
             </td>
             <td><?= e($membre['identifiant']) ?></td>
             <td>
@@ -239,6 +267,12 @@ titre_page(
                 <button type="submit" class="lien-action">Réinitialiser le mot de passe</button>
               </form>
               <?php if ((int) $membre['id'] !== $adherent['id']): ?>
+                <form method="post">
+                  <?= champ_csrf() ?>
+                  <input type="hidden" name="action" value="basculer_valide">
+                  <input type="hidden" name="id" value="<?= (int) $membre['id'] ?>">
+                  <button type="submit" class="lien-action"><?= $membre['valide'] ? 'Invalider' : 'Valider' ?></button>
+                </form>
                 <form method="post">
                   <?= champ_csrf() ?>
                   <input type="hidden" name="action" value="basculer_actif">

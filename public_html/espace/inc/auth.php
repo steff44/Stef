@@ -153,7 +153,7 @@ function tenter_connexion(string $identifiant, string $mot_de_passe): ?string
     }
 
     $requete = base_de_donnees()->prepare(
-        'SELECT id, identifiant, nom, email, telephone, mot_de_passe, administrateur, actif
+        'SELECT id, identifiant, nom, email, telephone, mot_de_passe, administrateur, actif, valide
            FROM adherents
           WHERE identifiant = ?
           LIMIT 1'
@@ -172,6 +172,15 @@ function tenter_connexion(string $identifiant, string $mot_de_passe): ?string
         // Message unique : ne jamais indiquer si c'est l'identifiant ou le mot
         // de passe qui est faux.
         return "Identifiant ou mot de passe incorrect.";
+    }
+
+    // Identifiants corrects, mais inscription pas encore validée par un
+    // responsable (voir la case « Validé » dans adherents.php) : le message
+    // peut être spécifique ici — la personne vient de créer ce compte
+    // elle-même, ça ne révèle rien qu'elle ne sache déjà. On ne compte pas ça
+    // comme un échec (compteur de blocage) : le mot de passe était correct.
+    if (!$ligne['valide']) {
+        return "Votre inscription est en attente de validation par un responsable.";
     }
 
     // Le mot de passe est bon : on réinitialise les compteurs.
