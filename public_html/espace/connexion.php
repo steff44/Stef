@@ -18,8 +18,16 @@ declare(strict_types=1);
 require_once __DIR__ . '/inc/page.php';
 require_once __DIR__ . '/inc/mail.php';
 
-$adherent = adherent_connecte();
-$pdo      = base_de_donnees();
+// Page dédiée à la seule connexion/inscription (choix explicite de
+// l'utilisateur, 18/08/2026) : le tableau de bord vit exclusivement sur
+// index.php, jamais ici. Un visiteur déjà connecté y est donc renvoyé
+// directement, sans étape intermédiaire sur cette page.
+if (adherent_connecte()) {
+    header('Location: index.php');
+    exit;
+}
+
+$pdo = base_de_donnees();
 
 // Onglet actif : par défaut Connexion, sauf lien direct vers l'inscription
 // (?onglet=inscription, utilisé par inscription.php et le menu) ou après une
@@ -33,7 +41,7 @@ $valeurs_inscription = [
     'telephone' => '', 'code_postal' => '', 'ville' => '',
 ];
 
-if (!$adherent && $_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verifier_csrf();
     $formulaire = (string) ($_POST['formulaire'] ?? '');
 
@@ -156,16 +164,10 @@ titre_page("Espace adhérents", "Réservé aux membres du Focal Club Turballais.
 
     <?php afficher_message(); ?>
 
-    <?php if ($adherent): ?>
-      <p style="margin:0 0 20px;">
-        Vous êtes déjà connecté en tant que <strong><?= e($adherent['identifiant']) ?></strong>.
-      </p>
-      <a class="btn btn-primary" href="index.php" style="width:100%;">Retour au tableau de bord</a>
-    <?php else: ?>
-      <div class="auth-tabs">
-        <button type="button" class="auth-tab<?= $onglet === 'connexion' ? ' is-active' : '' ?>" data-onglet="connexion">Connexion</button>
-        <button type="button" class="auth-tab<?= $onglet === 'inscription' ? ' is-active' : '' ?>" data-onglet="inscription">Inscription</button>
-      </div>
+    <div class="auth-tabs">
+      <button type="button" class="auth-tab<?= $onglet === 'connexion' ? ' is-active' : '' ?>" data-onglet="connexion">Connexion</button>
+      <button type="button" class="auth-tab<?= $onglet === 'inscription' ? ' is-active' : '' ?>" data-onglet="inscription">Inscription</button>
+    </div>
 
       <div class="auth-panel" data-panel="connexion"<?= $onglet !== 'connexion' ? ' hidden' : '' ?>>
         <?php if ($erreur_connexion !== null): ?>
@@ -258,7 +260,6 @@ titre_page("Espace adhérents", "Réservé aux membres du Focal Club Turballais.
           </p>
         </form>
       </div>
-    <?php endif; ?>
   </div>
 </div></section>
 <script>

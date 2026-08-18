@@ -82,17 +82,23 @@ public_html/          ← racine du site, déployée telle quelle
   Le Club (+ Adhérents, Réglages du site pour un responsable). Les classes
   `.espace-barre`/`.espace-onglets` ont été supprimées avec cette bascule
   (17/08/2026) — ne pas les réintroduire.
-- **`espace/connexion.php` ne redirige plus en silence quand on est déjà
-  connecté** (choix explicite de l'utilisateur, 18/08/2026) : la page
-  s'affiche, avec le formulaire remplacé par « Vous êtes déjà connecté… » et
-  un bouton **« Retour au tableau de bord »** (`index.php`) — valable pour un
-  adhérent comme pour un responsable, quelle que soit la page d'où il vient.
-  La page porte aussi désormais une flèche **« ← Page précédente »**
-  (`.lien-retour`, en haut de la carte), qui utilise `history.back()` avec un
-  repli statique vers `../index.html` si l'historique est vide (JS
-  désactivé, arrivée directe). C'est ce même mécanisme qui affiche
-  « Adhérents seulement. » (`definir_message()`) quand on est renvoyé ici
-  depuis `le-club.php` sans être connecté.
+- **`espace/connexion.php` et `espace/index.php` sont deux pages
+  strictement séparées** (choix explicite de l'utilisateur, 18/08/2026,
+  après une première tentative — testée puis abandonnée le même jour — qui
+  faisait cohabiter un encart « Vous êtes déjà connecté » sur la page de
+  connexion) : `connexion.php` ne sert **que** la connexion/inscription,
+  jamais le tableau de bord. Un visiteur déjà connecté qui y arrive est
+  renvoyé **directement et silencieusement** vers `index.php`, sans étape
+  intermédiaire ni bouton à cliquer. Après une connexion réussie, direction
+  unique également : toujours `index.php`, quelle que soit la page qui a
+  déclenché la demande de connexion (`exige_connexion()` ne mémorise plus de
+  page de retour). La page porte une flèche **« ← Page précédente »**
+  (`.lien-retour`, en haut de la carte, visible seulement quand le
+  formulaire s'affiche puisqu'un visiteur connecté ne voit jamais cette
+  page), qui utilise `history.back()` avec un repli statique vers
+  `../index.html` si l'historique est vide (JS désactivé, arrivée directe).
+  `afficher_message()` y affiche aussi « Adhérents seulement. » quand on est
+  renvoyé ici depuis `le-club.php` sans être connecté.
 - **Le titre du logo est sur deux lignes** depuis le 18/08/2026 : « Focal
   Club » puis « Turballais » centré dessous (`<span class="logo-text">Focal
   Club<br>Turballais</span>`, à côté de `.logo-mark`). La coupure est un
