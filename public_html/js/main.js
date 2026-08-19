@@ -101,6 +101,90 @@
       .catch(function () {});
   })();
 
+  /* ---------- État de connexion sur les pages statiques ----------
+     Les pages statiques ne savent jamais, au moment du déploiement, si le
+     visiteur est connecté : sans ce correctif, le menu « {pseudo} connecté »
+     revenait afficher « Espace Adhérent » dès qu'on quittait une page de
+     l'espace adhérents pour une page publique, alors que la session, elle,
+     restait bien active. On ne touche à rien si la page a déjà rendu l'état
+     connecté côté serveur (page.php) — reconnaissable à .nav-dropdown-label,
+     absente du rendu non connecté. */
+  (function () {
+    let dropdown = null;
+    dropdowns.forEach(function (d) {
+      if (
+        !d.querySelector(".nav-dropdown-label") &&
+        d.querySelector('a[href$="connexion.php"]')
+      ) {
+        dropdown = d;
+      }
+    });
+    if (!dropdown) return;
+
+    function echapper(texte) {
+      const span = document.createElement("span");
+      span.textContent = texte;
+      return span.innerHTML;
+    }
+
+    fetch("espace/statut-connexion.php")
+      .then(function (reponse) {
+        return reponse.ok ? reponse.json() : Promise.reject();
+      })
+      .then(function (donnees) {
+        if (!donnees.connecte) return;
+
+        const trigger = dropdown.querySelector(".nav-dropdown-trigger");
+        const menu = dropdown.querySelector(".nav-dropdown-menu");
+        if (!trigger || !menu) return;
+
+        Array.from(trigger.childNodes).forEach(function (noeud) {
+          if (noeud.nodeType === Node.TEXT_NODE) noeud.remove();
+        });
+        trigger.classList.add("nav-dropdown-trigger--icone");
+        trigger.setAttribute("aria-label", "Ouvrir le menu Espace Adhérent");
+
+        const lien = document.createElement("a");
+        lien.className = "nav-dropdown-label";
+        lien.href = "espace/index.php";
+        lien.textContent = donnees.identifiant + " connecté";
+        dropdown.insertBefore(lien, trigger);
+
+        const badge = donnees.administrateur
+          ? ' <span class="badge-admin">responsable</span>'
+          : "";
+        const pagesAdmin = donnees.administrateur
+          ? '<li><a href="espace/adherents.php">Adhérents</a></li>' +
+            '<li><a href="espace/parametres.php">Réglages du site</a></li>'
+          : "";
+        menu.innerHTML =
+          '<li class="nav-dropdown-heading">Bonjour <strong>' + echapper(donnees.nom) + "</strong>" + badge + "</li>" +
+          '<li><a href="espace/deconnexion.php">Se déconnecter</a></li>' +
+          '<li class="nav-dropdown-divider"></li>' +
+          '<li><a href="espace/index.php">Tableau de bord</a></li>' +
+          '<li><a href="espace/galerie.php">Galerie privée</a></li>' +
+          '<li><a href="espace/documents.php">Documents</a></li>' +
+          '<li><a href="espace/agenda.php">Agenda des sorties</a></li>' +
+          '<li><a href="espace/sorties-a-venir.php">Sorties à venir</a></li>' +
+          '<li><a href="espace/annuaire.php">Annuaire</a></li>' +
+          '<li><a href="espace/le-club.php">Le Club</a></li>' +
+          pagesAdmin;
+
+        // Les liens ajoutés après coup n'ont pas les écouteurs posés plus
+        // haut (fermeture du menu déroulant et du menu mobile au clic).
+        const fermer = function () {
+          closeDropdown(dropdown);
+          if (links) links.classList.remove("is-open");
+          if (toggle) toggle.setAttribute("aria-expanded", "false");
+        };
+        lien.addEventListener("click", fermer);
+        menu.querySelectorAll("a").forEach(function (a) {
+          a.addEventListener("click", fermer);
+        });
+      })
+      .catch(function () {});
+  })();
+
   /* ---------- Utilitaires ---------- */
   function initials(nom) {
     return nom

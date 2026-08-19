@@ -238,6 +238,7 @@ espace/
   parametres.php     ← coordonnées du club affichées sur le site public, responsables uniquement
   installation.php   ← à jouer UNE fois, se verrouille ensuite tout seul
   telecharger.php    ← seule porte d'accès aux fichiers privés
+  statut-connexion.php ← état de connexion en JSON, pour js/main.js sur les pages statiques
   inc/               ← code interne, fermé par .htaccess
     config.local.php ← À CRÉER À LA MAIN SUR LE SERVEUR, jamais dans Git
     config.example.php  db.php  auth.php  page.php  televersement.php
@@ -306,6 +307,25 @@ Points à ne pas casser :
   ignore). Vérifiés en ligne le 16/08/2026 : `inc/`, `photos/` et `fichiers/`
   répondent bien **403**, et une page réservée renvoie **302** vers la
   connexion.
+- **Le menu « {pseudo} connecté » sur les pages publiques statiques** — même
+  principe que le point précédent, bug constaté le 19/08/2026 : une page
+  statique est figée au moment du déploiement, donc rendue une fois pour
+  toutes avec le menu « Espace Adhérent » non connecté. En arrivant sur
+  `index.html` (ou toute autre page statique) après avoir navigué dans
+  l'espace adhérents connecté, le menu semblait revenir à l'état déconnecté
+  alors que la session, elle, restait active. Corrigé par le même mécanisme
+  qu'`infos-club.php` : `espace/statut-connexion.php` (session uniquement via
+  `inc/auth.php`, jamais de base de données — résistant à une panne, comme
+  `infos-club.php`) renvoie l'état de connexion en JSON ; `js/main.js` l'
+  interroge sur toute page dont le menu « Espace Adhérent » n'a pas déjà été
+  rendu connecté côté serveur (repéré par l'absence de
+  `.nav-dropdown-label`), et reconstruit alors le libellé et le sous-menu à
+  l'identique de `page.php` (Bonjour {nom}, Se déconnecter, Tableau de bord,
+  Galerie privée, Documents, Agenda des sorties, Sorties à venir, Annuaire,
+  Le Club, + Adhérents/Réglages du site pour un responsable). Sur les pages
+  déjà connectées côté serveur (`espace/*.php`), ce script ne fait rien —
+  il ne fait que compléter ce que PHP n'a pas pu savoir sur les pages
+  statiques.
 
 ## Déploiement
 
