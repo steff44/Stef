@@ -72,7 +72,7 @@ function debut_page(string $titre, string $page_active = ''): void
     </button>
     <ul class="nav-links" id="nav-links">
       <li><a href="../index.html">Accueil</a></li>
-      <li><a href="<?= $adherent ? 'galerie.php' : '../galerie.html' ?>">Galerie</a></li>
+      <li><a href="../galerie.html">Galerie</a></li>
       <li class="nav-dropdown">
         <button type="button" class="nav-dropdown-trigger" aria-expanded="false">
           Agenda

@@ -164,9 +164,15 @@ planter).
 **« Galerie » existe en double**, elle, publique et privée, sans aucun lien
 entre les deux : `galerie.html` (statique, démonstrative, alimentée par
 `js/data.js`) d'un côté, `galerie.php` (réelle, table `photos_privees`) de
-l'autre. Dans `espace/inc/page.php`, le lien « Galerie » du menu principal
-pointe donc vers `galerie.php` une fois connecté, et vers `galerie.html`
-sinon — ne pas harmoniser ce point avec l'Agenda sans qu'on le demande.
+l'autre. Le lien « Galerie » du menu principal pointe **toujours** vers
+`galerie.html`, connecté ou non (choix explicite de l'utilisateur,
+19/08/2026, qui revient sur un choix inverse du 17/08/2026) : la galerie
+privée ne s'ouvre plus que depuis « Le Club » (`espace/le-club.php`) ou
+l'entrée « Galerie privée » du menu déroulant « {pseudo} connecté »
+(`galerie.php`, toujours listée dans `$onglets` de `espace/inc/page.php`).
+Avant ce changement, cliquer sur « Galerie » depuis une page de l'espace
+adhérents ouvrait la galerie privée — piège reconnu par l'utilisateur comme
+non voulu, à ne pas réintroduire.
 
 **« Le Club » (`espace/le-club.php`)** est réservé aux adhérents connectés
 depuis le 18/08/2026 (choix explicite de l'utilisateur) : `exige_connexion()`
