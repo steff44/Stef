@@ -112,6 +112,13 @@ public_html/          ← racine du site, déployée telle quelle
   inerte au clic, constaté le 17/08/2026 — c'est ce qui a révélé l'oubli).
 - Hero plein écran : photo d'un photographe en fond (`images/hero-photographer.jpg`,
   Unsplash, la même que focalclub.fr) sous un voile dégradé, titre en overlay.
+- **Œil pour afficher/masquer un mot de passe** (choix explicite de
+  l'utilisateur, 19/08/2026) : posé automatiquement par `js/main.js` sur
+  tout `input[type="password"]` de la page (connexion, inscription,
+  installation, changement de mot de passe dans l'annuaire) — générique,
+  jamais besoin de le poser à la main sur un nouveau champ. Le script
+  enveloppe le champ dans `.champ-mot-de-passe` et y ajoute un bouton
+  `.bouton-oeil` qui bascule `type="password"`/`type="text"`.
 
 ## Modifier le contenu
 

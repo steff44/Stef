@@ -897,6 +897,34 @@ a {
   margin-top: 14px;
 }
 
+/* Œil pour afficher/masquer un mot de passe (posé par js/main.js sur
+   chaque input[type="password"], quel que soit le formulaire). */
+.champ-mot-de-passe {
+  position: relative;
+}
+.champ-mot-de-passe input {
+  padding-right: 44px;
+}
+.bouton-oeil {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.bouton-oeil:hover {
+  color: var(--text);
+}
+
 /* Onglets Connexion / Inscription, sur la même page (espace/connexion.php). */
 .auth-tabs {
   display: flex;
