@@ -194,20 +194,25 @@ adhérents qui vivait ici (`membres.html`) a été entièrement effacée — le
 contenu détaillé des sous-pages reste à définir plus tard, ne pas
 l'anticiper.
 
-**Connexion et inscription cohabitent sur `connexion.php`** (choix explicite
-de l'utilisateur, 18/08/2026, remplace deux pages séparées) : deux onglets,
-« Connexion » et « Inscription », affichés/masqués côté client
-(`.auth-tabs`/`.auth-panel`, script inline en bas de la page — pas touché à
-`main.js`, ce n'est utile que sur cette page). `?onglet=inscription` dans
-l'URL présélectionne l'onglet côté serveur (utilisé par le lien « S'inscrire »
-du menu et par `inscription.php`, qui n'est plus qu'une redirection vers
-`connexion.php?onglet=inscription` — même principe que
-`membres.html`/`evenements.html`). Les deux formulaires postent sur la même
-page, distingués par un champ caché `formulaire` (`connexion` ou
-`inscription`). N'importe qui peut créer un compte (prénom, nom, pseudo,
-e-mail **obligatoire**, téléphone/code postal/ville facultatifs, mot de
-passe) ; le pseudo devient `identifiant` (unicité vérifiée avant l'INSERT,
-message dédié plutôt qu'une erreur SQL brute).
+**Connexion et inscription vivent sur deux pages séparées**,
+`connexion.php` et `inscription.php` (choix explicite de l'utilisateur,
+20/08/2026, d'après sa maquette Word — revient sur une tentative du
+18/08/2026 qui les avait réunies en deux onglets sur une seule page ; cette
+version à onglets a été codée puis constatée comme ne correspondant pas au
+dessin, donc défaite le jour même de sa découverte). `connexion.php` ne
+contient que le formulaire de connexion, avec un lien « Créer un compte » en
+bas vers `inscription.php` ; `inscription.php` ne contient que le formulaire
+d'inscription (plus la logique d'INSERT et les e-mails, ancien contenu du
+bloc `formulaire === 'inscription'` de `connexion.php`), avec un lien « Se
+connecter » en bas vers `connexion.php`. Chaque page redirige silencieusement
+vers `index.php` si l'utilisateur est déjà connecté. Le menu déroulant
+« Espace Adhérent » (pages statiques et `espace/inc/page.php`) pointe
+« Connexion » vers `connexion.php` et « S'inscrire » vers `inscription.php`
+directement — plus de paramètre `?onglet=`. N'importe qui peut créer un
+compte (prénom, nom, pseudo, e-mail **obligatoire**, téléphone/code
+postal/ville facultatifs, mot de passe) ; le pseudo devient `identifiant`
+(unicité vérifiée avant l'INSERT, message dédié plutôt qu'une erreur SQL
+brute).
 
 **Un compte auto-inscrit doit être validé par un responsable avant de
 pouvoir se connecter** (choix explicite de l'utilisateur, 18/08/2026 —
