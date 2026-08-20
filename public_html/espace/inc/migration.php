@@ -36,6 +36,15 @@ const COLONNES_SORTIES_ATTENDUES = [
     'photo'     => 'VARCHAR(190) DEFAULT NULL',
 ];
 
+// Colonne attendue sur `documents` — rubrique de classement (voir
+// RUBRIQUES_DOCUMENTS dans inc/documents_categories.php). Valeur par défaut
+// dans « Documents internes », pour que les documents déposés avant l'ajout
+// de cette colonne restent visibles, rangés dans « Administration du club »
+// plutôt que de disparaître.
+const COLONNES_DOCUMENTS_ATTENDUES = [
+    'categorie' => "VARCHAR(60) NOT NULL DEFAULT 'Documents internes'",
+];
+
 // Coordonnées du club, modifiables par un responsable depuis parametres.php
 // et affichées sur les pages publiques statiques via infos-club.php. Les
 // valeurs par défaut reprennent EXACTEMENT ce qui est déjà écrit en dur dans
@@ -96,6 +105,17 @@ function appliquer_migrations(PDO $pdo): void
         }
     }
 
+    foreach (COLONNES_DOCUMENTS_ATTENDUES as $colonne => $definition) {
+        if (colonne_absente($pdo, 'documents', $colonne)) {
+            try {
+                $pdo->exec("ALTER TABLE documents ADD COLUMN {$colonne} {$definition}");
+            } catch (PDOException $e) {
+                error_log('Espace adhérents — migration documents.' . $colonne . ' : ' . $e->getMessage());
+                $reussi = false;
+            }
+        }
+    }
+
     try {
         $pdo->exec(
             'CREATE TABLE IF NOT EXISTS parametres_site (
@@ -125,6 +145,7 @@ function signature_schema(): string
     return md5(
         implode('|', array_keys(COLONNES_ATTENDUES)) . '||' .
         implode('|', array_keys(COLONNES_SORTIES_ATTENDUES)) . '||' .
+        implode('|', array_keys(COLONNES_DOCUMENTS_ATTENDUES)) . '||' .
         implode('|', array_keys(PARAMETRES_PAR_DEFAUT))
     );
 }

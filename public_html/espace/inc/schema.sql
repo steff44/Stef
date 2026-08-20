@@ -39,7 +39,9 @@ CREATE TABLE IF NOT EXISTS photos_privees (
   CONSTRAINT fk_photo_adherent FOREIGN KEY (depose_par) REFERENCES adherents(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Documents du club (comptes rendus, statuts, bulletins…).
+-- Documents du club (comptes rendus, statuts, bulletins…). `categorie` classe
+-- le document dans une rubrique — voir RUBRIQUES_DOCUMENTS dans
+-- inc/documents_categories.php.
 CREATE TABLE IF NOT EXISTS documents (
   id          INT AUTO_INCREMENT PRIMARY KEY,
   titre       VARCHAR(190) NOT NULL,
@@ -47,6 +49,7 @@ CREATE TABLE IF NOT EXISTS documents (
   fichier     VARCHAR(190) NOT NULL,
   nom_origine VARCHAR(190) NOT NULL,
   taille      INT          NOT NULL DEFAULT 0,
+  categorie   VARCHAR(60)  NOT NULL DEFAULT 'Documents internes',
   depose_par  INT          DEFAULT NULL,
   cree_le     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_document_adherent FOREIGN KEY (depose_par) REFERENCES adherents(id) ON DELETE SET NULL
