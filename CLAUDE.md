@@ -190,9 +190,32 @@ comprenne pourquoi il atterrit sur la page de connexion. Le contenu a été
 volontairement réduit à deux cartes (`.cards-grid`/`.feature-card`, même
 présentation que le tableau de bord) : **Documents du Club** → `documents.php`
 et **Galerie Privée** → `galerie.php`. L'ancienne liste publique des
-adhérents qui vivait ici (`membres.html`) a été entièrement effacée — le
-contenu détaillé des sous-pages reste à définir plus tard, ne pas
-l'anticiper.
+adhérents qui vivait ici (`membres.html`) a été entièrement effacée.
+
+**`documents.php` range les documents en quatre rubriques fixes** (choix
+explicite de l'utilisateur, 20/08/2026, d'après une liste fournie) :
+Débuter la photo (bases techniques, premiers réglages, guides simplifiés
+pour les seniors), Ateliers techniques du club (lumière, exposition,
+composition, matériel, post-traitement), Thèmes photographiques (portrait,
+paysage, macro, nature, street, architecture, noir & blanc, créatif) et
+Administration du club (planning, comptes rendus, documents internes) — le
+tout défini une seule fois dans `RUBRIQUES_DOCUMENTS`
+(`inc/documents_categories.php`), seul endroit à modifier pour ajouter une
+rubrique ou une catégorie. Colonne `categorie` sur `documents` (voir
+`COLONNES_DOCUMENTS_ATTENDUES` dans `migration.php`), par défaut
+« Documents internes » pour que les documents déposés avant cet ajout
+restent visibles. Un responsable choisit la rubrique dans le formulaire de
+dépôt ; la page les regroupe par rubrique puis sous-catégorie (dans l'ordre
+de `RUBRIQUES_DOCUMENTS`, pas celui de la requête SQL), et n'affiche que les
+groupes non vides — pour ne pas montrer 15 rubriques vides sur un club qui
+débute, la structure complète est expliquée en tête de page dans un texte
+d'intro plutôt qu'en rubriques creuses. Un champ de recherche (affiché dès
+qu'au moins un document existe) filtre les lignes par titre en JavaScript
+pur, `data-titre` sur chaque `<li class="document-ligne">`, sans aller-retour
+serveur — script inline en bas de `documents.php`, sur le même principe que
+l'ancien `.auth-tabs` de `connexion.php` (page-spécifique, pas dans
+`main.js`). Le HTML de chaque ligne est factorisé dans
+`inc/document-ligne.php`, inclus une fois par sous-catégorie.
 
 **Connexion et inscription vivent sur deux pages séparées**,
 `connexion.php` et `inscription.php` (choix explicite de l'utilisateur,
