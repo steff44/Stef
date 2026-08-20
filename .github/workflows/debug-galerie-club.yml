@@ -8,6 +8,9 @@ name: Debug temporaire — Galerie du Club
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - "claude/debug-galerie-club"
 
 jobs:
   diagnostiquer:
