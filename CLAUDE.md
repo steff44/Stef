@@ -192,30 +192,51 @@ présentation que le tableau de bord) : **Documents du Club** → `documents.php
 et **Galerie Privée** → `galerie.php`. L'ancienne liste publique des
 adhérents qui vivait ici (`membres.html`) a été entièrement effacée.
 
-**`documents.php` range les documents en quatre rubriques fixes** (choix
-explicite de l'utilisateur, 20/08/2026, d'après une liste fournie) :
-Débuter la photo (bases techniques, premiers réglages, guides simplifiés
-pour les seniors), Ateliers techniques du club (lumière, exposition,
-composition, matériel, post-traitement), Thèmes photographiques (portrait,
-paysage, macro, nature, street, architecture, noir & blanc, créatif) et
-Administration du club (planning, comptes rendus, documents internes) — le
-tout défini une seule fois dans `RUBRIQUES_DOCUMENTS`
-(`inc/documents_categories.php`), seul endroit à modifier pour ajouter une
-rubrique ou une catégorie. Colonne `categorie` sur `documents` (voir
-`COLONNES_DOCUMENTS_ATTENDUES` dans `migration.php`), par défaut
-« Documents internes » pour que les documents déposés avant cet ajout
-restent visibles. Un responsable choisit la rubrique dans le formulaire de
-dépôt ; la page les regroupe par rubrique puis sous-catégorie (dans l'ordre
-de `RUBRIQUES_DOCUMENTS`, pas celui de la requête SQL), et n'affiche que les
-groupes non vides — pour ne pas montrer 15 rubriques vides sur un club qui
-débute, la structure complète est expliquée en tête de page dans un texte
-d'intro plutôt qu'en rubriques creuses. Un champ de recherche (affiché dès
-qu'au moins un document existe) filtre les lignes par titre en JavaScript
-pur, `data-titre` sur chaque `<li class="document-ligne">`, sans aller-retour
-serveur — script inline en bas de `documents.php`, sur le même principe que
-l'ancien `.auth-tabs` de `connexion.php` (page-spécifique, pas dans
-`main.js`). Le HTML de chaque ligne est factorisé dans
-`inc/document-ligne.php`, inclus une fois par sous-catégorie.
+**`documents.php` range les documents par rubrique et catégorie, éditables
+par un responsable** (choix explicite de l'utilisateur, 20/08/2026 — la
+liste de départ était Débuter la photo, Ateliers techniques du club,
+Thèmes photographiques et Administration du club, mais un responsable peut
+désormais la renommer et la compléter sans intervention sur le dépôt : ce
+n'est plus une constante figée dans le code, comme au tout début de cette
+fonctionnalité le même jour). Deux tables, `rubriques_documents` et
+`categories_documents` (voir `schema.sql`), semées une seule fois avec la
+classification de départ par `RUBRIQUES_DOCUMENTS_PAR_DEFAUT`
+(`inc/migration.php`) — semis qui ne se rejoue jamais une fois qu'une
+rubrique existe, pour ne pas réintroduire une rubrique qu'un responsable
+aurait supprimée. `inc/documents_categories.php` porte les deux fonctions
+de lecture, `rubriques_documents($pdo)` (toute la classification, mise en
+cache pour la durée de la page) et `categorie_document($pdo, $id)` (rubrique
+et libellés d'une catégorie, pour valider un `categorie_id` posté). La
+gestion (renommer/ajouter/supprimer une rubrique ou une catégorie) vit dans
+`parametres.php`, sous le grand formulaire des coordonnées du club — un
+formulaire par action, sur le même principe que `adherents.php`. Supprimer
+une rubrique qui contient encore des catégories, ou une catégorie qui
+contient encore des documents, est refusé avec un message explicite plutôt
+que de les orpheliner ou de les faire disparaître silencieusement ; renommer
+est en revanche toujours permis (les documents suivent, puisqu'ils ne
+référencent qu'un identifiant). Sur `documents`, `categorie_id` (entier,
+référence vers `categories_documents`) fait foi pour l'affichage ;
+`categorie` (texte libre) est l'ancien classement, gardé tel quel pour ne
+perdre aucune donnée mais plus lu par le code — une bascule automatique dans
+`appliquer_migrations()` retrouve, pour chaque document déposé avant ce
+changement, la catégorie de même nom et lui pose son `categorie_id`. Un
+document dont l'ancienne catégorie ne correspond plus à rien de connu (ou
+qui n'a jamais eu de `categorie_id` valide) atterrit dans un groupe « Autres
+documents » en bas de page plutôt que de disparaître. Le formulaire de dépôt
+choisit la catégorie par `categorie_id` (menu `<select>` avec un
+`<optgroup>` par rubrique) ; la page regroupe les documents par rubrique
+puis catégorie (dans l'ordre de `rubriques_documents()`, pas celui de la
+requête SQL), et n'affiche que les groupes non vides — pour ne pas montrer
+une dizaine de rubriques vides sur un club qui débute, la structure complète
+(reconstruite depuis la base, donc toujours à jour même après un
+renommage) est expliquée en tête de page dans un texte d'intro plutôt qu'en
+rubriques creuses. Un champ de recherche (affiché dès qu'au moins un
+document existe) filtre les lignes par titre en JavaScript pur, `data-titre`
+sur chaque `<li class="document-ligne">`, sans aller-retour serveur — script
+inline en bas de `documents.php`, sur le même principe que l'ancien
+`.auth-tabs` de `connexion.php` (page-spécifique, pas dans `main.js`). Le
+HTML de chaque ligne est factorisé dans `inc/document-ligne.php`, inclus une
+fois par sous-catégorie.
 
 **Connexion et inscription vivent sur deux pages séparées**,
 `connexion.php` et `inscription.php` (choix explicite de l'utilisateur,

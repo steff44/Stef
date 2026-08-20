@@ -36,13 +36,51 @@ const COLONNES_SORTIES_ATTENDUES = [
     'photo'     => 'VARCHAR(190) DEFAULT NULL',
 ];
 
-// Colonne attendue sur `documents` — rubrique de classement (voir
-// RUBRIQUES_DOCUMENTS dans inc/documents_categories.php). Valeur par défaut
-// dans « Documents internes », pour que les documents déposés avant l'ajout
-// de cette colonne restent visibles, rangés dans « Administration du club »
-// plutôt que de disparaître.
+// Colonnes attendues sur `documents`. `categorie` (VARCHAR) est l'ancien
+// classement, figé dans le code — conservé tel quel pour ne perdre aucune
+// donnée, mais plus lu par le code depuis le passage aux rubriques/
+// catégories en base (20/08/2026, voir inc/documents_categories.php et
+// RUBRIQUES_DOCUMENTS_PAR_DEFAUT plus bas). `categorie_id` le remplace :
+// référence vers `categories_documents`, posée par la bascule automatique
+// ci-dessous à partir de l'ancienne valeur.
 const COLONNES_DOCUMENTS_ATTENDUES = [
-    'categorie' => "VARCHAR(60) NOT NULL DEFAULT 'Documents internes'",
+    'categorie'    => "VARCHAR(60) NOT NULL DEFAULT 'Documents internes'",
+    'categorie_id' => 'INT DEFAULT NULL',
+];
+
+// Classification par défaut des documents, semée une seule fois — la
+// première fois que `rubriques_documents` est créée — par
+// appliquer_migrations() ci-dessous. Un responsable la modifie ensuite
+// depuis parametres.php (renommer, ajouter, supprimer une rubrique ou une
+// catégorie) : ce n'est donc plus une constante que le code relit.
+const RUBRIQUES_DOCUMENTS_PAR_DEFAUT = [
+    'Débuter la photo' => [
+        'Bases techniques',
+        'Premiers réglages',
+        'Guides simplifiés pour les seniors',
+    ],
+    'Ateliers techniques du club' => [
+        'Lumière',
+        'Exposition',
+        'Composition',
+        'Matériel',
+        'Post-traitement',
+    ],
+    'Thèmes photographiques' => [
+        'Portrait',
+        'Paysage',
+        'Macro',
+        'Nature',
+        'Street',
+        'Architecture',
+        'Noir & Blanc',
+        'Créatif',
+    ],
+    'Administration du club' => [
+        'Planning',
+        'Comptes rendus',
+        'Documents internes',
+    ],
 ];
 
 // Coordonnées du club, modifiables par un responsable depuis parametres.php
@@ -134,6 +172,67 @@ function appliquer_migrations(PDO $pdo): void
         $reussi = false;
     }
 
+    try {
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS rubriques_documents (
+                id    INT AUTO_INCREMENT PRIMARY KEY,
+                nom   VARCHAR(120) NOT NULL,
+                ordre INT          NOT NULL DEFAULT 0
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS categories_documents (
+                id          INT AUTO_INCREMENT PRIMARY KEY,
+                rubrique_id INT          NOT NULL,
+                nom         VARCHAR(120) NOT NULL,
+                ordre       INT          NOT NULL DEFAULT 0,
+                CONSTRAINT fk_categorie_rubrique FOREIGN KEY (rubrique_id) REFERENCES rubriques_documents(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+
+        // Semis une seule fois, à la toute première création de la table :
+        // si un responsable a depuis renommé, ajouté ou supprimé des
+        // rubriques, on ne réintroduit jamais la liste par défaut.
+        if ((int) $pdo->query('SELECT COUNT(*) FROM rubriques_documents')->fetchColumn() === 0) {
+            $inserer_rubrique  = $pdo->prepare('INSERT INTO rubriques_documents (nom, ordre) VALUES (?, ?)');
+            $inserer_categorie = $pdo->prepare('INSERT INTO categories_documents (rubrique_id, nom, ordre) VALUES (?, ?, ?)');
+
+            $ordre_rubrique = 0;
+            foreach (RUBRIQUES_DOCUMENTS_PAR_DEFAUT as $nom_rubrique => $categories) {
+                $inserer_rubrique->execute([$nom_rubrique, $ordre_rubrique++]);
+                $rubrique_id = (int) $pdo->lastInsertId();
+
+                $ordre_categorie = 0;
+                foreach ($categories as $nom_categorie) {
+                    $inserer_categorie->execute([$rubrique_id, $nom_categorie, $ordre_categorie++]);
+                }
+            }
+        }
+
+        // Bascule les documents déposés avant ce changement (ancien
+        // classement en texte libre, colonne `categorie`) vers la nouvelle
+        // référence `categorie_id`, en retrouvant la catégorie de même nom.
+        // Ne touche que les documents pas encore basculés ; un document dont
+        // l'ancienne catégorie ne correspond plus à rien de connu reste sans
+        // categorie_id (affiché dans « Autres documents » par documents.php).
+        $manquants = $pdo->query('SELECT id, categorie FROM documents WHERE categorie_id IS NULL')->fetchAll();
+        if ($manquants) {
+            $correspondance = [];
+            foreach ($pdo->query('SELECT id, nom FROM categories_documents')->fetchAll() as $ligne) {
+                $correspondance[$ligne['nom']] = (int) $ligne['id'];
+            }
+            $basculer = $pdo->prepare('UPDATE documents SET categorie_id = ? WHERE id = ?');
+            foreach ($manquants as $document) {
+                if (isset($correspondance[$document['categorie']])) {
+                    $basculer->execute([$correspondance[$document['categorie']], $document['id']]);
+                }
+            }
+        }
+    } catch (PDOException $e) {
+        error_log('Espace adhérents — migration rubriques_documents : ' . $e->getMessage());
+        $reussi = false;
+    }
+
     if ($reussi) {
         @file_put_contents($temoin, signature_schema());
     }
@@ -146,7 +245,8 @@ function signature_schema(): string
         implode('|', array_keys(COLONNES_ATTENDUES)) . '||' .
         implode('|', array_keys(COLONNES_SORTIES_ATTENDUES)) . '||' .
         implode('|', array_keys(COLONNES_DOCUMENTS_ATTENDUES)) . '||' .
-        implode('|', array_keys(PARAMETRES_PAR_DEFAUT))
+        implode('|', array_keys(PARAMETRES_PAR_DEFAUT)) . '||' .
+        'rubriques_documents_v1'
     );
 }
 

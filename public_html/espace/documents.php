@@ -1,8 +1,9 @@
 <?php
 /*
- * Documents du club, classés par rubrique (voir RUBRIQUES_DOCUMENTS dans
- * inc/documents_categories.php — seul endroit à modifier pour ajouter une
- * rubrique ou une catégorie). Tous les adhérents consultent et recherchent ;
+ * Documents du club, classés par rubrique et catégorie — tables
+ * rubriques_documents / categories_documents (voir inc/documents_categories.php),
+ * modifiables par un responsable depuis parametres.php (choix explicite de
+ * l'utilisateur, 20/08/2026). Tous les adhérents consultent et recherchent ;
  * seuls les responsables déposent, classent et suppriment.
  */
 
@@ -30,14 +31,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             definir_message('succes', "Document supprimé.");
         }
     } else {
-        $titre     = trim((string) ($_POST['titre'] ?? ''));
-        $categorie = (string) ($_POST['categorie'] ?? '');
-        if (!in_array($categorie, categories_documents_a_plat(), true)) {
-            $categorie = categories_documents_a_plat()[0];
-        }
+        $titre        = trim((string) ($_POST['titre'] ?? ''));
+        $categorie_id = (int) ($_POST['categorie_id'] ?? 0);
+        $categorie    = categorie_document($pdo, $categorie_id);
 
         if ($titre === '') {
             definir_message('erreur', "Donnez un titre au document.");
+        } elseif ($categorie === null) {
+            definir_message('erreur', "Choisissez une rubrique — créez-en une dans Réglages du site si aucune ne convient.");
         } else {
             $resultat = enregistrer_fichier_envoye($_FILES['document'] ?? null, __DIR__ . '/fichiers', 'document');
 
@@ -45,8 +46,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 definir_message('erreur', $resultat['erreur']);
             } else {
                 $pdo->prepare(
-                    'INSERT INTO documents (titre, description, fichier, nom_origine, taille, categorie, depose_par)
-                     VALUES (?, ?, ?, ?, ?, ?, ?)'
+                    'INSERT INTO documents (titre, description, fichier, nom_origine, taille, categorie, categorie_id, depose_par)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
                 )->execute([
                     $titre,
                     trim((string) ($_POST['description'] ?? '')) ?: null,
@@ -55,10 +56,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // téléchargement ; il n'est jamais utilisé comme chemin.
                     basename((string) ($_FILES['document']['name'] ?? 'document')),
                     (int) ($_FILES['document']['size'] ?? 0),
-                    $categorie,
+                    // Colonne historique, gardée synchronisée pour qui
+                    // consulterait la base directement — categorie_id fait
+                    // foi pour l'affichage (voir inc/documents_categories.php).
+                    $categorie['categorie_nom'],
+                    $categorie_id,
                     $adherent['id'],
                 ]);
-                definir_message('succes', "Document ajouté dans « {$categorie} ».");
+                definir_message('succes', "Document ajouté dans « {$categorie['categorie_nom']} ».");
             }
         }
     }
@@ -67,27 +72,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
+$rubriques = rubriques_documents($pdo);
+
 $documents = $pdo->query(
-    'SELECT d.id, d.titre, d.description, d.nom_origine, d.taille, d.categorie, d.cree_le, a.nom AS auteur
+    'SELECT d.id, d.titre, d.description, d.nom_origine, d.taille, d.categorie_id, d.cree_le, a.nom AS auteur
        FROM documents d
        LEFT JOIN adherents a ON a.id = d.depose_par
       ORDER BY d.titre'
 )->fetchAll();
 
 // Rangement par rubrique puis par catégorie, dans l'ordre de
-// RUBRIQUES_DOCUMENTS — pas celui, arbitraire, du résultat SQL — pour que la
-// page présente toujours la même organisation. « Autres documents » ne
-// recueille que des documents dont la catégorie ne correspond plus à aucune
-// rubrique connue (RUBRIQUES_DOCUMENTS modifié après leur dépôt) : ça ne
-// devrait normalement jamais arriver.
+// rubriques_documents() — pas celui, arbitraire, du résultat SQL — pour que
+// la page présente toujours la même organisation. « Autres documents » ne
+// recueille que des documents sans categorie_id valide (catégorie
+// supprimée depuis leur dépôt, ou document déposé avant ce classement et
+// dont l'ancienne valeur ne correspond plus à rien de connu).
 $groupes = [];
 $autres  = [];
 foreach ($documents as $document) {
-    $rubrique = rubrique_de_categorie($document['categorie']);
-    if ($rubrique === null) {
+    $categorie_id = $document['categorie_id'] !== null ? (int) $document['categorie_id'] : null;
+    $trouve       = false;
+    if ($categorie_id !== null) {
+        foreach ($rubriques as $rubrique_id => $rubrique) {
+            if (isset($rubrique['categories'][$categorie_id])) {
+                $groupes[$rubrique_id][$categorie_id][] = $document;
+                $trouve = true;
+                break;
+            }
+        }
+    }
+    if (!$trouve) {
         $autres[] = $document;
-    } else {
-        $groupes[$rubrique][$document['categorie']][] = $document;
     }
 }
 
@@ -98,24 +113,40 @@ titre_page("Documents du club", "Comptes rendus, statuts, bulletins et ressource
   <?php afficher_message(); ?>
 
   <div class="documents-intro">
-    <p>
-      Les documents du club sont classés en quatre grandes rubriques, elles-mêmes
-      divisées en catégories : <strong>Débuter la photo</strong> (bases techniques,
-      premiers réglages, guides simplifiés pour les seniors),
-      <strong>Ateliers techniques du club</strong> (lumière, exposition, composition,
-      matériel, post-traitement), <strong>Thèmes photographiques</strong> (portrait,
-      paysage, macro, nature, street, architecture, noir &amp; blanc, créatif) et
-      <strong>Administration du club</strong> (planning, comptes rendus, documents
-      internes).
-    </p>
-    <p>
-      Un responsable dépose chaque document et lui attribue sa rubrique au moment de
-      l'envoi. Pour en retrouver un, parcourez les rubriques ci-dessous ou tapez son
-      nom dans le champ de recherche.
-    </p>
+    <?php if ($rubriques): ?>
+      <p>
+        Les documents du club sont classés en <?= count($rubriques) ?> rubriques, elles-mêmes
+        divisées en catégories :
+        <?php
+          $descriptions = [];
+          foreach ($rubriques as $rubrique) {
+              $descriptions[] = '<strong>' . e($rubrique['nom']) . '</strong>'
+                  . ($rubrique['categories'] ? ' (' . e(implode(', ', $rubrique['categories'])) . ')' : '');
+          }
+          echo implode(', ', $descriptions);
+        ?>.
+      </p>
+      <p>
+        Un responsable dépose chaque document et lui attribue sa catégorie au moment de
+        l'envoi. Pour en retrouver un, parcourez les rubriques ci-dessous ou tapez son
+        nom dans le champ de recherche.
+        <?php if (est_administrateur()): ?>
+          Les rubriques et catégories se renomment, s'ajoutent ou se suppriment depuis
+          <a href="parametres.php">Réglages du site</a>.
+        <?php endif; ?>
+      </p>
+    <?php else: ?>
+      <p>
+        Aucune rubrique n'est encore définie.
+        <?php if (est_administrateur()): ?>
+          Créez-en une depuis <a href="parametres.php">Réglages du site</a> avant de pouvoir
+          déposer un document.
+        <?php endif; ?>
+      </p>
+    <?php endif; ?>
   </div>
 
-  <?php if (est_administrateur()): ?>
+  <?php if (est_administrateur() && $rubriques): ?>
     <details class="depot-bloc">
       <summary>Ajouter un document</summary>
       <form method="post" enctype="multipart/form-data" class="form-card" style="margin-top:16px;">
@@ -130,12 +161,13 @@ titre_page("Documents du club", "Comptes rendus, statuts, bulletins et ressource
           <textarea id="description" name="description" rows="2"></textarea>
         </div>
         <div class="field">
-          <label for="categorie">Rubrique</label>
-          <select id="categorie" name="categorie">
-            <?php foreach (RUBRIQUES_DOCUMENTS as $rubrique => $categories): ?>
-              <optgroup label="<?= e($rubrique) ?>">
-                <?php foreach ($categories as $categorie): ?>
-                  <option value="<?= e($categorie) ?>"><?= e($categorie) ?></option>
+          <label for="categorie_id">Rubrique</label>
+          <select id="categorie_id" name="categorie_id">
+            <?php foreach ($rubriques as $rubrique): ?>
+              <?php if (!$rubrique['categories']) continue; ?>
+              <optgroup label="<?= e($rubrique['nom']) ?>">
+                <?php foreach ($rubrique['categories'] as $categorie_id => $nom_categorie): ?>
+                  <option value="<?= $categorie_id ?>"><?= e($nom_categorie) ?></option>
                 <?php endforeach; ?>
               </optgroup>
             <?php endforeach; ?>
@@ -161,16 +193,16 @@ titre_page("Documents du club", "Comptes rendus, statuts, bulletins et ressource
     </div>
     <div id="documents-recherche-vide" class="empty-state" hidden><p>Aucun document ne correspond à cette recherche.</p></div>
 
-    <?php foreach (RUBRIQUES_DOCUMENTS as $rubrique => $categories): ?>
-      <?php if (empty($groupes[$rubrique])) continue; ?>
+    <?php foreach ($rubriques as $rubrique_id => $rubrique): ?>
+      <?php if (empty($groupes[$rubrique_id])) continue; ?>
       <div class="rubrique-documents">
-        <h2><?= e($rubrique) ?></h2>
-        <?php foreach ($categories as $categorie): ?>
-          <?php if (empty($groupes[$rubrique][$categorie])) continue; ?>
+        <h2><?= e($rubrique['nom']) ?></h2>
+        <?php foreach ($rubrique['categories'] as $categorie_id => $nom_categorie): ?>
+          <?php if (empty($groupes[$rubrique_id][$categorie_id])) continue; ?>
           <div class="sous-categorie-documents">
-            <h3><?= e($categorie) ?></h3>
+            <h3><?= e($nom_categorie) ?></h3>
             <ul class="liste-documents">
-              <?php foreach ($groupes[$rubrique][$categorie] as $document): ?>
+              <?php foreach ($groupes[$rubrique_id][$categorie_id] as $document): ?>
                 <?php include __DIR__ . '/inc/document-ligne.php'; ?>
               <?php endforeach; ?>
             </ul>

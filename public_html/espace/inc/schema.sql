@@ -39,20 +39,40 @@ CREATE TABLE IF NOT EXISTS photos_privees (
   CONSTRAINT fk_photo_adherent FOREIGN KEY (depose_par) REFERENCES adherents(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Documents du club (comptes rendus, statuts, bulletins…). `categorie` classe
--- le document dans une rubrique — voir RUBRIQUES_DOCUMENTS dans
--- inc/documents_categories.php.
-CREATE TABLE IF NOT EXISTS documents (
+-- Rubriques et catégories de classement des documents du club, modifiables
+-- par un responsable depuis parametres.php — voir inc/documents_categories.php
+-- et RUBRIQUES_DOCUMENTS_PAR_DEFAUT (inc/migration.php) pour le semis initial.
+CREATE TABLE IF NOT EXISTS rubriques_documents (
+  id    INT AUTO_INCREMENT PRIMARY KEY,
+  nom   VARCHAR(120) NOT NULL,
+  ordre INT          NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS categories_documents (
   id          INT AUTO_INCREMENT PRIMARY KEY,
-  titre       VARCHAR(190) NOT NULL,
-  description TEXT         DEFAULT NULL,
-  fichier     VARCHAR(190) NOT NULL,
-  nom_origine VARCHAR(190) NOT NULL,
-  taille      INT          NOT NULL DEFAULT 0,
-  categorie   VARCHAR(60)  NOT NULL DEFAULT 'Documents internes',
-  depose_par  INT          DEFAULT NULL,
-  cree_le     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT fk_document_adherent FOREIGN KEY (depose_par) REFERENCES adherents(id) ON DELETE SET NULL
+  rubrique_id INT          NOT NULL,
+  nom         VARCHAR(120) NOT NULL,
+  ordre       INT          NOT NULL DEFAULT 0,
+  CONSTRAINT fk_categorie_rubrique FOREIGN KEY (rubrique_id) REFERENCES rubriques_documents(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Documents du club (comptes rendus, statuts, bulletins…). `categorie_id`
+-- classe le document dans une catégorie ; `categorie` (VARCHAR) est l'ancien
+-- classement en texte libre, conservé pour ne perdre aucune donnée mais plus
+-- lu par le code (voir inc/migration.php).
+CREATE TABLE IF NOT EXISTS documents (
+  id           INT AUTO_INCREMENT PRIMARY KEY,
+  titre        VARCHAR(190) NOT NULL,
+  description  TEXT         DEFAULT NULL,
+  fichier      VARCHAR(190) NOT NULL,
+  nom_origine  VARCHAR(190) NOT NULL,
+  taille       INT          NOT NULL DEFAULT 0,
+  categorie    VARCHAR(60)  NOT NULL DEFAULT 'Documents internes',
+  categorie_id INT          DEFAULT NULL,
+  depose_par   INT          DEFAULT NULL,
+  cree_le      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_document_adherent  FOREIGN KEY (depose_par)   REFERENCES adherents(id)          ON DELETE SET NULL,
+  CONSTRAINT fk_document_categorie FOREIGN KEY (categorie_id) REFERENCES categories_documents(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Agenda des sorties, cours et réunions (voir CATEGORIES_SORTIES dans inc/agenda.php).
