@@ -4,8 +4,9 @@
  * l'utilisateur, 18/08/2026). Remplace l'ancienne liste publique des
  * adhérents (membres.html, désormais une redirection vers cette page).
  *
- * Contenu volontairement réduit à deux cartes pour l'instant : le détail des
- * sous-pages (Documents du Club, Galerie Privée) reste à définir plus tard.
+ * Trois cartes : Documents du Club, Galerie Privée (réservée aux adhérents)
+ * et Galerie du Club (ajoutée le 20/08/2026 — les photos que les adhérents
+ * y déposent deviennent publiques, reprises sur galerie.html).
  */
 
 declare(strict_types=1);
@@ -37,6 +38,12 @@ titre_page("Le Club", "Réservé aux adhérents du Focal Club Turballais.");
       <h3>Galerie Privée</h3>
       <p>Les photos réservées aux adhérents connectés.</p>
       <a class="btn btn-ghost" href="galerie.php">Ouvrir</a>
+    </article>
+    <article class="feature-card">
+      <div class="feature-icon" aria-hidden="true">🖼️</div>
+      <h3>Galerie du Club</h3>
+      <p>Déposez vos photos par catégorie — elles apparaissent aussi sur la page Galerie, ouverte à tous.</p>
+      <a class="btn btn-ghost" href="galerie-club.php">Ouvrir</a>
     </article>
   </div>
 </div></section>
