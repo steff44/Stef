@@ -1,0 +1,40 @@
+name: Debug temporaire — Vignette Galerie du Club
+
+# Workflow JETABLE : vérifie pourquoi l'image de la photo « Grande aigrette »
+# (Galerie du Club) ne s'affiche pas sur la page publique Galerie, alors que
+# sa fiche (titre, catégorie) s'affiche bien. Interroge directement
+# telecharger.php?type=galerie_club sur le site en ligne, bloqué depuis le
+# sandbox Claude Code. À supprimer une fois le diagnostic terminé.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "claude/debug-vignette"
+
+jobs:
+  diagnostiquer:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Interroger l'API de liste (pour avoir l'id et l'URL d'image)
+        run: |
+          echo "=== infos-galerie-club.php ==="
+          curl -s "https://myfocal.online/infos-galerie-club.php"
+          echo ""
+
+      - name: Interroger directement l'image (en-têtes complets)
+        run: |
+          echo "=== telecharger.php?type=galerie_club&id=1 ==="
+          curl -s -D - -o /tmp/img -w "\nHTTP_CODE:%{http_code}\nCONTENT_TYPE:%{content_type}\nSIZE_DOWNLOAD:%{size_download}\n" \
+            "https://myfocal.online/espace/telecharger.php?type=galerie_club&id=1"
+          echo "=== corps de la réponse (les 500 premiers octets, texte si erreur) ==="
+          head -c 500 /tmp/img
+          echo ""
+          echo "=== type de fichier détecté localement ==="
+          file /tmp/img || true
+
+      - name: Vérifier aussi une photo de sortie existante (référence qui marche)
+        run: |
+          echo "=== Comparaison avec une image publique connue (galerie.html) ==="
+          curl -s -D - -o /dev/null -w "HTTP_CODE:%{http_code}\nCONTENT_TYPE:%{content_type}\n" \
+            "https://myfocal.online/images/hero-photographer.jpg" || true
