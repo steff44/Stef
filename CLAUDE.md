@@ -134,11 +134,13 @@ public_html/          ← racine du site, déployée telle quelle
 
 ## Modifier le contenu
 
-- **Adhérents et photos :** tout est dans `public_html/js/data.js`, tableau
-  `membres`. Les pages se régénèrent seules.
-- **Vraies photos :** les vignettes sont encore des dégradés de couleur générés
-  en CSS. Pour de vraies images, les déposer dans `public_html/images/` et
-  remplacer le `background` des `.photo-frame` / `.member-cover` dans `js/main.js`.
+- **Photos :** il n'y a plus de photos de démonstration depuis le 20/08/2026
+  (choix explicite de l'utilisateur — `CLUB_DATA.membres` est un tableau vide
+  dans `public_html/js/data.js`, à ne pas repeupler avec des données
+  fictives). Les vraies photos viennent des adhérents, via la Galerie du Club
+  (`espace/galerie-club.php`) — voir plus bas. `CLUB_DATA.themes` reste la
+  liste des filtres affichés sur la page Galerie, même sans aucune photo dans
+  une catégorie pour l'instant.
 - **Agenda :** une seule page, `espace/agenda.php` — voir plus bas.
 
 ## Espace adhérents (`public_html/espace/`)
@@ -229,22 +231,35 @@ inclus une fois par catégorie non vide, même principe que
 comme `type=sortie`, contrairement à `type=photo`/`document` qui exigent une
 connexion.
 
-**La page publique `galerie.html` affiche les vraies photos de la Galerie du
-Club, par-dessus les photos de démonstration.** `infos-galerie-club.php`
-(à la racine, hors de `espace/` — même principe qu'`infos-club.php` : public
-par conception, connexion autonome à la base, jamais de dépendance à une
-page de l'espace déjà visitée) renvoie en JSON les photos de `photos_club`
-avec leur catégorie et leur auteur affiché. `js/main.js` les ajoute au
-tableau de photos de démonstration existant (`CLUB_DATA` de `js/data.js`) —
-la grille et les filtres par thème s'affichent donc immédiatement avec la
-démo, puis se complètent sans à-coup dès que l'appel réussit ; il échoue
-silencieusement sinon (hors ligne, ou préversion GitHub Pages, qui ne peut
-pas exécuter PHP), laissant la démo seule comme repli. Une vraie photo
-affiche l'image réelle (`background: url(...)`) là où une photo de
-démonstration garde son dégradé de couleur généré
-(`photoBackground()` dans `main.js` choisit entre les deux). Toute catégorie
-de photo inconnue de `CLUB_DATA.themes` s'ajoute automatiquement aux
-filtres.
+**La page publique `galerie.html` (et la sélection sur l'accueil) affichent
+les vraies photos de la Galerie du Club.** `infos-galerie-club.php` (à la
+racine, hors de `espace/` — même principe qu'`infos-club.php` : public par
+conception, connexion autonome à la base, jamais de dépendance à une page de
+l'espace déjà visitée) renvoie en JSON les photos de `photos_club` avec leur
+catégorie et leur auteur affiché, des plus récentes aux plus anciennes.
+`js/main.js` les récupère sur les deux pages : sur l'accueil (`[data-highlights]`,
+les 8 plus récentes), la section reste masquée (`hidden` posé en dur dans
+`index.html`) tant qu'aucune photo n'est encore disponible ; sur la page
+Galerie, la grille et les filtres par thème restent vides jusqu'à ce que
+l'appel réussisse, puis se complètent sans à-coup. Dans les deux cas, l'appel
+échoue silencieusement sinon (hors ligne, ou préversion GitHub Pages, qui ne
+peut pas exécuter PHP). Il n'y a plus de photos de démonstration depuis le
+20/08/2026 (`CLUB_DATA.membres` vide dans `js/data.js`, à ne pas repeupler) ;
+`photoBackground()` dans `main.js` sait toujours afficher un dégradé de
+couleur si jamais une photo sans champ `image` réapparaissait. Toute
+catégorie de photo inconnue de `CLUB_DATA.themes` s'ajoute automatiquement
+aux filtres.
+
+**Le fond d'une vignette (`.photo-frame`) est posé via un attribut `style="…"`
+construit en JavaScript (`buildPhotoCard()`), pas via `element.style` :**
+piège rencontré le 20/08/2026 — `photoBackground()` entourait l'URL de
+guillemets doubles (`url("…")`), qui refermaient prématurément l'attribut
+`style="…"` lui-même délimité par des guillemets doubles, vidant la
+vignette de toute photo réelle (le titre et la fiche s'affichaient quand même,
+seul le fond disparaissait). Corrigé en guillemets simples autour de l'URL.
+Tout texte inséré via `innerHTML` dans une carte de photo (titre, nom
+affiché, catégorie) passe par `echapperHtml()` — un titre ou un nom contenant
+`&`, `<` ou `"` (saisi par un adhérent) casserait sinon le HTML généré.
 
 **`documents.php` range les documents par rubrique et catégorie, éditables
 par un responsable** (choix explicite de l'utilisateur, 20/08/2026 — la
