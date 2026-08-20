@@ -1,6 +1,15 @@
 (function () {
   "use strict";
 
+  /* Échappe un texte avant de l'insérer via innerHTML — nécessaire dès que le
+     texte peut contenir des caractères spéciaux HTML (&, <, >, "), ce qui est
+     le cas de tout texte saisi par un adhérent (titre de photo, nom affiché…). */
+  function echapperHtml(texte) {
+    const span = document.createElement("span");
+    span.textContent = texte;
+    return span.innerHTML;
+  }
+
   /* ---------- Navigation mobile ---------- */
   const toggle = document.querySelector(".nav-toggle");
   const links = document.querySelector(".nav-links");
@@ -154,12 +163,6 @@
     });
     if (!dropdown) return;
 
-    function echapper(texte) {
-      const span = document.createElement("span");
-      span.textContent = texte;
-      return span.innerHTML;
-    }
-
     fetch("espace/statut-connexion.php")
       .then(function (reponse) {
         return reponse.ok ? reponse.json() : Promise.reject();
@@ -191,7 +194,7 @@
             '<li><a href="espace/parametres.php">Réglages du site</a></li>'
           : "";
         menu.innerHTML =
-          '<li class="nav-dropdown-heading">Bonjour <strong>' + echapper(donnees.nom) + "</strong>" + badge + "</li>" +
+          '<li class="nav-dropdown-heading">Bonjour <strong>' + echapperHtml(donnees.nom) + "</strong>" + badge + "</li>" +
           '<li><a href="espace/deconnexion.php">Se déconnecter</a></li>' +
           '<li class="nav-dropdown-divider"></li>' +
           '<li><a href="espace/index.php">Tableau de bord</a></li>' +
@@ -242,10 +245,15 @@
 
   /* Une vraie photo (Galerie du Club, champ "image") s'affiche telle quelle ;
      une photo de démonstration (js/data.js, sans champ "image") garde son
-     dégradé de couleur généré. */
+     dégradé de couleur généré. Guillemets simples autour de l'URL : la
+     vignette insère ce résultat dans un attribut style="…" via innerHTML
+     (voir buildPhotoCard) — des guillemets doubles y refermeraient
+     prématurément l'attribut et videraient la vignette (constaté le
+     20/08/2026 : les photos de la Galerie du Club n'affichaient aucune
+     miniature, alors que le titre et la fiche s'affichaient normalement). */
   function photoBackground(photo) {
     return photo.image
-      ? 'center / cover no-repeat url("' + photo.image + '")'
+      ? "center / cover no-repeat url('" + photo.image + "')"
       : photoGradient(photo.hue, photo.index);
   }
 
@@ -334,8 +342,8 @@
       photoBackground(photo) +
       '"></span>' +
       '<span class="photo-caption">' +
-      '<span class="title">' + photo.titre + "</span>" +
-      '<span class="meta">' + membreNom + " · " + photo.theme + "</span>" +
+      '<span class="title">' + echapperHtml(photo.titre) + "</span>" +
+      '<span class="meta">' + echapperHtml(membreNom) + " · " + echapperHtml(photo.theme) + "</span>" +
       "</span>";
     card.addEventListener("click", function () {
       const idx = photosForLightbox.findIndex(function (p) {
@@ -346,23 +354,40 @@
     return card;
   }
 
-  /* ---------- Page d'accueil : sélection de photos ---------- */
+  /* ---------- Page d'accueil : sélection de photos ----------
+     Reprend les photos les plus récentes de la Galerie du Club (même point
+     d'accès que la page Galerie, voir plus bas) — il n'y a plus de photos de
+     démonstration depuis leur retrait le 20/08/2026. La section reste
+     masquée (attribut `hidden` posé en dur dans index.html) tant qu'aucune
+     photo réelle n'est encore disponible, plutôt que d'afficher une grille
+     vide sous un titre. */
+  const highlightSection = document.querySelector("[data-highlights-section]");
   const highlightGrid = document.querySelector("[data-highlights]");
-  if (highlightGrid) {
-    const pool = [];
-    CLUB_DATA.membres.forEach(function (m) {
-      m.photos.forEach(function (p, i) {
-        pool.push(Object.assign({}, p, { hue: m.hue, membreNom: m.nom, index: i }));
-      });
-    });
-    const picked = pool.filter(function (_, i) {
-      return i % 3 === 0;
-    }).slice(0, 8);
-    picked.forEach(function (photo) {
-      highlightGrid.appendChild(
-        buildPhotoCard(photo, photo.hue, photo.membreNom, photo.index, picked)
-      );
-    });
+  if (highlightSection && highlightGrid) {
+    fetch("infos-galerie-club.php")
+      .then(function (reponse) { return reponse.ok ? reponse.json() : Promise.reject(); })
+      .then(function (photosClub) {
+        if (!Array.isArray(photosClub) || !photosClub.length) return;
+
+        // Déjà triées des plus récentes aux plus anciennes par l'API.
+        const picked = photosClub.slice(0, 8).map(function (p) {
+          return {
+            titre: p.titre,
+            theme: p.categorie,
+            membreNom: p.auteur,
+            image: p.image,
+            hue: 0,
+            index: 0,
+          };
+        });
+        picked.forEach(function (photo) {
+          highlightGrid.appendChild(
+            buildPhotoCard(photo, photo.hue, photo.membreNom, photo.index, picked)
+          );
+        });
+        highlightSection.hidden = false;
+      })
+      .catch(function () {});
   }
 
   /* ---------- Page adhérents ---------- */
