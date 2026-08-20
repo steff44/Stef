@@ -22,12 +22,13 @@ Club Turballais**, club photo associatif de La Turballe (44).
 ```
 public_html/          ← racine du site, déployée telle quelle
   index.html          ← accueil : hero photo, cartes, galerie, CTA
-  galerie.html        ← galerie d'un adhérent, via ?id=<identifiant>
+  galerie.html        ← galerie publique : photos de démonstration + vraies photos de la Galerie du Club
   evenements.html     ← redirection vers espace/agenda.php (ne pas supprimer)
   membres.html        ← redirection vers espace/le-club.php (ne pas supprimer)
   contact.html
   connexion.html      ← redirection vers espace/connexion.php (ne pas supprimer)
   infos-club.php      ← API publique en lecture seule (coordonnées du club, voir plus bas)
+  infos-galerie-club.php ← API publique en lecture seule (photos de la Galerie du Club, voir plus bas)
   espace/             ← ESPACE ADHÉRENTS en PHP + MySQL (voir plus bas)
   css/style.css       ← tout le style, variables CSS en haut du fichier
   js/data.js          ← DONNÉES : adhérents + leurs photos
@@ -78,7 +79,7 @@ public_html/          ← racine du site, déployée telle quelle
   Celui-ci affiche « Bonjour {nom} » puis, juste en dessous, **« Se
   déconnecter »** (choix explicite de l'utilisateur : la déconnexion doit
   être la première action visible, pas la dernière), puis Tableau de bord,
-  Galerie privée, Documents, Agenda des sorties, Sorties à venir, Annuaire,
+  Galerie privée, Galerie du Club, Documents, Agenda des sorties, Sorties à venir, Annuaire,
   Le Club (+ Adhérents, Réglages du site pour un responsable). Les classes
   `.espace-barre`/`.espace-onglets` ont été supprimées avec cette bascule
   (17/08/2026) — ne pas les réintroduire.
@@ -119,6 +120,17 @@ public_html/          ← racine du site, déployée telle quelle
   jamais besoin de le poser à la main sur un nouveau champ. Le script
   enveloppe le champ dans `.champ-mot-de-passe` et y ajoute un bouton
   `.bouton-oeil` qui bascule `type="password"`/`type="text"`.
+- **Boutons flottants « section précédente » / « retour en haut »** (choix
+  explicite de l'utilisateur, 20/08/2026) : posés automatiquement par
+  `js/main.js` (`.retour-nav`, bas-droite de l'écran) sur toute page comptant
+  au moins deux `<section>` — générique, s'applique donc à toute page
+  publique ou de l'espace adhérents (y compris les pages réservées aux
+  responsables) sans rien ajouter à la main, y compris pour une page future.
+  Absent sur une page à une seule section (rien à survoler). Le premier
+  bouton remonte au début de la `<section>` précédente (pas seulement en
+  haut de la section actuelle) ; le second va toujours en haut de la page.
+  Les deux restent invisibles (`opacity:0` + `pointer-events:none`) tant que
+  la page n'a pas défilé d'au moins 60 % de la hauteur de l'écran.
 
 ## Modifier le contenu
 
@@ -168,29 +180,71 @@ un seul endroit : la constante `CATEGORIES_SORTIES` (le mapping couleur
 ce mapping retombe simplement sur le style « sortie » plutôt que de
 planter).
 
-**« Galerie » existe en double**, elle, publique et privée, sans aucun lien
-entre les deux : `galerie.html` (statique, démonstrative, alimentée par
-`js/data.js`) d'un côté, `galerie.php` (réelle, table `photos_privees`) de
-l'autre. Le lien « Galerie » du menu principal pointe **toujours** vers
-`galerie.html`, connecté ou non (choix explicite de l'utilisateur,
+**« Galerie » existe en trois versions**, sans confondre les deux publiques
+avec la privée : `galerie.html` (page publique, ouverte à tous) d'un côté,
+`galerie.php` (**Galerie privée**, réservée aux adhérents connectés, table
+`photos_privees`) de l'autre — et depuis le 20/08/2026, `galerie-club.php`
+(**Galerie du Club**, choix explicite de l'utilisateur) : un adhérent y
+dépose une photo, la classe dans une catégorie (portrait, paysage…), et
+cette photo devient **publique**, reprise automatiquement sur `galerie.html`
+(voir plus bas). Le lien « Galerie » du menu principal pointe **toujours**
+vers `galerie.html`, connecté ou non (choix explicite de l'utilisateur,
 19/08/2026, qui revient sur un choix inverse du 17/08/2026) : la galerie
-privée ne s'ouvre plus que depuis « Le Club » (`espace/le-club.php`) ou
-l'entrée « Galerie privée » du menu déroulant « {pseudo} connecté »
-(`galerie.php`, toujours listée dans `$onglets` de `espace/inc/page.php`).
-Avant ce changement, cliquer sur « Galerie » depuis une page de l'espace
-adhérents ouvrait la galerie privée — piège reconnu par l'utilisateur comme
-non voulu, à ne pas réintroduire.
+privée et la Galerie du Club ne s'ouvrent que depuis « Le Club »
+(`espace/le-club.php`) ou le menu déroulant « {pseudo} connecté »
+(`$onglets` de `espace/inc/page.php`). Avant ce changement, cliquer sur
+« Galerie » depuis une page de l'espace adhérents ouvrait la galerie privée
+— piège reconnu par l'utilisateur comme non voulu, à ne pas réintroduire.
 
 **« Le Club » (`espace/le-club.php`)** est réservé aux adhérents connectés
 depuis le 18/08/2026 (choix explicite de l'utilisateur) : `exige_connexion()`
 protège la page, avec un message dédié — « Adhérents seulement. » posé par
 `definir_message()` avant le renvoi vers `connexion.php`, plutôt que le
 silence habituel de `exige_connexion()` — pour qu'un visiteur non connecté
-comprenne pourquoi il atterrit sur la page de connexion. Le contenu a été
-volontairement réduit à deux cartes (`.cards-grid`/`.feature-card`, même
-présentation que le tableau de bord) : **Documents du Club** → `documents.php`
-et **Galerie Privée** → `galerie.php`. L'ancienne liste publique des
-adhérents qui vivait ici (`membres.html`) a été entièrement effacée.
+comprenne pourquoi il atterrit sur la page de connexion. Trois cartes
+(`.cards-grid`/`.feature-card`, même présentation que le tableau de bord) :
+**Documents du Club** → `documents.php`, **Galerie Privée** → `galerie.php`
+et **Galerie du Club** → `galerie-club.php` (ajoutée le 20/08/2026).
+L'ancienne liste publique des adhérents qui vivait ici (`membres.html`) a
+été entièrement effacée.
+
+**`galerie-club.php` : les adhérents déposent des photos qui deviennent
+publiques**, classées par catégorie (choix explicite de l'utilisateur,
+20/08/2026). Contrairement à `galerie.php` (Galerie privée, jamais visible
+hors connexion), ces photos sont reprises sur la page publique
+`galerie.html`. Catégories à plat (pas de rubriques, contrairement aux
+documents) dans la table `categories_galerie`, gérées par un responsable
+depuis `parametres.php` (`ajouter_categorie_galerie` / `renommer_...` /
+`supprimer_...`, refusé si des photos y sont encore classées) — semées une
+seule fois avec `CATEGORIES_GALERIE_PAR_DEFAUT` (`inc/migration.php`, reprend
+les catégories de la rubrique « Thèmes photographiques » des documents).
+Tout adhérent peut déposer (titre, catégorie, nom affiché facultatif — pour
+signer autrement que son identifiant de connexion —, note facultative) ;
+seul l'auteur ou un responsable peut supprimer sa photo (même règle que
+`galerie.php`). La catégorie n'est pas répétée sur chaque photo : elle est
+déjà donnée par le titre du groupe (`inc/photo-club-carte.php`, partiel
+inclus une fois par catégorie non vide, même principe que
+`inc/document-ligne.php`). Fichiers dans `espace/photos_club/` (fermé par
+`.htaccess`), servis par `telecharger.php?type=galerie_club` — **public**,
+comme `type=sortie`, contrairement à `type=photo`/`document` qui exigent une
+connexion.
+
+**La page publique `galerie.html` affiche les vraies photos de la Galerie du
+Club, par-dessus les photos de démonstration.** `infos-galerie-club.php`
+(à la racine, hors de `espace/` — même principe qu'`infos-club.php` : public
+par conception, connexion autonome à la base, jamais de dépendance à une
+page de l'espace déjà visitée) renvoie en JSON les photos de `photos_club`
+avec leur catégorie et leur auteur affiché. `js/main.js` les ajoute au
+tableau de photos de démonstration existant (`CLUB_DATA` de `js/data.js`) —
+la grille et les filtres par thème s'affichent donc immédiatement avec la
+démo, puis se complètent sans à-coup dès que l'appel réussit ; il échoue
+silencieusement sinon (hors ligne, ou préversion GitHub Pages, qui ne peut
+pas exécuter PHP), laissant la démo seule comme repli. Une vraie photo
+affiche l'image réelle (`background: url(...)`) là où une photo de
+démonstration garde son dégradé de couleur généré
+(`photoBackground()` dans `main.js` choisit entre les deux). Toute catégorie
+de photo inconnue de `CLUB_DATA.themes` s'ajoute automatiquement aux
+filtres.
 
 **`documents.php` range les documents par rubrique et catégorie, éditables
 par un responsable** (choix explicite de l'utilisateur, 20/08/2026 — la
@@ -295,17 +349,17 @@ nom/identifiant/contact).
 ```
 espace/
   connexion.php  deconnexion.php  inscription.php  index.php    ← tableau de bord
-  galerie.php    documents.php    agenda.php       annuaire.php
+  galerie.php    galerie-club.php documents.php     agenda.php   annuaire.php
   adherents.php      ← gestion des comptes, responsables uniquement
   parametres.php     ← coordonnées du club affichées sur le site public, responsables uniquement
   installation.php   ← à jouer UNE fois, se verrouille ensuite tout seul
-  telecharger.php    ← seule porte d'accès aux fichiers privés
+  telecharger.php    ← seule porte d'accès aux fichiers privés (+ types publics : sortie, galerie_club)
   statut-connexion.php ← état de connexion en JSON, pour js/main.js sur les pages statiques
   inc/               ← code interne, fermé par .htaccess
     config.local.php ← À CRÉER À LA MAIN SUR LE SERVEUR, jamais dans Git
     config.example.php  db.php  auth.php  page.php  televersement.php
     mail.php  schema.sql
-  photos/  fichiers/  ← dépôts, fermés par .htaccess
+  photos/  photos_club/  fichiers/  ← dépôts, fermés par .htaccess
 ```
 
 Points à ne pas casser :
@@ -383,7 +437,7 @@ Points à ne pas casser :
   rendu connecté côté serveur (repéré par l'absence de
   `.nav-dropdown-label`), et reconstruit alors le libellé et le sous-menu à
   l'identique de `page.php` (Bonjour {nom}, Se déconnecter, Tableau de bord,
-  Galerie privée, Documents, Agenda des sorties, Sorties à venir, Annuaire,
+  Galerie privée, Galerie du Club, Documents, Agenda des sorties, Sorties à venir, Annuaire,
   Le Club, + Adhérents/Réglages du site pour un responsable). Sur les pages
   déjà connectées côté serveur (`espace/*.php`), ce script ne fait rien —
   il ne fait que compléter ce que PHP n'a pas pu savoir sur les pages

@@ -196,6 +196,7 @@
           '<li class="nav-dropdown-divider"></li>' +
           '<li><a href="espace/index.php">Tableau de bord</a></li>' +
           '<li><a href="espace/galerie.php">Galerie privée</a></li>' +
+          '<li><a href="espace/galerie-club.php">Galerie du Club</a></li>' +
           '<li><a href="espace/documents.php">Documents</a></li>' +
           '<li><a href="espace/agenda.php">Agenda des sorties</a></li>' +
           '<li><a href="espace/sorties-a-venir.php">Sorties à venir</a></li>' +
@@ -239,6 +240,15 @@
     return "linear-gradient(135deg, hsl(" + hue + " 70% 62%), hsl(" + ((hue + 50) % 360) + " 55% 42%))";
   }
 
+  /* Une vraie photo (Galerie du Club, champ "image") s'affiche telle quelle ;
+     une photo de démonstration (js/data.js, sans champ "image") garde son
+     dégradé de couleur généré. */
+  function photoBackground(photo) {
+    return photo.image
+      ? 'center / cover no-repeat url("' + photo.image + '")'
+      : photoGradient(photo.hue, photo.index);
+  }
+
   /* ---------- Lightbox ---------- */
   const lightbox = document.querySelector("[data-lightbox]");
   let activePhotos = [];
@@ -280,10 +290,15 @@
   function renderLightbox() {
     const photo = activePhotos[activeIndex];
     const frame = lightbox.querySelector(".lightbox-frame");
-    frame.style.background = photoGradient(photo.hue, photo.index);
+    frame.style.background = photoBackground(photo);
     lightbox.querySelector(".lightbox-title").textContent = photo.titre;
     lightbox.querySelector(".lightbox-meta").textContent =
       photo.membreNom + " — " + photo.theme;
+    const descriptionEl = lightbox.querySelector(".lightbox-description");
+    if (descriptionEl) {
+      descriptionEl.textContent = photo.description || "";
+      descriptionEl.hidden = !photo.description;
+    }
   }
 
   if (lightbox) {
@@ -316,7 +331,7 @@
     card.setAttribute("aria-label", "Voir la photo : " + photo.titre);
     card.innerHTML =
       '<span class="photo-frame" style="display:block;aspect-ratio:4/3;background:' +
-      photoGradient(hue, index) +
+      photoBackground(photo) +
       '"></span>' +
       '<span class="photo-caption">' +
       '<span class="title">' + photo.titre + "</span>" +
@@ -403,7 +418,12 @@
     }
 
     const toutesLesPhotos = "Toutes";
-    [toutesLesPhotos].concat(CLUB_DATA.themes).forEach(function (theme) {
+    const themesConnus = [];
+
+    function addThemeFilter(theme) {
+      if (themesConnus.indexOf(theme) !== -1) return;
+      themesConnus.push(theme);
+
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "theme-filter";
@@ -418,9 +438,37 @@
         renderGrid();
       });
       filtersRoot.appendChild(btn);
-    });
+    }
 
+    [toutesLesPhotos].concat(CLUB_DATA.themes).forEach(addThemeFilter);
     renderGrid();
+
+    /* ---------- Vraies photos de la Galerie du Club (espace/galerie-club.php) ----------
+       Ajoutées par-dessus les photos de démonstration une fois chargées : la
+       grille et les filtres s'affichent donc immédiatement avec la démo, puis
+       se complètent sans à-coup. Silencieusement ignoré si l'appel échoue
+       (hors ligne, ou préversion GitHub Pages, qui ne peut pas exécuter PHP) —
+       comme pour infos-club.php. */
+    fetch("infos-galerie-club.php")
+      .then(function (reponse) { return reponse.ok ? reponse.json() : Promise.reject(); })
+      .then(function (photosClub) {
+        if (!Array.isArray(photosClub) || !photosClub.length) return;
+
+        photosClub.forEach(function (p) {
+          pool.push({
+            titre: p.titre,
+            theme: p.categorie,
+            description: p.description,
+            membreNom: p.auteur,
+            image: p.image,
+            hue: 0,
+            index: 0,
+          });
+          addThemeFilter(p.categorie);
+        });
+        renderGrid();
+      })
+      .catch(function () {});
 
     const diaporamaBtn = document.querySelector("[data-start-diaporama]");
     if (diaporamaBtn) {
@@ -432,5 +480,55 @@
       });
     }
   }
+
+  /* ---------- Boutons « section précédente » / « retour en haut » ----------
+     Génériques : posés sur toute page ayant au moins deux <section>, qu'elle
+     soit publique ou dans l'espace adhérents (page.php partage ce même
+     script) — jamais besoin de les ajouter à la main sur une page neuve. */
+  (function () {
+    const sections = Array.from(document.querySelectorAll("main section"));
+    if (sections.length < 2) return;
+
+    const nav = document.createElement("div");
+    nav.className = "retour-nav";
+    nav.innerHTML =
+      '<button type="button" class="retour-bouton retour-section" aria-label="Remonter à la section précédente">' +
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="18 15 12 9 6 15"></polyline></svg>' +
+      "</button>" +
+      '<button type="button" class="retour-bouton retour-haut" aria-label="Retour en haut de la page">' +
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="18 11 12 5 6 11"></polyline><polyline points="18 18 12 12 6 18"></polyline></svg>' +
+      "</button>";
+    document.body.appendChild(nav);
+
+    // Index de la section dont le haut est déjà dépassé (ou en vue) — la
+    // dernière dont offsetTop est sous le décalage de l'en-tête collant.
+    function sectionActuelle() {
+      const seuil = window.scrollY + 90;
+      let idx = 0;
+      sections.forEach(function (s, i) {
+        if (s.offsetTop <= seuil) idx = i;
+      });
+      return idx;
+    }
+
+    nav.querySelector(".retour-section").addEventListener("click", function () {
+      const idx = sectionActuelle();
+      if (idx > 0) {
+        sections[idx - 1].scrollIntoView({ behavior: "smooth", block: "start" });
+      } else {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    });
+
+    nav.querySelector(".retour-haut").addEventListener("click", function () {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+
+    function actualiserVisibilite() {
+      nav.classList.toggle("is-visible", window.scrollY > window.innerHeight * 0.6);
+    }
+    window.addEventListener("scroll", actualiserVisibilite, { passive: true });
+    actualiserVisibilite();
+  })();
 
 })();

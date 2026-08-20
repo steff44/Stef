@@ -38,12 +38,13 @@ function debut_page(string $titre, string $page_active = ''): void
 {
     $adherent = adherent_connecte();
     $onglets  = [
-        'index'     => ['Tableau de bord',   'index.php'],
-        'galerie'   => ['Galerie privée',    'galerie.php'],
-        'documents' => ['Documents',         'documents.php'],
-        'agenda'    => ['Agenda des sorties', 'agenda.php'],
-        'sorties'   => ['Sorties à venir',   'sorties-a-venir.php'],
-        'annuaire'  => ['Annuaire',          'annuaire.php'],
+        'index'        => ['Tableau de bord',   'index.php'],
+        'galerie'      => ['Galerie privée',    'galerie.php'],
+        'galerie-club' => ['Galerie du Club',   'galerie-club.php'],
+        'documents'    => ['Documents',         'documents.php'],
+        'agenda'       => ['Agenda des sorties', 'agenda.php'],
+        'sorties'      => ['Sorties à venir',   'sorties-a-venir.php'],
+        'annuaire'     => ['Annuaire',          'annuaire.php'],
     ];
     if (est_administrateur()) {
         $onglets['adherents']   = ['Adhérents', 'adherents.php'];

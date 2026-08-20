@@ -1,0 +1,13 @@
+# Les photos de la Galerie du Club sont publiques une fois en ligne (elles
+# apparaissent aussi sur galerie.html), mais l'accès direct par URL reste
+# interdit : elles passent toujours par telecharger.php (type=galerie_club),
+# qui retrouve le nom de fichier en base plutôt que de le prendre dans l'URL.
+
+<IfModule mod_authz_core.c>
+  Require all denied
+</IfModule>
+
+<IfModule !mod_authz_core.c>
+  Order deny,allow
+  Deny from all
+</IfModule>

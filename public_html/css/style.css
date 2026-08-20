@@ -800,6 +800,12 @@ a {
   font-size: 1.1rem;
   margin-bottom: 4px;
 }
+.lightbox-description {
+  margin: 10px auto 0;
+  max-width: 60ch;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
 .lightbox-close,
 .lightbox-prev,
 .lightbox-next {
@@ -1259,13 +1265,15 @@ a {
   max-width: 420px;
   margin: 0 0 32px;
 }
-.rubrique-documents {
+.rubrique-documents,
+.groupe-galerie-club {
   margin: 0 0 36px;
 }
-.rubrique-documents h2 {
+.rubrique-documents h2,
+.groupe-galerie-club h2 {
   font-family: var(--font-heading);
   font-size: 1.3rem;
-  margin: 0 0 4px;
+  margin: 0 0 16px;
   padding-bottom: 10px;
   border-bottom: 1px solid var(--border);
 }
@@ -1887,5 +1895,54 @@ a {
   }
   .field-row {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Boutons flottants « section précédente » / « retour en haut », posés par
+   main.js sur toute page ayant au moins deux sections — génériques, aucune
+   page (présente ou future) n'a besoin de les déclarer elle-même. */
+.retour-nav {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.retour-nav.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+.retour-bouton {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: rgba(15, 15, 40, 0.85);
+  backdrop-filter: blur(6px);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+.retour-bouton:hover {
+  background: var(--accent-gradient);
+  border-color: transparent;
+  transform: translateY(-2px);
+}
+.retour-bouton svg {
+  width: 18px;
+  height: 18px;
+}
+@media (max-width: 640px) {
+  .retour-nav {
+    right: 14px;
+    bottom: 14px;
   }
 }

@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/inc/page.php';
 require_once __DIR__ . '/inc/documents_categories.php';
+require_once __DIR__ . '/inc/galerie_club.php';
 
 exige_administrateur();
 $pdo = base_de_donnees();
@@ -46,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id  = (int) ($_POST['id'] ?? 0);
         $nom = trim((string) ($_POST['nom'] ?? ''));
 
-        if (in_array($action, ['ajouter_rubrique', 'renommer_rubrique', 'ajouter_categorie', 'renommer_categorie'], true) && $nom === '') {
+        if (in_array($action, ['ajouter_rubrique', 'renommer_rubrique', 'ajouter_categorie', 'renommer_categorie', 'ajouter_categorie_galerie', 'renommer_categorie_galerie'], true) && $nom === '') {
             definir_message('erreur', "Le nom ne peut pas être vide.");
         } elseif ($action === 'ajouter_rubrique') {
             $ordre = (int) $pdo->query('SELECT COALESCE(MAX(ordre), -1) FROM rubriques_documents')->fetchColumn() + 1;
@@ -98,6 +99,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 definir_message('erreur', "{$nb_documents} document(s) sont classés dans cette catégorie — déplacez-les ou supprimez-les d'abord.");
             } else {
                 $pdo->prepare('DELETE FROM categories_documents WHERE id = ?')->execute([$id]);
+                definir_message('succes', "Catégorie supprimée.");
+            }
+
+        } elseif ($action === 'ajouter_categorie_galerie') {
+            $ordre = (int) $pdo->query('SELECT COALESCE(MAX(ordre), -1) FROM categories_galerie')->fetchColumn() + 1;
+            $pdo->prepare('INSERT INTO categories_galerie (nom, ordre) VALUES (?, ?)')->execute([$nom, $ordre]);
+            definir_message('succes', "Catégorie « {$nom} » ajoutée.");
+
+        } elseif ($action === 'renommer_categorie_galerie') {
+            $pdo->prepare('UPDATE categories_galerie SET nom = ? WHERE id = ?')->execute([$nom, $id]);
+            definir_message('succes', "Catégorie renommée en « {$nom} ».");
+
+        } elseif ($action === 'supprimer_categorie_galerie') {
+            $requete = $pdo->prepare('SELECT COUNT(*) FROM photos_club WHERE categorie_id = ?');
+            $requete->execute([$id]);
+            $nb_photos = (int) $requete->fetchColumn();
+
+            if ($nb_photos > 0) {
+                definir_message('erreur', "{$nb_photos} photo(s) sont classées dans cette catégorie — déplacez-les ou supprimez-les d'abord.");
+            } else {
+                $pdo->prepare('DELETE FROM categories_galerie WHERE id = ?')->execute([$id]);
                 definir_message('succes', "Catégorie supprimée.");
             }
         }
@@ -155,7 +177,8 @@ foreach ($requete->fetchAll() as $ligne) {
     $actuel[$ligne['cle']] = $ligne['valeur'];
 }
 
-$rubriques = rubriques_documents($pdo);
+$rubriques           = rubriques_documents($pdo);
+$categories_galerie  = categories_galerie($pdo);
 
 debut_page("Réglages du site", 'parametres');
 titre_page(
@@ -294,6 +317,42 @@ titre_page(
       <input type="text" name="nom" maxlength="120" required placeholder="Nouvelle rubrique">
       <button type="submit" class="btn btn-primary">Ajouter une rubrique</button>
     </form>
+  </div>
+
+  <div class="form-card reglage-rubriques" style="max-width:640px;margin-top:32px;">
+    <h2 style="font-family:var(--font-heading);font-size:1.2rem;margin:0 0 6px;">Catégories de la Galerie du Club</h2>
+    <p class="form-note" style="margin-top:0;margin-bottom:20px;">
+      Ces catégories organisent la Galerie du Club et les filtres de la page Galerie.
+      Une catégorie contenant encore des photos ne peut pas être supprimée.
+    </p>
+
+    <ul class="reglage-categories" style="padding-left:0;">
+      <?php foreach ($categories_galerie as $categorie_id => $nom_categorie): ?>
+        <li class="reglage-ligne">
+          <form method="post" class="reglage-forme-nom">
+            <?= champ_csrf() ?>
+            <input type="hidden" name="action" value="renommer_categorie_galerie">
+            <input type="hidden" name="id" value="<?= $categorie_id ?>">
+            <input type="text" name="nom" value="<?= e($nom_categorie) ?>" maxlength="120" required>
+            <button type="submit" class="btn btn-ghost">Renommer</button>
+          </form>
+          <form method="post" onsubmit="return confirm('Supprimer la catégorie « <?= e(addslashes($nom_categorie)) ?> » ?');">
+            <?= champ_csrf() ?>
+            <input type="hidden" name="action" value="supprimer_categorie_galerie">
+            <input type="hidden" name="id" value="<?= $categorie_id ?>">
+            <button type="submit" class="lien-danger">Supprimer</button>
+          </form>
+        </li>
+      <?php endforeach; ?>
+      <li class="reglage-ligne">
+        <form method="post" class="reglage-forme-nom">
+          <?= champ_csrf() ?>
+          <input type="hidden" name="action" value="ajouter_categorie_galerie">
+          <input type="text" name="nom" maxlength="120" required placeholder="Nouvelle catégorie">
+          <button type="submit" class="btn btn-ghost">Ajouter</button>
+        </form>
+      </li>
+    </ul>
   </div>
 </div></section>
 <?php

@@ -83,6 +83,22 @@ const RUBRIQUES_DOCUMENTS_PAR_DEFAUT = [
     ],
 ];
 
+// Catégories par défaut de la Galerie du Club (espace/galerie-club.php),
+// semées une seule fois — la première fois que `categories_galerie` est
+// créée — par appliquer_migrations() ci-dessous. Reprend les catégories de
+// la rubrique « Thèmes photographiques » des documents, pour partir d'une
+// liste cohérente ; un responsable la modifie ensuite depuis parametres.php.
+const CATEGORIES_GALERIE_PAR_DEFAUT = [
+    'Portrait',
+    'Paysage',
+    'Macro',
+    'Nature',
+    'Street',
+    'Architecture',
+    'Noir & Blanc',
+    'Créatif',
+];
+
 // Coordonnées du club, modifiables par un responsable depuis parametres.php
 // et affichées sur les pages publiques statiques via infos-club.php. Les
 // valeurs par défaut reprennent EXACTEMENT ce qui est déjà écrit en dur dans
@@ -233,6 +249,43 @@ function appliquer_migrations(PDO $pdo): void
         $reussi = false;
     }
 
+    try {
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS categories_galerie (
+                id    INT AUTO_INCREMENT PRIMARY KEY,
+                nom   VARCHAR(120) NOT NULL,
+                ordre INT          NOT NULL DEFAULT 0
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS photos_club (
+                id           INT AUTO_INCREMENT PRIMARY KEY,
+                titre        VARCHAR(190) NOT NULL,
+                description  TEXT         DEFAULT NULL,
+                nom_affiche  VARCHAR(120) DEFAULT NULL,
+                fichier      VARCHAR(190) NOT NULL,
+                categorie_id INT          DEFAULT NULL,
+                depose_par   INT          DEFAULT NULL,
+                cree_le      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT fk_photo_club_categorie FOREIGN KEY (categorie_id) REFERENCES categories_galerie(id) ON DELETE SET NULL,
+                CONSTRAINT fk_photo_club_adherent  FOREIGN KEY (depose_par)   REFERENCES adherents(id)          ON DELETE SET NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+
+        // Même principe que rubriques_documents plus haut : semé une seule
+        // fois, jamais réintroduit si un responsable a depuis tout supprimé.
+        if ((int) $pdo->query('SELECT COUNT(*) FROM categories_galerie')->fetchColumn() === 0) {
+            $inserer = $pdo->prepare('INSERT INTO categories_galerie (nom, ordre) VALUES (?, ?)');
+            $ordre   = 0;
+            foreach (CATEGORIES_GALERIE_PAR_DEFAUT as $nom_categorie) {
+                $inserer->execute([$nom_categorie, $ordre++]);
+            }
+        }
+    } catch (PDOException $e) {
+        error_log('Espace adhérents — migration categories_galerie : ' . $e->getMessage());
+        $reussi = false;
+    }
+
     if ($reussi) {
         @file_put_contents($temoin, signature_schema());
     }
@@ -246,7 +299,8 @@ function signature_schema(): string
         implode('|', array_keys(COLONNES_SORTIES_ATTENDUES)) . '||' .
         implode('|', array_keys(COLONNES_DOCUMENTS_ATTENDUES)) . '||' .
         implode('|', array_keys(PARAMETRES_PAR_DEFAUT)) . '||' .
-        'rubriques_documents_v1'
+        'rubriques_documents_v1' . '||' .
+        'categories_galerie_v1'
     );
 }
 
