@@ -18,6 +18,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/inc/page.php';
+require_once __DIR__ . '/inc/documents_categories.php';
 
 exige_administrateur();
 $pdo = base_de_donnees();
@@ -35,6 +36,75 @@ const CHAMPS = [
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verifier_csrf();
+    $action = (string) ($_POST['action'] ?? '');
+
+    // Rubriques et catégories des documents (voir inc/documents_categories.php) :
+    // un formulaire par action, sur le même principe que adherents.php. Le
+    // gros formulaire des coordonnées du club, plus bas, ne porte pas de
+    // champ « action » — c'est ce qui distingue les deux.
+    if ($action !== '') {
+        $id  = (int) ($_POST['id'] ?? 0);
+        $nom = trim((string) ($_POST['nom'] ?? ''));
+
+        if (in_array($action, ['ajouter_rubrique', 'renommer_rubrique', 'ajouter_categorie', 'renommer_categorie'], true) && $nom === '') {
+            definir_message('erreur', "Le nom ne peut pas être vide.");
+        } elseif ($action === 'ajouter_rubrique') {
+            $ordre = (int) $pdo->query('SELECT COALESCE(MAX(ordre), -1) FROM rubriques_documents')->fetchColumn() + 1;
+            $pdo->prepare('INSERT INTO rubriques_documents (nom, ordre) VALUES (?, ?)')->execute([$nom, $ordre]);
+            definir_message('succes', "Rubrique « {$nom} » ajoutée.");
+
+        } elseif ($action === 'renommer_rubrique') {
+            $pdo->prepare('UPDATE rubriques_documents SET nom = ? WHERE id = ?')->execute([$nom, $id]);
+            definir_message('succes', "Rubrique renommée en « {$nom} ».");
+
+        } elseif ($action === 'supprimer_rubrique') {
+            $requete = $pdo->prepare('SELECT COUNT(*) FROM categories_documents WHERE rubrique_id = ?');
+            $requete->execute([$id]);
+            $nb_categories = (int) $requete->fetchColumn();
+
+            if ($nb_categories > 0) {
+                definir_message('erreur', "Cette rubrique contient encore {$nb_categories} catégorie(s) — supprimez-les d'abord.");
+            } else {
+                $pdo->prepare('DELETE FROM rubriques_documents WHERE id = ?')->execute([$id]);
+                definir_message('succes', "Rubrique supprimée.");
+            }
+
+        } elseif ($action === 'ajouter_categorie') {
+            $rubrique_id = (int) ($_POST['rubrique_id'] ?? 0);
+            $requete     = $pdo->prepare('SELECT COUNT(*) FROM rubriques_documents WHERE id = ?');
+            $requete->execute([$rubrique_id]);
+
+            if (!$requete->fetchColumn()) {
+                definir_message('erreur', "Rubrique introuvable.");
+            } else {
+                $requete_ordre = $pdo->prepare('SELECT COALESCE(MAX(ordre), -1) FROM categories_documents WHERE rubrique_id = ?');
+                $requete_ordre->execute([$rubrique_id]);
+                $ordre = (int) $requete_ordre->fetchColumn() + 1;
+                $pdo->prepare('INSERT INTO categories_documents (rubrique_id, nom, ordre) VALUES (?, ?, ?)')
+                    ->execute([$rubrique_id, $nom, $ordre]);
+                definir_message('succes', "Catégorie « {$nom} » ajoutée.");
+            }
+
+        } elseif ($action === 'renommer_categorie') {
+            $pdo->prepare('UPDATE categories_documents SET nom = ? WHERE id = ?')->execute([$nom, $id]);
+            definir_message('succes', "Catégorie renommée en « {$nom} ».");
+
+        } elseif ($action === 'supprimer_categorie') {
+            $requete = $pdo->prepare('SELECT COUNT(*) FROM documents WHERE categorie_id = ?');
+            $requete->execute([$id]);
+            $nb_documents = (int) $requete->fetchColumn();
+
+            if ($nb_documents > 0) {
+                definir_message('erreur', "{$nb_documents} document(s) sont classés dans cette catégorie — déplacez-les ou supprimez-les d'abord.");
+            } else {
+                $pdo->prepare('DELETE FROM categories_documents WHERE id = ?')->execute([$id]);
+                definir_message('succes', "Catégorie supprimée.");
+            }
+        }
+
+        header('Location: parametres.php');
+        exit;
+    }
 
     $valeurs = [];
     foreach (CHAMPS as $cle => $libelle) {
@@ -84,6 +154,8 @@ $actuel  = [];
 foreach ($requete->fetchAll() as $ligne) {
     $actuel[$ligne['cle']] = $ligne['valeur'];
 }
+
+$rubriques = rubriques_documents($pdo);
 
 debut_page("Réglages du site", 'parametres');
 titre_page(
@@ -159,6 +231,70 @@ titre_page(
     <button type="submit" class="btn btn-primary" style="width:100%;">Enregistrer</button>
     <p class="form-note">Les visiteurs déjà sur le site verront le changement à leur prochaine visite, ou après quelques minutes si leur page reste ouverte.</p>
   </form>
+
+  <div class="form-card reglage-rubriques" style="max-width:640px;margin-top:32px;">
+    <h2 style="font-family:var(--font-heading);font-size:1.2rem;margin:0 0 6px;">Rubriques des documents</h2>
+    <p class="form-note" style="margin-top:0;margin-bottom:20px;">
+      Ces rubriques et catégories organisent la page « Documents du club ». Une rubrique ou
+      une catégorie contenant encore des documents ne peut pas être supprimée.
+    </p>
+
+    <?php foreach ($rubriques as $rubrique_id => $rubrique): ?>
+      <div class="rubrique-reglage">
+        <div class="reglage-ligne reglage-ligne--rubrique">
+          <form method="post" class="reglage-forme-nom">
+            <?= champ_csrf() ?>
+            <input type="hidden" name="action" value="renommer_rubrique">
+            <input type="hidden" name="id" value="<?= $rubrique_id ?>">
+            <input type="text" name="nom" value="<?= e($rubrique['nom']) ?>" maxlength="120" required>
+            <button type="submit" class="btn btn-ghost">Renommer</button>
+          </form>
+          <form method="post" onsubmit="return confirm('Supprimer la rubrique « <?= e(addslashes($rubrique['nom'])) ?> » ?');">
+            <?= champ_csrf() ?>
+            <input type="hidden" name="action" value="supprimer_rubrique">
+            <input type="hidden" name="id" value="<?= $rubrique_id ?>">
+            <button type="submit" class="lien-danger">Supprimer</button>
+          </form>
+        </div>
+
+        <ul class="reglage-categories">
+          <?php foreach ($rubrique['categories'] as $categorie_id => $nom_categorie): ?>
+            <li class="reglage-ligne">
+              <form method="post" class="reglage-forme-nom">
+                <?= champ_csrf() ?>
+                <input type="hidden" name="action" value="renommer_categorie">
+                <input type="hidden" name="id" value="<?= $categorie_id ?>">
+                <input type="text" name="nom" value="<?= e($nom_categorie) ?>" maxlength="120" required>
+                <button type="submit" class="btn btn-ghost">Renommer</button>
+              </form>
+              <form method="post" onsubmit="return confirm('Supprimer la catégorie « <?= e(addslashes($nom_categorie)) ?> » ?');">
+                <?= champ_csrf() ?>
+                <input type="hidden" name="action" value="supprimer_categorie">
+                <input type="hidden" name="id" value="<?= $categorie_id ?>">
+                <button type="submit" class="lien-danger">Supprimer</button>
+              </form>
+            </li>
+          <?php endforeach; ?>
+          <li class="reglage-ligne">
+            <form method="post" class="reglage-forme-nom">
+              <?= champ_csrf() ?>
+              <input type="hidden" name="action" value="ajouter_categorie">
+              <input type="hidden" name="rubrique_id" value="<?= $rubrique_id ?>">
+              <input type="text" name="nom" maxlength="120" required placeholder="Nouvelle catégorie">
+              <button type="submit" class="btn btn-ghost">Ajouter</button>
+            </form>
+          </li>
+        </ul>
+      </div>
+    <?php endforeach; ?>
+
+    <form method="post" class="reglage-forme-nom reglage-forme-rubrique">
+      <?= champ_csrf() ?>
+      <input type="hidden" name="action" value="ajouter_rubrique">
+      <input type="text" name="nom" maxlength="120" required placeholder="Nouvelle rubrique">
+      <button type="submit" class="btn btn-primary">Ajouter une rubrique</button>
+    </form>
+  </div>
 </div></section>
 <?php
 fin_page();
