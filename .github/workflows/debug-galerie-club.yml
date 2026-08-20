@@ -1,0 +1,78 @@
+name: Debug temporaire — Galerie du Club
+
+# Workflow JETABLE pour diagnostiquer pourquoi une photo déposée dans la
+# Galerie du Club n'apparaît pas sur la page publique Galerie. Interroge le
+# site en ligne (myfocal.online), bloqué depuis le sandbox Claude Code — même
+# principe que documenté dans CLAUDE.md pour inspecter un domaine externe. À
+# supprimer une fois le diagnostic terminé.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnostiquer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Installer Playwright
+        run: |
+          npm init -y > /dev/null
+          npm install playwright@1 > /dev/null
+          npx playwright install --with-deps chromium
+
+      - name: Interroger l'API publique de la Galerie du Club
+        run: |
+          echo "=== infos-galerie-club.php ==="
+          curl -s -D - "https://myfocal.online/infos-galerie-club.php" || echo "ECHEC CURL"
+          echo ""
+
+      - name: Charger la page Galerie et inspecter le rendu
+        run: |
+          cat > check.js << 'EOF'
+          const { chromium } = require('playwright');
+          (async () => {
+            const browser = await chromium.launch();
+            const page = await browser.newPage();
+            const reponsesJson = [];
+            page.on('response', async (res) => {
+              if (res.url().includes('infos-galerie-club.php')) {
+                let corps = '';
+                try { corps = await res.text(); } catch (e) { corps = 'ERREUR LECTURE: ' + e; }
+                reponsesJson.push({ url: res.url(), status: res.status(), corps });
+              }
+            });
+            const erreursConsole = [];
+            page.on('console', (msg) => erreursConsole.push(msg.type() + ': ' + msg.text()));
+            page.on('pageerror', (err) => erreursConsole.push('PAGEERROR: ' + err));
+
+            await page.goto('https://myfocal.online/galerie.html', { waitUntil: 'networkidle', timeout: 30000 });
+            await page.waitForTimeout(1500);
+
+            const titres = await page.locator('.photo-card .title').allInnerTexts();
+            const filtres = await page.locator('.theme-filter').allInnerTexts();
+
+            console.log('=== Réponses réseau infos-galerie-club.php ===');
+            console.log(JSON.stringify(reponsesJson, null, 2));
+            console.log('=== Filtres de thème affichés ===');
+            console.log(JSON.stringify(filtres, null, 2));
+            console.log('=== Titres de photos affichés (' + titres.length + ' cartes) ===');
+            console.log(JSON.stringify(titres, null, 2));
+            console.log('=== Console / erreurs JS ===');
+            console.log(JSON.stringify(erreursConsole, null, 2));
+
+            await page.screenshot({ path: 'galerie.png', fullPage: true });
+            await browser.close();
+          })();
+          EOF
+          node check.js
+
+      - name: Capture en base64 (repli si les logs tronquent l'image)
+        if: always()
+        run: base64 -w 0 galerie.png > galerie.b64 2>/dev/null && wc -c galerie.b64 || echo "pas de capture"
+
+      - name: Afficher la capture en base64
+        if: always()
+        run: cat galerie.b64 2>/dev/null || echo "rien à afficher"
