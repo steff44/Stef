@@ -1,13 +1,18 @@
 <?php
 /*
- * Galerie privée : photos visibles uniquement par les adhérents connectés.
- * Tout adhérent peut déposer ; seul l'auteur ou un responsable peut supprimer.
+ * Galerie privée : photos visibles uniquement par les adhérents connectés,
+ * classées par catégorie — mêmes catégories et mêmes champs que la Galerie
+ * du Club (voir galerie-club.php et inc/galerie_categories.php), choix
+ * explicite de l'utilisateur, 21/08/2026. Contrairement à la Galerie du
+ * Club, ces photos restent réservées aux adhérents. Tout adhérent peut
+ * déposer ; seul l'auteur ou un responsable peut supprimer.
  */
 
 declare(strict_types=1);
 
 require_once __DIR__ . '/inc/page.php';
 require_once __DIR__ . '/inc/televersement.php';
+require_once __DIR__ . '/inc/galerie_categories.php';
 
 $adherent = exige_connexion();
 $pdo      = base_de_donnees();
@@ -29,9 +34,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             definir_message('erreur', "Vous ne pouvez supprimer que vos propres photos.");
         }
     } else {
-        $titre = trim((string) ($_POST['titre'] ?? ''));
+        $titre        = trim((string) ($_POST['titre'] ?? ''));
+        $categorie_id = (int) ($_POST['categorie_id'] ?? 0);
+        $categories   = categories_galerie($pdo);
+
         if ($titre === '') {
             definir_message('erreur', "Donnez un titre à la photo.");
+        } elseif (!isset($categories[$categorie_id])) {
+            definir_message('erreur', "Choisissez une catégorie — créez-en une dans Réglages du site si aucune ne convient.");
         } else {
             $resultat = enregistrer_fichier_envoye($_FILES['photo'] ?? null, __DIR__ . '/photos', 'image');
 
@@ -39,14 +49,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 definir_message('erreur', $resultat['erreur']);
             } else {
                 $pdo->prepare(
-                    'INSERT INTO photos_privees (titre, description, fichier, depose_par) VALUES (?, ?, ?, ?)'
+                    'INSERT INTO photos_privees (titre, description, nom_affiche, fichier, categorie_id, depose_par)
+                     VALUES (?, ?, ?, ?, ?, ?)'
                 )->execute([
                     $titre,
                     trim((string) ($_POST['description'] ?? '')) ?: null,
+                    trim((string) ($_POST['nom_affiche'] ?? '')) ?: null,
                     $resultat['nom'],
+                    $categorie_id,
                     $adherent['id'],
                 ]);
-                definir_message('succes', "Photo ajoutée à la galerie privée.");
+                definir_message('succes', "Photo ajoutée à la galerie privée, dans « {$categories[$categorie_id]} ».");
             }
         }
     }
@@ -56,12 +69,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
+$categories = categories_galerie($pdo);
+
 $photos = $pdo->query(
-    'SELECT p.id, p.titre, p.description, p.depose_par, p.cree_le, a.nom AS auteur
+    'SELECT p.id, p.titre, p.description, p.nom_affiche, p.categorie_id, p.depose_par, p.cree_le, a.nom AS auteur
        FROM photos_privees p
        LEFT JOIN adherents a ON a.id = p.depose_par
       ORDER BY p.cree_le DESC'
 )->fetchAll();
+
+// Même rangement par catégorie que galerie-club.php — voir ce fichier pour
+// le détail du raisonnement (ordre stable, « Sans catégorie » en repli).
+$groupes        = [];
+$sans_categorie = [];
+foreach ($photos as $photo) {
+    $categorie_id = $photo['categorie_id'] !== null ? (int) $photo['categorie_id'] : null;
+    if ($categorie_id !== null && isset($categories[$categorie_id])) {
+        $groupes[$categorie_id][] = $photo;
+    } else {
+        $sans_categorie[] = $photo;
+    }
+}
 
 debut_page("Galerie privée", 'galerie');
 titre_page("Galerie privée", "Ces photos ne sont visibles que par les adhérents connectés.");
@@ -69,58 +97,92 @@ titre_page("Galerie privée", "Ces photos ne sont visibles que par les adhérent
 <section class="section"><div class="container">
   <?php afficher_message(); ?>
 
-  <details class="depot-bloc">
-    <summary>Ajouter une photo</summary>
-    <form method="post" enctype="multipart/form-data" class="form-card" style="margin-top:16px;">
-      <?= champ_csrf() ?>
-      <div class="field">
-        <label for="titre">Titre</label>
-        <input type="text" id="titre" name="titre" required maxlength="190">
-      </div>
-      <div class="field">
-        <label for="description">Description (facultatif)</label>
-        <textarea id="description" name="description" rows="2"></textarea>
-      </div>
-      <div class="field">
-        <label for="photo">Image (JPEG, PNG, WebP ou GIF — <?= taille_lisible(TAILLE_MAX_OCTETS) ?> maximum)</label>
-        <input type="file" id="photo" name="photo" accept="image/*" required>
-      </div>
-      <button type="submit" class="btn btn-primary">Envoyer la photo</button>
-    </form>
-  </details>
+  <?php if ($categories): ?>
+    <details class="depot-bloc">
+      <summary>Ajouter une photo</summary>
+      <form method="post" enctype="multipart/form-data" class="form-card" style="margin-top:16px;">
+        <?= champ_csrf() ?>
+        <div class="field">
+          <label for="titre">Titre</label>
+          <input type="text" id="titre" name="titre" required maxlength="190">
+        </div>
+        <div class="field">
+          <label for="categorie_id">Catégorie</label>
+          <select id="categorie_id" name="categorie_id">
+            <?php foreach ($categories as $categorie_id => $nom_categorie): ?>
+              <option value="<?= $categorie_id ?>"><?= e($nom_categorie) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="field">
+          <label for="nom_affiche">Nom affiché (facultatif)</label>
+          <input type="text" id="nom_affiche" name="nom_affiche" maxlength="120"
+                 placeholder="<?= e($adherent['nom']) ?>">
+        </div>
+        <div class="field">
+          <label for="description">Note (facultatif)</label>
+          <textarea id="description" name="description" rows="2" placeholder="Un mot pour expliquer votre photo…"></textarea>
+        </div>
+        <div class="field">
+          <label for="photo">Image (JPEG, PNG, WebP ou GIF — <?= taille_lisible(TAILLE_MAX_OCTETS) ?> maximum)</label>
+          <input type="file" id="photo" name="photo" accept="image/*" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Envoyer la photo</button>
+      </form>
+    </details>
+  <?php else: ?>
+    <div class="empty-state">
+      <p>
+        Aucune catégorie n'est encore définie.
+        <?php if (est_administrateur()): ?>
+          Créez-en une depuis <a href="parametres.php">Réglages du site</a> avant de pouvoir déposer une photo.
+        <?php endif; ?>
+      </p>
+    </div>
+  <?php endif; ?>
 
   <?php if (!$photos): ?>
     <div class="empty-state" style="margin-top:28px;">
       <p>Aucune photo pour l'instant. Soyez le premier à en déposer une !</p>
     </div>
   <?php else: ?>
-    <div class="photo-grid" style="margin-top:28px;">
-      <?php foreach ($photos as $photo): ?>
-        <figure class="photo-card">
-          <img class="photo-privee" src="telecharger.php?type=photo&amp;id=<?= (int) $photo['id'] ?>"
-               alt="<?= e($photo['titre']) ?>" loading="lazy">
-          <figcaption class="photo-caption">
-            <strong><?= e($photo['titre']) ?></strong>
-            <?php if ($photo['description']): ?>
-              <span class="photo-description"><?= e($photo['description']) ?></span>
-            <?php endif; ?>
-            <span class="photo-meta">
-              <?= $photo['auteur'] ? e($photo['auteur']) : 'Adhérent retiré' ?>
-              — <?= e(date_en_francais($photo['cree_le'], false)) ?>
-            </span>
-            <?php if ((int) $photo['depose_par'] === $adherent['id'] || est_administrateur()): ?>
-              <form method="post" onsubmit="return confirm('Supprimer cette photo ?');" style="margin-top:8px;">
-                <?= champ_csrf() ?>
-                <input type="hidden" name="action" value="supprimer">
-                <input type="hidden" name="id" value="<?= (int) $photo['id'] ?>">
-                <button type="submit" class="lien-danger">Supprimer</button>
-              </form>
-            <?php endif; ?>
-          </figcaption>
-        </figure>
-      <?php endforeach; ?>
-    </div>
+    <?php foreach ($categories as $categorie_id => $nom_categorie): ?>
+      <?php if (empty($groupes[$categorie_id])) continue; ?>
+      <div class="groupe-galerie">
+        <h2><?= e($nom_categorie) ?></h2>
+        <div class="photo-grid">
+          <?php foreach ($groupes[$categorie_id] as $photo): ?>
+            <?php $type = 'photo'; include __DIR__ . '/inc/photo-carte.php'; ?>
+          <?php endforeach; ?>
+        </div>
+      </div>
+    <?php endforeach; ?>
+
+    <?php if ($sans_categorie): ?>
+      <div class="groupe-galerie">
+        <h2>Sans catégorie</h2>
+        <div class="photo-grid">
+          <?php foreach ($sans_categorie as $photo): ?>
+            <?php $type = 'photo'; include __DIR__ . '/inc/photo-carte.php'; ?>
+          <?php endforeach; ?>
+        </div>
+      </div>
+    <?php endif; ?>
   <?php endif; ?>
 </div></section>
+
+<div class="lightbox" data-lightbox role="dialog" aria-modal="true" aria-label="Photo en grand format">
+  <button class="lightbox-close" aria-label="Fermer">✕</button>
+  <button class="lightbox-prev" aria-label="Photo précédente">‹</button>
+  <button class="lightbox-next" aria-label="Photo suivante">›</button>
+  <div class="lightbox-content">
+    <div class="lightbox-frame"></div>
+    <div class="lightbox-caption">
+      <strong class="lightbox-title"></strong>
+      <span class="lightbox-meta"></span>
+      <p class="lightbox-description" hidden></p>
+    </div>
+  </div>
+</div>
 <?php
 fin_page();

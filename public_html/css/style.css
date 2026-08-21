@@ -564,44 +564,100 @@ a {
   border: 1px solid var(--border);
 }
 
-/* Photo grid (masonry via CSS columns) */
+/* Grille de photos : cartes toutes de la même taille (une vraie grille, pas
+   un « masonry » à hauteurs variables), légende en incrustation sur l'image
+   plutôt qu'un bloc de texte à hauteur variable en dessous — c'est ce qui
+   garantit des vignettes uniformes quel que soit le titre (choix explicite
+   de l'utilisateur, 21/08/2026 : les vignettes paraissaient de tailles
+   inégales avec l'ancienne disposition). Le titre est tronqué avec des
+   points de suspension s'il est trop long ; le texte complet reste
+   disponible dans l'agrandissement (lightbox), lu depuis les mêmes données. */
 .photo-grid {
-  columns: 4 220px;
-  column-gap: 18px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 20px;
 }
 .photo-card {
-  break-inside: avoid;
-  margin-bottom: 18px;
+  position: relative;
+  aspect-ratio: 4 / 3;
   border-radius: var(--radius);
   overflow: hidden;
   border: 1px solid var(--border);
   background: var(--surface);
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  position: relative;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  /* Effet de relief : ombre portée à deux niveaux, accentuée au survol. */
+  box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.35);
 }
 .photo-card:hover,
 .photo-card:focus-visible {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow);
+  transform: translateY(-6px) scale(1.015);
+  box-shadow: 0 20px 38px -14px rgba(0, 0, 0, 0.7), 0 4px 10px rgba(0, 0, 0, 0.4);
 }
 .photo-frame {
+  position: absolute;
+  inset: 0;
   width: 100%;
+  height: 100%;
+  object-fit: cover;
   display: block;
+  transition: transform 0.4s ease;
+}
+.photo-card:hover .photo-frame {
+  transform: scale(1.05);
 }
 .photo-caption {
-  padding: 12px 14px 14px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 30px 14px 12px;
+  background: linear-gradient(180deg, transparent, rgba(10, 9, 16, 0.92) 70%);
+  pointer-events: none;
 }
 .photo-caption .title {
   display: block;
   font-size: 0.92rem;
   font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .photo-caption .meta {
   display: block;
-  font-size: 0.78rem;
-  color: var(--text-muted);
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.75);
   margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Bouton Supprimer en incrustation : ne doit jamais agrandir la carte. */
+.photo-supprimer {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  pointer-events: auto;
+}
+.photo-supprimer-bouton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(10, 9, 16, 0.65);
+  color: #fff;
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.photo-supprimer-bouton:hover {
+  background: #e0365c;
+  border-color: transparent;
 }
 
 /* Member cards */
@@ -789,6 +845,7 @@ a {
   aspect-ratio: 4 / 3;
   border-radius: var(--radius);
   border: 1px solid var(--border);
+  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.75), 0 8px 20px rgba(0, 0, 0, 0.5);
 }
 .lightbox-caption {
   margin-top: 18px;
@@ -1088,9 +1145,6 @@ a {
   .section {
     padding: 64px 0;
   }
-  .photo-grid {
-    columns: 2 160px;
-  }
   .lightbox-prev,
   .lightbox-next {
     width: 38px;
@@ -1100,7 +1154,8 @@ a {
 
 @media (max-width: 480px) {
   .photo-grid {
-    columns: 1;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 14px;
   }
   .hero-stats {
     grid-template-columns: 1fr;
@@ -1209,21 +1264,6 @@ a {
   padding: 24px;
 }
 
-/* Galerie privée */
-.photo-privee {
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  object-fit: cover;
-  border-radius: var(--radius) var(--radius) 0 0;
-}
-.photo-description,
-.photo-meta {
-  display: block;
-  color: var(--text-muted);
-  font-size: 0.82rem;
-  margin-top: 4px;
-}
-
 /* Bouton discret d'action destructrice */
 .lien-danger,
 .lien-action {
@@ -1266,11 +1306,11 @@ a {
   margin: 0 0 32px;
 }
 .rubrique-documents,
-.groupe-galerie-club {
+.groupe-galerie {
   margin: 0 0 36px;
 }
 .rubrique-documents h2,
-.groupe-galerie-club h2 {
+.groupe-galerie h2 {
   font-family: var(--font-heading);
   font-size: 1.3rem;
   margin: 0 0 16px;

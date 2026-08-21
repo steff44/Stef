@@ -48,6 +48,15 @@ const COLONNES_DOCUMENTS_ATTENDUES = [
     'categorie_id' => 'INT DEFAULT NULL',
 ];
 
+// Colonnes attendues sur `photos_privees` — mêmes possibilités que
+// `photos_club` (catégorie, nom affiché), choix explicite de l'utilisateur,
+// 21/08/2026. Les deux tables partagent la table `categories_galerie` : une
+// même liste de catégories pour la Galerie privée et la Galerie du Club.
+const COLONNES_PHOTOS_PRIVEES_ATTENDUES = [
+    'nom_affiche'  => 'VARCHAR(120) DEFAULT NULL',
+    'categorie_id' => 'INT DEFAULT NULL',
+];
+
 // Classification par défaut des documents, semée une seule fois — la
 // première fois que `rubriques_documents` est créée — par
 // appliquer_migrations() ci-dessous. Un responsable la modifie ensuite
@@ -165,6 +174,17 @@ function appliquer_migrations(PDO $pdo): void
                 $pdo->exec("ALTER TABLE documents ADD COLUMN {$colonne} {$definition}");
             } catch (PDOException $e) {
                 error_log('Espace adhérents — migration documents.' . $colonne . ' : ' . $e->getMessage());
+                $reussi = false;
+            }
+        }
+    }
+
+    foreach (COLONNES_PHOTOS_PRIVEES_ATTENDUES as $colonne => $definition) {
+        if (colonne_absente($pdo, 'photos_privees', $colonne)) {
+            try {
+                $pdo->exec("ALTER TABLE photos_privees ADD COLUMN {$colonne} {$definition}");
+            } catch (PDOException $e) {
+                error_log('Espace adhérents — migration photos_privees.' . $colonne . ' : ' . $e->getMessage());
                 $reussi = false;
             }
         }
@@ -298,6 +318,7 @@ function signature_schema(): string
         implode('|', array_keys(COLONNES_ATTENDUES)) . '||' .
         implode('|', array_keys(COLONNES_SORTIES_ATTENDUES)) . '||' .
         implode('|', array_keys(COLONNES_DOCUMENTS_ATTENDUES)) . '||' .
+        implode('|', array_keys(COLONNES_PHOTOS_PRIVEES_ATTENDUES)) . '||' .
         implode('|', array_keys(PARAMETRES_PAR_DEFAUT)) . '||' .
         'rubriques_documents_v1' . '||' .
         'categories_galerie_v1'

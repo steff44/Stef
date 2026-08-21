@@ -338,7 +338,7 @@
     card.className = "photo-card";
     card.setAttribute("aria-label", "Voir la photo : " + photo.titre);
     card.innerHTML =
-      '<span class="photo-frame" style="display:block;aspect-ratio:4/3;background:' +
+      '<span class="photo-frame" style="background:' +
       photoBackground(photo) +
       '"></span>' +
       '<span class="photo-caption">' +
@@ -554,6 +554,85 @@
     }
     window.addEventListener("scroll", actualiserVisibilite, { passive: true });
     actualiserVisibilite();
+  })();
+
+  /* ---------- Agrandissement des photos (Galerie privée, Galerie du Club) ----------
+     Générique : toute page portant des cartes .photo-card[data-titre] (voir
+     espace/inc/photo-carte.php) et le bloc [data-lightbox] correspondant
+     obtient l'agrandissement au clic, avec navigation précédente/suivante —
+     la page publique Galerie a son propre système plus riche (diaporama) et
+     n'est pas concernée, ses cartes ne portent pas ces attributs. Le texte
+     complet (description comprise) vient des attributs data-*, jamais
+     tronqué même si la vignette l'est visuellement en CSS. */
+  (function () {
+    const cartes = Array.from(document.querySelectorAll(".photo-card[data-titre]"));
+    const boite = document.querySelector("[data-lightbox]");
+    if (!cartes.length || !boite) return;
+
+    const photos = cartes.map(function (carte) {
+      return {
+        titre: carte.dataset.titre || "",
+        description: carte.dataset.description || "",
+        meta: carte.dataset.meta || "",
+        image: carte.dataset.image || "",
+      };
+    });
+
+    let indexActif = 0;
+
+    function afficher() {
+      const photo = photos[indexActif];
+      boite.querySelector(".lightbox-frame").style.background =
+        "center / cover no-repeat url('" + photo.image + "')";
+      boite.querySelector(".lightbox-title").textContent = photo.titre;
+      boite.querySelector(".lightbox-meta").textContent = photo.meta;
+      const descriptionEl = boite.querySelector(".lightbox-description");
+      if (descriptionEl) {
+        descriptionEl.textContent = photo.description;
+        descriptionEl.hidden = !photo.description;
+      }
+    }
+
+    function ouvrir(index) {
+      indexActif = index;
+      afficher();
+      boite.classList.add("is-open");
+      document.body.style.overflow = "hidden";
+      boite.querySelector(".lightbox-close").focus();
+    }
+
+    function fermer() {
+      boite.classList.remove("is-open");
+      document.body.style.overflow = "";
+    }
+
+    cartes.forEach(function (carte, index) {
+      carte.addEventListener("click", function (e) {
+        // Un clic sur le formulaire Supprimer (en incrustation sur la carte)
+        // ne doit jamais ouvrir l'agrandissement.
+        if (e.target.closest("form")) return;
+        ouvrir(index);
+      });
+    });
+
+    boite.querySelector(".lightbox-close").addEventListener("click", fermer);
+    boite.querySelector(".lightbox-prev").addEventListener("click", function () {
+      indexActif = (indexActif - 1 + photos.length) % photos.length;
+      afficher();
+    });
+    boite.querySelector(".lightbox-next").addEventListener("click", function () {
+      indexActif = (indexActif + 1) % photos.length;
+      afficher();
+    });
+    boite.addEventListener("click", function (e) {
+      if (e.target === boite) fermer();
+    });
+    document.addEventListener("keydown", function (e) {
+      if (!boite.classList.contains("is-open")) return;
+      if (e.key === "Escape") fermer();
+      if (e.key === "ArrowLeft") boite.querySelector(".lightbox-prev").click();
+      if (e.key === "ArrowRight") boite.querySelector(".lightbox-next").click();
+    });
   })();
 
 })();

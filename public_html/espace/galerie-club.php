@@ -1,18 +1,18 @@
 <?php
 /*
  * Galerie du Club : photos déposées par les adhérents, classées par
- * catégorie (voir inc/galerie_club.php). Contrairement à la Galerie privée
- * (galerie.php), ces photos sont PUBLIQUES une fois en ligne — reprises sur
- * la page publique galerie.html (choix explicite de l'utilisateur,
- * 20/08/2026). Tout adhérent peut déposer ; seul l'auteur ou un responsable
- * peut supprimer.
+ * catégorie (voir inc/galerie_categories.php, partagé avec galerie.php).
+ * Contrairement à la Galerie privée (galerie.php), ces photos sont
+ * PUBLIQUES une fois en ligne — reprises sur la page publique galerie.html
+ * (choix explicite de l'utilisateur, 20/08/2026). Tout adhérent peut
+ * déposer ; seul l'auteur ou un responsable peut supprimer.
  */
 
 declare(strict_types=1);
 
 require_once __DIR__ . '/inc/page.php';
 require_once __DIR__ . '/inc/televersement.php';
-require_once __DIR__ . '/inc/galerie_club.php';
+require_once __DIR__ . '/inc/galerie_categories.php';
 
 $adherent = exige_connexion();
 $pdo      = base_de_donnees();
@@ -149,27 +149,41 @@ titre_page("Galerie du Club", "Déposez vos photos et classez-les par catégorie
   <?php else: ?>
     <?php foreach ($categories as $categorie_id => $nom_categorie): ?>
       <?php if (empty($groupes[$categorie_id])) continue; ?>
-      <div class="groupe-galerie-club">
+      <div class="groupe-galerie">
         <h2><?= e($nom_categorie) ?></h2>
         <div class="photo-grid">
           <?php foreach ($groupes[$categorie_id] as $photo): ?>
-            <?php include __DIR__ . '/inc/photo-club-carte.php'; ?>
+            <?php $type = 'galerie_club'; include __DIR__ . '/inc/photo-carte.php'; ?>
           <?php endforeach; ?>
         </div>
       </div>
     <?php endforeach; ?>
 
     <?php if ($sans_categorie): ?>
-      <div class="groupe-galerie-club">
+      <div class="groupe-galerie">
         <h2>Sans catégorie</h2>
         <div class="photo-grid">
           <?php foreach ($sans_categorie as $photo): ?>
-            <?php include __DIR__ . '/inc/photo-club-carte.php'; ?>
+            <?php $type = 'galerie_club'; include __DIR__ . '/inc/photo-carte.php'; ?>
           <?php endforeach; ?>
         </div>
       </div>
     <?php endif; ?>
   <?php endif; ?>
 </div></section>
+
+<div class="lightbox" data-lightbox role="dialog" aria-modal="true" aria-label="Photo en grand format">
+  <button class="lightbox-close" aria-label="Fermer">✕</button>
+  <button class="lightbox-prev" aria-label="Photo précédente">‹</button>
+  <button class="lightbox-next" aria-label="Photo suivante">›</button>
+  <div class="lightbox-content">
+    <div class="lightbox-frame"></div>
+    <div class="lightbox-caption">
+      <strong class="lightbox-title"></strong>
+      <span class="lightbox-meta"></span>
+      <p class="lightbox-description" hidden></p>
+    </div>
+  </div>
+</div>
 <?php
 fin_page();
