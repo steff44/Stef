@@ -26,12 +26,17 @@ if ($id <= 0 || !in_array($type, ['photo', 'document', 'sortie', 'galerie_club']
     exit('Fichier introuvable.');
 }
 
+$adherent = null;
 if (!in_array($type, TYPES_PUBLICS, true)) {
-    exige_connexion();
+    $adherent = exige_connexion();
 }
 
 if ($type === 'photo') {
-    $requete = base_de_donnees()->prepare('SELECT fichier, titre FROM photos_privees WHERE id = ?');
+    // Chacun ne voit que ses propres photos dans galerie.php (choix
+    // explicite de l'utilisateur, 21/08/2026) : même restriction ici, sans
+    // quoi un identifiant deviné dans l'URL donnerait accès au fichier
+    // malgré tout. Un responsable garde accès à tout, pour la modération.
+    $requete = base_de_donnees()->prepare('SELECT fichier, titre, depose_par FROM photos_privees WHERE id = ?');
     $dossier = __DIR__ . '/photos/';
 } elseif ($type === 'document') {
     $requete = base_de_donnees()->prepare('SELECT fichier, nom_origine AS titre FROM documents WHERE id = ?');
@@ -48,6 +53,11 @@ $requete->execute([$id]);
 $ligne = $requete->fetch();
 
 if (!$ligne || !$ligne['fichier']) {
+    http_response_code(404);
+    exit('Fichier introuvable.');
+}
+
+if ($type === 'photo' && (int) $ligne['depose_par'] !== $adherent['id'] && !est_administrateur()) {
     http_response_code(404);
     exit('Fichier introuvable.');
 }

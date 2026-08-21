@@ -184,8 +184,16 @@ planter).
 
 **« Galerie » existe en trois versions**, sans confondre les deux publiques
 avec la privée : `galerie.html` (page publique, ouverte à tous) d'un côté,
-`galerie.php` (**Galerie privée**, réservée aux adhérents connectés, table
-`photos_privees`) de l'autre — et depuis le 20/08/2026, `galerie-club.php`
+`galerie.php` (**Galerie privée**, table `photos_privees`) de l'autre —
+chaque adhérent n'y voit **que ses propres photos** depuis le 21/08/2026
+(choix explicite de l'utilisateur, revient sur un premier comportement où
+tout adhérent connecté voyait les photos de tout le monde) ; un responsable
+continue de tout voir, pour la modération, même logique que la suppression
+(déjà réservée à l'auteur ou à un responsable). La restriction porte aussi
+sur `telecharger.php?type=photo` lui-même (vérifie `depose_par`), pas
+seulement sur la liste affichée — sans quoi un identifiant deviné dans
+l'URL aurait donné accès au fichier d'un autre adhérent malgré tout. Et
+depuis le 20/08/2026, `galerie-club.php`
 (**Galerie du Club**, choix explicite de l'utilisateur) : un adhérent y
 dépose une photo, la classe dans une catégorie (portrait, paysage…), et
 cette photo devient **publique**, reprise automatiquement sur `galerie.html`
@@ -234,7 +242,14 @@ depuis `parametres.php` (`ajouter_categorie_galerie` / `renommer_...` /
 `supprimer_...`, refusé si l'une ou l'autre galerie contient encore des
 photos dans cette catégorie) — semées une seule fois avec
 `CATEGORIES_GALERIE_PAR_DEFAUT` (`inc/migration.php`, reprend les catégories
-de la rubrique « Thèmes photographiques » des documents).
+de la rubrique « Thèmes photographiques » des documents — sauf « Macro »,
+volontairement écrit « Macro / Proxi » pour correspondre exactement au thème
+déjà utilisé dans `CLUB_DATA.themes`, `js/main.js` ajoutant automatiquement
+aux filtres toute catégorie de photo qui ne s'y trouve pas déjà : les deux
+libellés faisaient double emploi sur la page Galerie publique jusqu'au
+21/08/2026, corrigé par un renommage ponctuel — `UPDATE ... WHERE nom =
+'Macro'` — dans `appliquer_migrations()`, qui ne perd aucune photo déjà
+classée puisque seul le nom change, jamais l'identifiant).
 `inc/galerie_categories.php` (renommé le 21/08/2026, s'appelait
 `inc/galerie_club.php` avant que `galerie.php` ne partage aussi ses
 catégories) porte la seule fonction `categories_galerie($pdo)`. Tout

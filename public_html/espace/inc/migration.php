@@ -97,10 +97,14 @@ const RUBRIQUES_DOCUMENTS_PAR_DEFAUT = [
 // créée — par appliquer_migrations() ci-dessous. Reprend les catégories de
 // la rubrique « Thèmes photographiques » des documents, pour partir d'une
 // liste cohérente ; un responsable la modifie ensuite depuis parametres.php.
+// « Macro / Proxi » (pas juste « Macro ») pour correspondre exactement au
+// thème déjà utilisé dans CLUB_DATA.themes (js/data.js) — sans quoi la page
+// Galerie publique affiche deux filtres qui font double emploi (constaté le
+// 21/08/2026).
 const CATEGORIES_GALERIE_PAR_DEFAUT = [
     'Portrait',
     'Paysage',
-    'Macro',
+    'Macro / Proxi',
     'Nature',
     'Street',
     'Architecture',
@@ -301,6 +305,16 @@ function appliquer_migrations(PDO $pdo): void
                 $inserer->execute([$nom_categorie, $ordre++]);
             }
         }
+
+        // Correction ponctuelle (21/08/2026) : la catégorie semée « Macro »
+        // faisait double emploi avec le thème « Macro / Proxi » de
+        // CLUB_DATA.themes (js/data.js) — les deux apparaissaient comme deux
+        // filtres séparés sur la page Galerie publique. Renommer plutôt que
+        // supprimer : les photos déjà classées dans « Macro » gardent leur
+        // categorie_id, rien n'est perdu. Sans effet si un responsable a
+        // depuis renommé ou supprimé cette catégorie lui-même (la clause
+        // WHERE ne trouve alors plus rien).
+        $pdo->exec("UPDATE categories_galerie SET nom = 'Macro / Proxi' WHERE nom = 'Macro'");
     } catch (PDOException $e) {
         error_log('Espace adhérents — migration categories_galerie : ' . $e->getMessage());
         $reussi = false;
@@ -321,7 +335,7 @@ function signature_schema(): string
         implode('|', array_keys(COLONNES_PHOTOS_PRIVEES_ATTENDUES)) . '||' .
         implode('|', array_keys(PARAMETRES_PAR_DEFAUT)) . '||' .
         'rubriques_documents_v1' . '||' .
-        'categories_galerie_v1'
+        'categories_galerie_v2'
     );
 }
 
