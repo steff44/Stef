@@ -15,8 +15,18 @@ $prochaine = $pdo->query(
     'SELECT id, titre, lieu, debut FROM sorties WHERE debut >= NOW() ORDER BY debut ASC LIMIT 1'
 )->fetch();
 
+// Galerie privée : le nombre affiché suit la même règle que la page elle-même
+// (chacun ne voit que ses photos, un responsable les voit toutes).
+if (est_administrateur()) {
+    $nb_photos_privees = (int) $pdo->query('SELECT COUNT(*) FROM photos_privees')->fetchColumn();
+} else {
+    $requete_nb = $pdo->prepare('SELECT COUNT(*) FROM photos_privees WHERE depose_par = ?');
+    $requete_nb->execute([$adherent['id']]);
+    $nb_photos_privees = (int) $requete_nb->fetchColumn();
+}
+
 $compteurs = [
-    'photos'       => (int) $pdo->query('SELECT COUNT(*) FROM photos_privees')->fetchColumn(),
+    'photos'       => $nb_photos_privees,
     'photos_club'  => (int) $pdo->query('SELECT COUNT(*) FROM photos_club')->fetchColumn(),
     'documents'    => (int) $pdo->query('SELECT COUNT(*) FROM documents')->fetchColumn(),
     'sorties'      => (int) $pdo->query('SELECT COUNT(*) FROM sorties WHERE debut >= NOW()')->fetchColumn(),
@@ -44,7 +54,10 @@ titre_page("Bonjour " . $adherent['nom'], "Bienvenue dans l'espace réservé aux
     <article class="feature-card">
       <div class="feature-icon" aria-hidden="true">📷</div>
       <h3>Galerie privée</h3>
-      <p><?= $compteurs['photos'] ?> photo<?= $compteurs['photos'] > 1 ? 's' : '' ?> réservée<?= $compteurs['photos'] > 1 ? 's' : '' ?> aux adhérents.</p>
+      <p>
+        <?= $compteurs['photos'] ?> photo<?= $compteurs['photos'] > 1 ? 's' : '' ?>
+        <?= est_administrateur() ? 'au total (vue responsable).' : 'à vous, invisibles des autres adhérents.' ?>
+      </p>
       <a class="btn btn-ghost" href="galerie.php">Ouvrir</a>
     </article>
     <article class="feature-card">

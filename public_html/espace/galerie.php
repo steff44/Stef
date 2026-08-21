@@ -1,11 +1,13 @@
 <?php
 /*
- * Galerie privée : photos visibles uniquement par les adhérents connectés,
- * classées par catégorie — mêmes catégories et mêmes champs que la Galerie
- * du Club (voir galerie-club.php et inc/galerie_categories.php), choix
- * explicite de l'utilisateur, 21/08/2026. Contrairement à la Galerie du
- * Club, ces photos restent réservées aux adhérents. Tout adhérent peut
- * déposer ; seul l'auteur ou un responsable peut supprimer.
+ * Galerie privée : chaque adhérent n'y voit que SES PROPRES photos (choix
+ * explicite de l'utilisateur, 21/08/2026 — revient sur un premier
+ * comportement où tous les adhérents voyaient les photos de tout le monde).
+ * Un responsable continue de tout voir, pour la modération — même logique
+ * que la suppression, déjà réservée à l'auteur ou à un responsable. Mêmes
+ * catégories et mêmes champs que la Galerie du Club (voir galerie-club.php
+ * et inc/galerie_categories.php). telecharger.php applique la même
+ * restriction sur le fichier lui-même, pas seulement sur cette liste.
  */
 
 declare(strict_types=1);
@@ -71,12 +73,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $categories = categories_galerie($pdo);
 
-$photos = $pdo->query(
-    'SELECT p.id, p.titre, p.description, p.nom_affiche, p.categorie_id, p.depose_par, p.cree_le, a.nom AS auteur
-       FROM photos_privees p
-       LEFT JOIN adherents a ON a.id = p.depose_par
-      ORDER BY p.cree_le DESC'
-)->fetchAll();
+// Chacun ne voit que ses propres photos ; un responsable les voit toutes.
+if (est_administrateur()) {
+    $photos = $pdo->query(
+        'SELECT p.id, p.titre, p.description, p.nom_affiche, p.categorie_id, p.depose_par, p.cree_le, a.nom AS auteur
+           FROM photos_privees p
+           LEFT JOIN adherents a ON a.id = p.depose_par
+          ORDER BY p.cree_le DESC'
+    )->fetchAll();
+} else {
+    $requete_photos = $pdo->prepare(
+        'SELECT p.id, p.titre, p.description, p.nom_affiche, p.categorie_id, p.depose_par, p.cree_le, a.nom AS auteur
+           FROM photos_privees p
+           LEFT JOIN adherents a ON a.id = p.depose_par
+          WHERE p.depose_par = ?
+          ORDER BY p.cree_le DESC'
+    );
+    $requete_photos->execute([$adherent['id']]);
+    $photos = $requete_photos->fetchAll();
+}
 
 // Même rangement par catégorie que galerie-club.php — voir ce fichier pour
 // le détail du raisonnement (ordre stable, « Sans catégorie » en repli).
@@ -92,7 +107,12 @@ foreach ($photos as $photo) {
 }
 
 debut_page("Galerie privée", 'galerie');
-titre_page("Galerie privée", "Ces photos ne sont visibles que par les adhérents connectés.");
+titre_page(
+    "Galerie privée",
+    est_administrateur()
+        ? "Vos photos et celles des autres adhérents (vue responsable) — invisibles hors connexion."
+        : "Vos photos, réservées à vous seul — personne d'autre ne les voit ici."
+);
 ?>
 <section class="section"><div class="container">
   <?php afficher_message(); ?>
