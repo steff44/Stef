@@ -27,25 +27,31 @@ CREATE TABLE IF NOT EXISTS adherents (
   cree_le            DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Photos réservées aux adhérents. Le fichier est stocké dans espace/photos/,
--- dossier interdit d'accès direct : il est servi par telecharger.php.
-CREATE TABLE IF NOT EXISTS photos_privees (
-  id          INT AUTO_INCREMENT PRIMARY KEY,
-  titre       VARCHAR(190) NOT NULL,
-  description TEXT         DEFAULT NULL,
-  fichier     VARCHAR(190) NOT NULL,
-  depose_par  INT          DEFAULT NULL,
-  cree_le     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT fk_photo_adherent FOREIGN KEY (depose_par) REFERENCES adherents(id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Catégories des photos de la Galerie du Club, modifiables par un
--- responsable depuis parametres.php — voir inc/galerie_club.php et
+-- Catégories des photos, partagées par la Galerie privée (photos_privees) et
+-- la Galerie du Club (photos_club), modifiables par un responsable depuis
+-- parametres.php — voir inc/galerie_categories.php et
 -- CATEGORIES_GALERIE_PAR_DEFAUT (inc/migration.php) pour le semis initial.
 CREATE TABLE IF NOT EXISTS categories_galerie (
   id    INT AUTO_INCREMENT PRIMARY KEY,
   nom   VARCHAR(120) NOT NULL,
   ordre INT          NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Photos réservées aux adhérents. Le fichier est stocké dans espace/photos/,
+-- dossier interdit d'accès direct : il est servi par telecharger.php.
+-- Mêmes possibilités que photos_club (catégorie, nom affiché) depuis le
+-- 21/08/2026 — voir photos_club plus bas pour le détail de ces deux champs.
+CREATE TABLE IF NOT EXISTS photos_privees (
+  id           INT AUTO_INCREMENT PRIMARY KEY,
+  titre        VARCHAR(190) NOT NULL,
+  description  TEXT         DEFAULT NULL,
+  nom_affiche  VARCHAR(120) DEFAULT NULL,
+  fichier      VARCHAR(190) NOT NULL,
+  categorie_id INT          DEFAULT NULL,
+  depose_par   INT          DEFAULT NULL,
+  cree_le      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_photo_categorie FOREIGN KEY (categorie_id) REFERENCES categories_galerie(id) ON DELETE SET NULL,
+  CONSTRAINT fk_photo_adherent  FOREIGN KEY (depose_par)   REFERENCES adherents(id)          ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Photos de la Galerie du Club (espace/galerie-club.php) : déposées par

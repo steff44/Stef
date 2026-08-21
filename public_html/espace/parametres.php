@@ -19,7 +19,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/inc/page.php';
 require_once __DIR__ . '/inc/documents_categories.php';
-require_once __DIR__ . '/inc/galerie_club.php';
+require_once __DIR__ . '/inc/galerie_categories.php';
 
 exige_administrateur();
 $pdo = base_de_donnees();
@@ -112,9 +112,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             definir_message('succes', "Catégorie renommée en « {$nom} ».");
 
         } elseif ($action === 'supprimer_categorie_galerie') {
-            $requete = $pdo->prepare('SELECT COUNT(*) FROM photos_club WHERE categorie_id = ?');
-            $requete->execute([$id]);
-            $nb_photos = (int) $requete->fetchColumn();
+            // Compte les deux galeries : une catégorie partagée par
+            // galerie.php et galerie-club.php (voir inc/galerie_categories.php)
+            // ne doit pas pouvoir disparaître tant que l'une des deux
+            // l'utilise encore.
+            $requete_club = $pdo->prepare('SELECT COUNT(*) FROM photos_club WHERE categorie_id = ?');
+            $requete_club->execute([$id]);
+            $requete_privee = $pdo->prepare('SELECT COUNT(*) FROM photos_privees WHERE categorie_id = ?');
+            $requete_privee->execute([$id]);
+            $nb_photos = (int) $requete_club->fetchColumn() + (int) $requete_privee->fetchColumn();
 
             if ($nb_photos > 0) {
                 definir_message('erreur', "{$nb_photos} photo(s) sont classées dans cette catégorie — déplacez-les ou supprimez-les d'abord.");
@@ -320,10 +326,11 @@ titre_page(
   </div>
 
   <div class="form-card reglage-rubriques" style="max-width:640px;margin-top:32px;">
-    <h2 style="font-family:var(--font-heading);font-size:1.2rem;margin:0 0 6px;">Catégories de la Galerie du Club</h2>
+    <h2 style="font-family:var(--font-heading);font-size:1.2rem;margin:0 0 6px;">Catégories des galeries</h2>
     <p class="form-note" style="margin-top:0;margin-bottom:20px;">
-      Ces catégories organisent la Galerie du Club et les filtres de la page Galerie.
-      Une catégorie contenant encore des photos ne peut pas être supprimée.
+      Ces catégories organisent aussi bien la Galerie du Club que la Galerie privée,
+      et les filtres de la page Galerie publique. Une catégorie contenant encore des
+      photos (dans l'une ou l'autre galerie) ne peut pas être supprimée.
     </p>
 
     <ul class="reglage-categories" style="padding-left:0;">

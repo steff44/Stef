@@ -189,7 +189,10 @@ avec la privée : `galerie.html` (page publique, ouverte à tous) d'un côté,
 (**Galerie du Club**, choix explicite de l'utilisateur) : un adhérent y
 dépose une photo, la classe dans une catégorie (portrait, paysage…), et
 cette photo devient **publique**, reprise automatiquement sur `galerie.html`
-(voir plus bas). Le lien « Galerie » du menu principal pointe **toujours**
+(voir plus bas). Depuis le 21/08/2026, `galerie.php` a les mêmes
+possibilités que `galerie-club.php` (catégorie, nom affiché) — voir plus
+bas, dans le paragraphe sur `galerie-club.php`, pour le détail partagé par
+les deux. Le lien « Galerie » du menu principal pointe **toujours**
 vers `galerie.html`, connecté ou non (choix explicite de l'utilisateur,
 19/08/2026, qui revient sur un choix inverse du 17/08/2026) : la galerie
 privée et la Galerie du Club ne s'ouvrent que depuis « Le Club »
@@ -197,6 +200,15 @@ privée et la Galerie du Club ne s'ouvrent que depuis « Le Club »
 (`$onglets` de `espace/inc/page.php`). Avant ce changement, cliquer sur
 « Galerie » depuis une page de l'espace adhérents ouvrait la galerie privée
 — piège reconnu par l'utilisateur comme non voulu, à ne pas réintroduire.
+
+**Le tableau de bord (`espace/index.php`) n'affiche plus de carte
+Annuaire** depuis le 21/08/2026 (choix explicite de l'utilisateur) : la
+carte Annuaire (`.feature-card`) a été remplacée par une carte **Galerie du
+Club** (nombre de photos partagées, lien vers `galerie-club.php`) —
+changement volontairement limité à cette page : le lien Annuaire reste
+présent et fonctionnel dans le menu déroulant « {pseudo} connecté »
+(`$onglets` de `espace/inc/page.php`) et sur `annuaire.php` lui-même, ne
+pas les retirer sans qu'on le redemande explicitement.
 
 **« Le Club » (`espace/le-club.php`)** est réservé aux adhérents connectés
 depuis le 18/08/2026 (choix explicite de l'utilisateur) : `exige_connexion()`
@@ -215,21 +227,58 @@ publiques**, classées par catégorie (choix explicite de l'utilisateur,
 20/08/2026). Contrairement à `galerie.php` (Galerie privée, jamais visible
 hors connexion), ces photos sont reprises sur la page publique
 `galerie.html`. Catégories à plat (pas de rubriques, contrairement aux
-documents) dans la table `categories_galerie`, gérées par un responsable
+documents) dans la table `categories_galerie`, **partagée avec `galerie.php`
+depuis le 21/08/2026** (choix explicite de l'utilisateur — mêmes catégories
+pour les deux galeries, une seule liste à gérer) — gérées par un responsable
 depuis `parametres.php` (`ajouter_categorie_galerie` / `renommer_...` /
-`supprimer_...`, refusé si des photos y sont encore classées) — semées une
-seule fois avec `CATEGORIES_GALERIE_PAR_DEFAUT` (`inc/migration.php`, reprend
-les catégories de la rubrique « Thèmes photographiques » des documents).
-Tout adhérent peut déposer (titre, catégorie, nom affiché facultatif — pour
+`supprimer_...`, refusé si l'une ou l'autre galerie contient encore des
+photos dans cette catégorie) — semées une seule fois avec
+`CATEGORIES_GALERIE_PAR_DEFAUT` (`inc/migration.php`, reprend les catégories
+de la rubrique « Thèmes photographiques » des documents).
+`inc/galerie_categories.php` (renommé le 21/08/2026, s'appelait
+`inc/galerie_club.php` avant que `galerie.php` ne partage aussi ses
+catégories) porte la seule fonction `categories_galerie($pdo)`. Tout
+adhérent peut déposer (titre, catégorie, nom affiché facultatif — pour
 signer autrement que son identifiant de connexion —, note facultative) ;
-seul l'auteur ou un responsable peut supprimer sa photo (même règle que
-`galerie.php`). La catégorie n'est pas répétée sur chaque photo : elle est
-déjà donnée par le titre du groupe (`inc/photo-club-carte.php`, partiel
-inclus une fois par catégorie non vide, même principe que
-`inc/document-ligne.php`). Fichiers dans `espace/photos_club/` (fermé par
-`.htaccess`), servis par `telecharger.php?type=galerie_club` — **public**,
-comme `type=sortie`, contrairement à `type=photo`/`document` qui exigent une
-connexion.
+seul l'auteur ou un responsable peut supprimer sa photo — même règle,
+et même formulaire de dépôt, dans `galerie.php` (colonnes `categorie_id` et
+`nom_affiche` ajoutées à `photos_privees` le 21/08/2026, exactement comme
+`photos_club`). La catégorie n'est pas répétée sur chaque photo : elle est
+déjà donnée par le titre du groupe. Les deux galeries partagent le même
+partiel de carte, `inc/photo-carte.php` (remplace l'ancien
+`inc/photo-club-carte.php`, propre à la Galerie du Club), paramétré par
+`$type` (`'photo'` ou `'galerie_club'`, le type attendu par
+`telecharger.php`) — même principe que `inc/document-ligne.php`. Fichiers
+dans `espace/photos_club/` (fermé par `.htaccess`), servis par
+`telecharger.php?type=galerie_club` — **public**, comme `type=sortie`,
+contrairement à `type=photo`/`document` qui exigent une connexion.
+
+**Cartes de photo uniformes, légende en incrustation, agrandissement au
+clic** (choix explicite de l'utilisateur, 21/08/2026 — les vignettes
+paraissaient de tailles inégales avec l'ancien « masonry » en colonnes CSS
+et une légende en bloc sous la photo, à hauteur variable selon la longueur
+du titre). `.photo-grid` est une vraie grille (`display:grid`, cases toutes
+identiques) plutôt qu'un masonry ; chaque `.photo-card` a un ratio fixe
+(4:3) avec la légende **incrustée** en dégradé sombre par-dessus la photo
+(`.photo-caption`, `position:absolute`), pas un bloc séparé qui grandirait
+avec le texte. Le titre et le nom/date sont tronqués en CSS
+(`text-overflow: ellipsis`, une seule ligne) — jamais dans les données : le
+texte complet (description comprise) part dans des attributs `data-titre` /
+`data-description` / `data-meta` / `data-image` sur chaque carte
+(`inc/photo-carte.php`), lus intégralement par l'agrandissement au clic.
+Un « effet de relief » habille les cartes et la boîte d'agrandissement
+(ombre portée à deux niveaux, accentuée au survol/zoom léger). Pour
+`galerie.php` et `galerie-club.php` (pages PHP sans le système de
+diaporama de la page publique), un bloc générique dans `js/main.js`
+détecte toute page portant des `.photo-card[data-titre]` et le marqueur
+`[data-lightbox]` (ajouté dans le HTML de ces deux pages), et branche
+l'agrandissement avec navigation précédente/suivante — un clic sur le
+bouton Supprimer, en incrustation dans le coin de la carte
+(`.photo-supprimer`), n'ouvre jamais l'agrandissement. La page publique
+`galerie.html` garde son propre système, plus riche (diaporama automatique)
+et non concerné puisque ses cartes ne portent pas ces attributs — seul le
+CSS partagé (`.photo-card`/`.photo-frame`/`.photo-caption`) s'applique aux
+deux, ce qui suffit à leur donner le même habillage.
 
 **La page publique `galerie.html` (et la sélection sur l'accueil) affichent
 les vraies photos de la Galerie du Club.** `infos-galerie-club.php` (à la

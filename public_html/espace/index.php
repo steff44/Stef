@@ -16,10 +16,10 @@ $prochaine = $pdo->query(
 )->fetch();
 
 $compteurs = [
-    'photos'    => (int) $pdo->query('SELECT COUNT(*) FROM photos_privees')->fetchColumn(),
-    'documents' => (int) $pdo->query('SELECT COUNT(*) FROM documents')->fetchColumn(),
-    'sorties'   => (int) $pdo->query('SELECT COUNT(*) FROM sorties WHERE debut >= NOW()')->fetchColumn(),
-    'adherents' => (int) $pdo->query('SELECT COUNT(*) FROM adherents WHERE actif = 1')->fetchColumn(),
+    'photos'       => (int) $pdo->query('SELECT COUNT(*) FROM photos_privees')->fetchColumn(),
+    'photos_club'  => (int) $pdo->query('SELECT COUNT(*) FROM photos_club')->fetchColumn(),
+    'documents'    => (int) $pdo->query('SELECT COUNT(*) FROM documents')->fetchColumn(),
+    'sorties'      => (int) $pdo->query('SELECT COUNT(*) FROM sorties WHERE debut >= NOW()')->fetchColumn(),
 ];
 
 debut_page("Tableau de bord", 'index');
@@ -60,10 +60,10 @@ titre_page("Bonjour " . $adherent['nom'], "Bienvenue dans l'espace réservé aux
       <a class="btn btn-ghost" href="agenda.php">Ouvrir</a>
     </article>
     <article class="feature-card">
-      <div class="feature-icon" aria-hidden="true">👥</div>
-      <h3>Annuaire</h3>
-      <p><?= $compteurs['adherents'] ?> adhérent<?= $compteurs['adherents'] > 1 ? 's' : '' ?> dans le club.</p>
-      <a class="btn btn-ghost" href="annuaire.php">Ouvrir</a>
+      <div class="feature-icon" aria-hidden="true">🖼️</div>
+      <h3>Galerie du Club</h3>
+      <p><?= $compteurs['photos_club'] ?> photo<?= $compteurs['photos_club'] > 1 ? 's' : '' ?> partagée<?= $compteurs['photos_club'] > 1 ? 's' : '' ?>, visibles de tous.</p>
+      <a class="btn btn-ghost" href="galerie-club.php">Ouvrir</a>
     </article>
     <?php if (est_administrateur()): ?>
       <article class="feature-card">
