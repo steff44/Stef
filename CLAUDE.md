@@ -254,7 +254,12 @@ classée puisque seul le nom change, jamais l'identifiant).
 `inc/galerie_club.php` avant que `galerie.php` ne partage aussi ses
 catégories) porte la seule fonction `categories_galerie($pdo)`. Tout
 adhérent peut déposer (titre, catégorie, nom affiché facultatif — pour
-signer autrement que son identifiant de connexion —, note facultative) ;
+signer autrement que son identifiant de connexion —, note facultative) —
+les photos sont plafonnées à 600 Ko (`TAILLE_MAX_PHOTO_ADHERENT` dans
+`inc/televersement.php`, choix explicite de l'utilisateur, 21/08/2026 : plus
+strict que le plafond général de 8 Mo, qui reste appliqué aux documents et
+aux photos de sortie), message dédié — « Photo trop lourde, ne pas dépasser
+600 Ko. Merci. » — passé en 5ᵉ argument à `enregistrer_fichier_envoye()` ;
 seul l'auteur ou un responsable peut supprimer sa photo — même règle,
 et même formulaire de dépôt, dans `galerie.php` (colonnes `categorie_id` et
 `nom_affiche` ajoutées à `photos_privees` le 21/08/2026, exactement comme
@@ -356,6 +361,19 @@ changement, la catégorie de même nom et lui pose son `categorie_id`. Un
 document dont l'ancienne catégorie ne correspond plus à rien de connu (ou
 qui n'a jamais eu de `categorie_id` valide) atterrit dans un groupe « Autres
 documents » en bas de page plutôt que de disparaître. Le formulaire de dépôt
+accepte **plusieurs fichiers à la fois** (`<input type="file" name="documents[]"
+multiple>`, choix explicite de l'utilisateur, 21/08/2026) : chacun devient un
+document séparé, dans la même rubrique et avec la même description
+facultative choisies une seule fois pour tout le lot. Il n'y a plus de champ
+Titre — **le titre de chaque document reprend le nom de son fichier, sans
+l'extension** (`pathinfo($nom, PATHINFO_FILENAME)`), ce qui n'aurait plus de
+sens à saisir à la main dès qu'on dépose plusieurs fichiers d'un coup.
+`fichiers_multiples()` (`inc/televersement.php`) remet à plat la structure
+que PHP donne à un champ multiple (`$_FILES['documents']['name'][i]`, etc.)
+en une liste de fichiers, un par un, pour appeler `enregistrer_fichier_envoye()`
+une fois par fichier ; un fichier refusé (mauvais format, trop lourd) n'empêche
+pas les autres d'être déposés — le message affiché résume les deux
+(« 3 documents ajoutés… » suivi de l'erreur du fichier refusé). Le formulaire
 choisit la catégorie par `categorie_id` (menu `<select>` avec un
 `<optgroup>` par rubrique) ; la page regroupe les documents par rubrique
 puis catégorie (dans l'ordre de `rubriques_documents()`, pas celui de la

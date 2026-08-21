@@ -31,31 +31,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             definir_message('succes', "Document supprimé.");
         }
     } else {
-        $titre        = trim((string) ($_POST['titre'] ?? ''));
+        // Le titre de chaque document est repris du nom de son fichier, sans
+        // l'extension (choix explicite de l'utilisateur, 21/08/2026) : avec
+        // plusieurs fichiers déposés d'un coup, un seul champ de titre saisi
+        // à la main n'aurait plus de sens.
         $categorie_id = (int) ($_POST['categorie_id'] ?? 0);
         $categorie    = categorie_document($pdo, $categorie_id);
+        $description  = trim((string) ($_POST['description'] ?? '')) ?: null;
+        $fichiers     = fichiers_multiples($_FILES['documents'] ?? ['name' => []]);
 
-        if ($titre === '') {
-            definir_message('erreur', "Donnez un titre au document.");
-        } elseif ($categorie === null) {
+        if ($categorie === null) {
             definir_message('erreur', "Choisissez une rubrique — créez-en une dans Réglages du site si aucune ne convient.");
+        } elseif (!$fichiers) {
+            definir_message('erreur', "Sélectionnez au moins un fichier.");
         } else {
-            $resultat = enregistrer_fichier_envoye($_FILES['document'] ?? null, __DIR__ . '/fichiers', 'document');
+            $reussis = 0;
+            $erreurs = [];
 
-            if ($resultat['erreur'] !== null) {
-                definir_message('erreur', $resultat['erreur']);
-            } else {
+            foreach ($fichiers as $fichier) {
+                $resultat = enregistrer_fichier_envoye($fichier, __DIR__ . '/fichiers', 'document');
+                $nom_origine = basename((string) $fichier['name']);
+
+                if ($resultat['erreur'] !== null) {
+                    $erreurs[] = "« {$nom_origine} » : {$resultat['erreur']}";
+                    continue;
+                }
+
+                $titre = pathinfo($nom_origine, PATHINFO_FILENAME);
                 $pdo->prepare(
                     'INSERT INTO documents (titre, description, fichier, nom_origine, taille, categorie, categorie_id, depose_par)
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
                 )->execute([
-                    $titre,
-                    trim((string) ($_POST['description'] ?? '')) ?: null,
+                    $titre !== '' ? $titre : $nom_origine,
+                    $description,
                     $resultat['nom'],
                     // Le nom d'origine sert seulement à proposer un joli nom au
                     // téléchargement ; il n'est jamais utilisé comme chemin.
-                    basename((string) ($_FILES['document']['name'] ?? 'document')),
-                    (int) ($_FILES['document']['size'] ?? 0),
+                    $nom_origine,
+                    (int) $fichier['size'],
                     // Colonne historique, gardée synchronisée pour qui
                     // consulterait la base directement — categorie_id fait
                     // foi pour l'affichage (voir inc/documents_categories.php).
@@ -63,8 +76,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $categorie_id,
                     $adherent['id'],
                 ]);
-                definir_message('succes', "Document ajouté dans « {$categorie['categorie_nom']} ».");
+                $reussis++;
             }
+
+            $parts = [];
+            if ($reussis > 0) {
+                $parts[] = "{$reussis} document" . ($reussis > 1 ? 's' : '')
+                    . " ajouté" . ($reussis > 1 ? 's' : '') . " dans « {$categorie['categorie_nom']} ».";
+            }
+            array_push($parts, ...$erreurs);
+            definir_message($erreurs ? 'erreur' : 'succes', implode(' ', $parts));
         }
     }
 
@@ -152,15 +173,6 @@ titre_page("Documents du club", "Comptes rendus, statuts, bulletins et ressource
       <form method="post" enctype="multipart/form-data" class="form-card" style="margin-top:16px;">
         <?= champ_csrf() ?>
         <div class="field">
-          <label for="titre">Titre</label>
-          <input type="text" id="titre" name="titre" required maxlength="190"
-                 placeholder="Compte rendu de l'assemblée générale 2026">
-        </div>
-        <div class="field">
-          <label for="description">Description (facultatif)</label>
-          <textarea id="description" name="description" rows="2"></textarea>
-        </div>
-        <div class="field">
           <label for="categorie_id">Rubrique</label>
           <select id="categorie_id" name="categorie_id">
             <?php foreach ($rubriques as $rubrique): ?>
@@ -174,10 +186,18 @@ titre_page("Documents du club", "Comptes rendus, statuts, bulletins et ressource
           </select>
         </div>
         <div class="field">
-          <label for="document">Fichier (PDF, Word, Excel, OpenDocument, texte ou image — <?= taille_lisible(TAILLE_MAX_OCTETS) ?> maximum)</label>
-          <input type="file" id="document" name="document" required>
+          <label for="description">Description (facultatif, s'applique à tous les fichiers déposés ici)</label>
+          <textarea id="description" name="description" rows="2"></textarea>
         </div>
-        <button type="submit" class="btn btn-primary">Déposer le document</button>
+        <div class="field">
+          <label for="documents">Fichiers (PDF, Word, Excel, OpenDocument, texte ou image — <?= taille_lisible(TAILLE_MAX_OCTETS) ?> maximum chacun)</label>
+          <input type="file" id="documents" name="documents[]" multiple required>
+          <p class="form-note">
+            Plusieurs fichiers peuvent être sélectionnés d'un coup : le titre de chaque
+            document reprend alors le nom de son fichier, sans l'extension.
+          </p>
+        </div>
+        <button type="submit" class="btn btn-primary">Déposer</button>
       </form>
     </details>
   <?php endif; ?>

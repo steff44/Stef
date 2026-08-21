@@ -45,7 +45,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif (!isset($categories[$categorie_id])) {
             definir_message('erreur', "Choisissez une catégorie — créez-en une dans Réglages du site si aucune ne convient.");
         } else {
-            $resultat = enregistrer_fichier_envoye($_FILES['photo'] ?? null, __DIR__ . '/photos', 'image');
+            $resultat = enregistrer_fichier_envoye(
+                $_FILES['photo'] ?? null,
+                __DIR__ . '/photos',
+                'image',
+                TAILLE_MAX_PHOTO_ADHERENT,
+                "Photo trop lourde, ne pas dépasser 600 Ko. Merci."
+            );
 
             if ($resultat['erreur'] !== null) {
                 definir_message('erreur', $resultat['erreur']);
@@ -144,7 +150,7 @@ titre_page(
           <textarea id="description" name="description" rows="2" placeholder="Un mot pour expliquer votre photo…"></textarea>
         </div>
         <div class="field">
-          <label for="photo">Image (JPEG, PNG, WebP ou GIF — <?= taille_lisible(TAILLE_MAX_OCTETS) ?> maximum)</label>
+          <label for="photo">Image (JPEG, PNG, WebP ou GIF — <?= taille_lisible(TAILLE_MAX_PHOTO_ADHERENT) ?> maximum)</label>
           <input type="file" id="photo" name="photo" accept="image/*" required>
         </div>
         <button type="submit" class="btn btn-primary">Envoyer la photo</button>

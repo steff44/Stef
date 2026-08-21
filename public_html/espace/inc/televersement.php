@@ -19,6 +19,12 @@ require_once __DIR__ . '/page.php';
 
 const TAILLE_MAX_OCTETS = 8388608; // 8 Mo
 
+// Plafond plus strict pour les photos déposées par les adhérents (Galerie
+// privée, Galerie du Club) — choix explicite de l'utilisateur, 21/08/2026 :
+// contrairement aux documents et aux photos de sortie, qui gardent le
+// plafond général ci-dessus.
+const TAILLE_MAX_PHOTO_ADHERENT = 614400; // 600 Ko
+
 /* Types acceptés, et l'extension qu'on leur donne. */
 const IMAGES_ACCEPTEES = [
     'image/jpeg' => 'jpg',
@@ -42,10 +48,19 @@ const DOCUMENTS_ACCEPTES = [
 /*
  * Renvoie ['nom' => 'fichier enregistré', 'erreur' => null]
  * ou        ['nom' => null, 'erreur' => 'message à afficher'].
+ *
+ * $taille_max et $message_trop_lourd permettent un plafond et un message
+ * différents de ceux par défaut — voir TAILLE_MAX_PHOTO_ADHERENT plus haut.
  */
-function enregistrer_fichier_envoye(?array $envoi, string $dossier, string $categorie): array
-{
+function enregistrer_fichier_envoye(
+    ?array $envoi,
+    string $dossier,
+    string $categorie,
+    int $taille_max = TAILLE_MAX_OCTETS,
+    ?string $message_trop_lourd = null
+): array {
     $echec = static fn(string $message): array => ['nom' => null, 'erreur' => $message];
+    $message_trop_lourd ??= "Le fichier est trop volumineux (maximum " . taille_lisible($taille_max) . ").";
 
     if (!$envoi || !isset($envoi['error']) || $envoi['error'] === UPLOAD_ERR_NO_FILE) {
         return $echec("Aucun fichier sélectionné.");
@@ -54,7 +69,7 @@ function enregistrer_fichier_envoye(?array $envoi, string $dossier, string $cate
     if ($envoi['error'] !== UPLOAD_ERR_OK) {
         // Cas le plus fréquent : le fichier dépasse la limite du serveur.
         if (in_array($envoi['error'], [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true)) {
-            return $echec("Le fichier est trop volumineux (maximum " . taille_lisible(TAILLE_MAX_OCTETS) . ").");
+            return $echec($message_trop_lourd);
         }
         return $echec("L'envoi du fichier a échoué. Réessayez.");
     }
@@ -65,8 +80,8 @@ function enregistrer_fichier_envoye(?array $envoi, string $dossier, string $cate
         return $echec("Envoi invalide.");
     }
 
-    if ($envoi['size'] > TAILLE_MAX_OCTETS) {
-        return $echec("Le fichier est trop volumineux (maximum " . taille_lisible(TAILLE_MAX_OCTETS) . ").");
+    if ($envoi['size'] > $taille_max) {
+        return $echec($message_trop_lourd);
     }
 
     $autorises = $categorie === 'image' ? IMAGES_ACCEPTEES : DOCUMENTS_ACCEPTES;
@@ -156,4 +171,34 @@ function redimensionner_en_carre(string $chemin, int $taille): void
 
     imagedestroy($source);
     imagedestroy($destination);
+}
+
+/*
+ * Remet à plat le tableau que PHP construit pour un champ `name="x[]"
+ * multiple` — $_FILES['x'] arrive alors sous la forme ['name' => [...],
+ * 'tmp_name' => [...], ...] (un tableau par propriété) plutôt qu'un tableau
+ * par fichier. Renvoie une liste de tableaux au format attendu par
+ * enregistrer_fichier_envoye() ; une case laissée vide dans le sélecteur
+ * (aucun fichier choisi à cet emplacement) est ignorée plutôt que traitée
+ * comme un envoi en échec.
+ */
+function fichiers_multiples(array $bloc): array
+{
+    $fichiers = [];
+    $total    = count($bloc['name'] ?? []);
+
+    for ($i = 0; $i < $total; $i++) {
+        if (($bloc['error'][$i] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+            continue;
+        }
+        $fichiers[] = [
+            'name'     => $bloc['name'][$i],
+            'type'     => $bloc['type'][$i],
+            'tmp_name' => $bloc['tmp_name'][$i],
+            'error'    => $bloc['error'][$i],
+            'size'     => $bloc['size'][$i],
+        ];
+    }
+
+    return $fichiers;
 }
