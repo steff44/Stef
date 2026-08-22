@@ -1520,6 +1520,21 @@ a {
   padding: 14px 20px;
 }
 
+/* Bouton « Modifier » d'une sortie : bouton normal replié, formulaire sur
+   toute la largeur de la ligne d'actions une fois déplié. */
+.sortie-modifier {
+  flex: 0 1 auto;
+}
+.sortie-modifier[open] {
+  flex-basis: 100%;
+}
+.sortie-modifier summary.btn {
+  list-style: none;
+}
+.sortie-modifier summary.btn::-webkit-details-marker {
+  display: none;
+}
+
 /* Calendrier de l'agenda, connecté aux mêmes sorties que les listes */
 .agenda-calendrier {
   background: var(--bg-alt);

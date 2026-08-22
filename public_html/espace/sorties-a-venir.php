@@ -51,6 +51,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         definir_message('succes', "Sortie supprimée.");
 
+    } elseif ($action === 'modifier') {
+        exige_administrateur();
+        $titre     = trim((string) ($_POST['titre'] ?? ''));
+        $debut     = trim((string) ($_POST['debut'] ?? ''));
+        $categorie = (string) ($_POST['categorie'] ?? '');
+        if (!in_array($categorie, CATEGORIES_SORTIES, true)) {
+            $categorie = CATEGORIES_SORTIES[0];
+        }
+
+        $horodatage = strtotime($debut);
+
+        if ($titre === '' || $horodatage === false) {
+            definir_message('erreur', "Le titre et la date sont obligatoires.");
+        } else {
+            $requete = $pdo->prepare('SELECT photo FROM sorties WHERE id = ?');
+            $requete->execute([$id]);
+            $sortie_existante = $requete->fetch();
+
+            if (!$sortie_existante) {
+                definir_message('erreur', "Cette sortie n'existe plus.");
+            } else {
+                // La photo n'est remplacée que si un nouveau fichier est envoyé ;
+                // sinon la photo déjà en place est conservée telle quelle.
+                $photo       = $sortie_existante['photo'];
+                $envoi_photo = $_FILES['photo'] ?? null;
+                if ($envoi_photo && ($envoi_photo['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+                    $resultat_photo = enregistrer_fichier_envoye($envoi_photo, __DIR__ . '/photos', 'image');
+                    if ($resultat_photo['erreur'] !== null) {
+                        definir_message('erreur', $resultat_photo['erreur']);
+                        header('Location: sorties-a-venir.php');
+                        exit;
+                    }
+                    if ($photo) {
+                        @unlink(__DIR__ . '/photos/' . basename((string) $photo));
+                    }
+                    $photo = $resultat_photo['nom'];
+                    redimensionner_en_carre(__DIR__ . '/photos/' . $photo, TAILLE_PHOTO_SORTIE);
+                }
+
+                $pdo->prepare(
+                    'UPDATE sorties SET titre = ?, categorie = ?, description = ?, lieu = ?, debut = ?, rendez_vous = ?, covoiturage = ?, photo = ?
+                     WHERE id = ?'
+                )->execute([
+                    $titre,
+                    $categorie,
+                    trim((string) ($_POST['description'] ?? '')) ?: null,
+                    trim((string) ($_POST['lieu'] ?? '')) ?: null,
+                    date('Y-m-d H:i:s', $horodatage),
+                    trim((string) ($_POST['rendez_vous'] ?? '')) ?: null,
+                    isset($_POST['covoiturage']) ? 1 : 0,
+                    $photo,
+                    $id,
+                ]);
+                definir_message('succes', "Sortie modifiée.");
+            }
+        }
+
     } elseif ($action === 'creer') {
         exige_administrateur();
         $titre     = trim((string) ($_POST['titre'] ?? ''));
@@ -243,6 +300,55 @@ titre_page("Sorties à venir", "Les prochaines sorties du club, et qui y partici
                 <a class="btn btn-ghost" href="connexion.php">Se connecter pour participer</a>
               <?php endif; ?>
               <?php if (est_administrateur()): ?>
+                <details class="sortie-modifier">
+                  <summary class="btn btn-ghost">Modifier</summary>
+                  <form method="post" enctype="multipart/form-data" class="form-card" style="margin-top:16px;">
+                    <?= champ_csrf() ?>
+                    <input type="hidden" name="action" value="modifier">
+                    <input type="hidden" name="id" value="<?= (int) $sortie['id'] ?>">
+                    <div class="field">
+                      <label for="titre-<?= (int) $sortie['id'] ?>">Titre</label>
+                      <input type="text" id="titre-<?= (int) $sortie['id'] ?>" name="titre" required maxlength="190"
+                             value="<?= e($sortie['titre']) ?>">
+                    </div>
+                    <div class="field">
+                      <label for="categorie-<?= (int) $sortie['id'] ?>">Catégorie</label>
+                      <select id="categorie-<?= (int) $sortie['id'] ?>" name="categorie">
+                        <?php foreach (CATEGORIES_SORTIES as $categorie_option): ?>
+                          <option value="<?= e($categorie_option) ?>" <?= $categorie_option === $sortie['categorie'] ? 'selected' : '' ?>><?= e($categorie_option) ?></option>
+                        <?php endforeach; ?>
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label for="debut-<?= (int) $sortie['id'] ?>">Date et heure</label>
+                      <input type="datetime-local" id="debut-<?= (int) $sortie['id'] ?>" name="debut" required
+                             value="<?= e(date('Y-m-d\TH:i', strtotime($sortie['debut']))) ?>">
+                    </div>
+                    <div class="field">
+                      <label for="lieu-<?= (int) $sortie['id'] ?>">Lieu</label>
+                      <input type="text" id="lieu-<?= (int) $sortie['id'] ?>" name="lieu" maxlength="190"
+                             value="<?= e((string) $sortie['lieu']) ?>">
+                    </div>
+                    <div class="field">
+                      <label for="rendez_vous-<?= (int) $sortie['id'] ?>">Point de rendez-vous</label>
+                      <input type="text" id="rendez_vous-<?= (int) $sortie['id'] ?>" name="rendez_vous" maxlength="190"
+                             value="<?= e((string) $sortie['rendez_vous']) ?>">
+                    </div>
+                    <div class="field">
+                      <label for="description-<?= (int) $sortie['id'] ?>">Précisions (facultatif)</label>
+                      <textarea id="description-<?= (int) $sortie['id'] ?>" name="description" rows="3"><?= e((string) $sortie['description']) ?></textarea>
+                    </div>
+                    <div class="field">
+                      <label for="photo-<?= (int) $sortie['id'] ?>">Photo (facultatif — <?= $sortie['photo'] ? 'laissez vide pour garder la photo actuelle, ou remplacez-la' : 'recadrée automatiquement en carré ' . TAILLE_PHOTO_SORTIE . '×' . TAILLE_PHOTO_SORTIE ?>)</label>
+                      <input type="file" id="photo-<?= (int) $sortie['id'] ?>" name="photo" accept="image/*">
+                    </div>
+                    <label class="case-a-cocher">
+                      <input type="checkbox" name="covoiturage" value="1" <?= $sortie['covoiturage'] ? 'checked' : '' ?>>
+                      Covoiturage proposé
+                    </label>
+                    <button type="submit" class="btn btn-primary" style="margin-top:16px;">Enregistrer les modifications</button>
+                  </form>
+                </details>
                 <form method="post" onsubmit="return confirm('Supprimer cette sortie et ses inscriptions ?');">
                   <?= champ_csrf() ?>
                   <input type="hidden" name="action" value="supprimer">
