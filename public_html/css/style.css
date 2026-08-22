@@ -150,6 +150,15 @@ a {
   transition: color 0.2s ease, border-color 0.2s ease;
 }
 
+/* Lien « Nous Contacter » du menu, sur deux lignes (« Nous Contacter » puis
+   « S'inscrire ») — même principe que .logo-text : un <br> volontaire fixe
+   la coupure plutôt que de compter sur le retour à la ligne automatique. */
+.nav-deux-lignes {
+  display: inline-block;
+  text-align: center;
+  line-height: 1.25;
+}
+
 .nav-links a:hover,
 .nav-links a[aria-current="page"] {
   color: var(--text);
