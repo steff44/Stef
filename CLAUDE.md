@@ -176,10 +176,25 @@ sorties et qui y participe, avec un lien « Se connecter pour participer » à
 la place du bouton d'inscription. Ne pas réintroduire de calendrier public
 séparé.
 
-`espace/agenda.php` affiche aussi un **calendrier du mois**, connecté aux
-mêmes lignes de la table `sorties` que les listes juste en dessous (aucune
-donnée séparée) — navigation par `?mois=AAAA-MM`, en rechargement de page
-classique, sans JavaScript. Chaque sortie a une **catégorie** (colonne
+`espace/agenda.php` affiche aussi un **calendrier**, en vue **mois ou
+semaine** (choix explicite de l'utilisateur, 22/08/2026 — la vue semaine
+manquait), connecté aux mêmes lignes de la table `sorties` que les listes
+juste en dessous (aucune donnée séparée) — deux onglets `.agenda-cal-onglet`
+en haut du calendrier, navigation par `?vue=mois&mois=AAAA-MM` ou
+`?vue=semaine&semaine=AAAA-MM-JJ` (le lundi de la semaine affichée — un
+paramètre pointant sur un autre jour est ramené à son lundi), en
+rechargement de page classique, sans JavaScript. Basculer d'un onglet à
+l'autre préserve le contexte plutôt que de revenir à aujourd'hui : depuis la
+vue mois, « Semaine » ouvre la semaine du 1er du mois affiché ; depuis la
+vue semaine, « Mois » ouvre le mois du lundi affiché. Les **vacances
+scolaires** (zone B, académie de Nantes, dates officielles 2026-2027 —
+vérifiées en ligne, pas inventées) sont affichées en fond teinté sur les
+jours concernés (classe `.agenda-cal-jour.vacances`) et récapitulées dans un
+bandeau au-dessus du calendrier pour toute vacance qui chevauche la période
+affichée (mois ou semaine) — `VACANCES_SCOLAIRES`, `vacances_du_jour()` et
+`vacances_chevauchant()` dans `inc/agenda.php`, à côté de
+`CATEGORIES_SORTIES` ; à compléter à la même source lors d'une prochaine
+année scolaire. Chaque sortie a une **catégorie** (colonne
 `categorie` sur `sorties`, ajoutée via `COLONNES_SORTIES_ATTENDUES` dans
 `migration.php`) parmi celles listées dans `CATEGORIES_SORTIES` en haut de
 `agenda.php` — actuellement Sortie photo / Cours / Réunion, choisie à la

@@ -1535,6 +1535,49 @@ a {
   display: none;
 }
 
+/* Onglets Mois/Semaine au-dessus du calendrier */
+.agenda-cal-onglets {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.agenda-cal-onglet {
+  padding: 9px 20px;
+  border-radius: var(--radius-btn);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+.agenda-cal-onglet:hover {
+  border-color: var(--accent-3);
+  color: var(--text);
+}
+.agenda-cal-onglet--actif {
+  background: var(--accent-gradient);
+  border-color: transparent;
+  color: #fff;
+}
+
+/* Bandeau récapitulatif des vacances scolaires qui chevauchent la période
+   affichée (mois ou semaine). */
+.agenda-cal-vacances-bandeau {
+  background: rgba(250, 204, 21, 0.1);
+  border: 1px solid rgba(250, 204, 21, 0.35);
+  border-radius: var(--radius);
+  padding: 12px 18px;
+  margin: 0 0 16px;
+  font-size: 0.86rem;
+  color: var(--text-muted);
+}
+.agenda-cal-vacances-bandeau strong {
+  color: var(--text);
+}
+.agenda-cal-vacances-pastille {
+  background: rgba(250, 204, 21, 0.35);
+  border: 1px solid rgba(250, 204, 21, 0.6);
+  border-radius: 3px;
+}
+
 /* Calendrier de l'agenda, connecté aux mêmes sorties que les listes */
 .agenda-calendrier {
   background: var(--bg-alt);
@@ -1605,6 +1648,12 @@ a {
 }
 .agenda-cal-jour.hors-mois {
   opacity: 0.35;
+}
+.agenda-cal-jour.vacances {
+  background: rgba(250, 204, 21, 0.08);
+}
+.agenda-cal-grille--semaine .agenda-cal-jour {
+  min-height: 200px;
 }
 .agenda-cal-jour-numero {
   font-size: 0.82rem;
