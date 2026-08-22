@@ -1707,6 +1707,81 @@ a {
   gap: 6px;
 }
 
+/* Vue Année : douze mini-mois, un point sous les jours qui ont un événement */
+.agenda-cal-annee-grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 18px;
+  padding: 20px;
+}
+.agenda-cal-mini-mois {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-btn);
+  padding: 12px;
+}
+.agenda-cal-mini-mois-titre {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  text-align: center;
+  margin: 0 0 8px;
+  color: var(--text);
+}
+.agenda-cal-mini-mois-titre:hover {
+  color: var(--accent-3);
+}
+.agenda-cal-mini-entetes,
+.agenda-cal-mini-jours {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+.agenda-cal-mini-entetes span {
+  text-align: center;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  padding-bottom: 4px;
+}
+.agenda-cal-mini-jour {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 26px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  border-radius: 4px;
+}
+.agenda-cal-mini-jour.vacances {
+  background: rgba(250, 204, 21, 0.14);
+}
+.agenda-cal-mini-jour.aujourdhui {
+  background: var(--accent-gradient);
+  color: #fff;
+  font-weight: 700;
+}
+.agenda-cal-mini-jour.a-un-evenement::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent-3);
+}
+.agenda-cal-mini-jour.aujourdhui.a-un-evenement::after {
+  background: #fff;
+}
+.agenda-cal-mini-point {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-3);
+}
+
 @media (max-width: 760px) {
   .agenda-cal-grille-entetes span {
     font-size: 0.6rem;
