@@ -55,7 +55,15 @@ public_html/          ← racine du site, déployée telle quelle
     Sorties à venir (ancre `#sortie-{id}`). Une sortie peut avoir une photo
     (facultative), recadrée en carré 400×400 à l'envoi
     (`redimensionner_en_carre()` dans `inc/televersement.php`), publique via
-    `telecharger.php?type=sortie`.
+    `telecharger.php?type=sortie`. Un responsable peut aussi **modifier** une
+    sortie existante (22/08/2026) : bouton « Modifier » à côté de
+    « Supprimer » sur chaque carte à venir, qui déplie (`<details
+    class="sortie-modifier">`) le même formulaire que « Ajouter une sortie »,
+    prérempli avec les valeurs actuelles. La photo n'est remplacée que si un
+    nouveau fichier est envoyé ; sinon celle déjà en place est conservée
+    (l'action `modifier`, dans `sorties-a-venir.php`, relit la photo actuelle
+    avant d'écraser la ligne). Uniquement sur les sorties à venir, pas sur
+    les sorties passées (qui n'ont aucune action).
   - Le Club → `espace/le-club.php` (voir « Le Club » plus bas) : **réservé
     aux adhérents connectés depuis le 18/08/2026** — ce n'est plus la liste
     publique des adhérents. `membres.html` est désormais une redirection
