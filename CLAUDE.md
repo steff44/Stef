@@ -215,6 +215,19 @@ un seul endroit : la constante `CATEGORIES_SORTIES` (le mapping couleur
 ce mapping retombe simplement sur le style « sortie » plutôt que de
 planter).
 
+**La réunion hebdomadaire du club est semée automatiquement dans
+`sorties`** (choix explicite de l'utilisateur, 22/08/2026) : une sortie
+catégorie « Réunion » par jeudi de 20h30 à 23h00 (l'heure de fin va dans
+`description`, faute de colonne dédiée), au Foyer des Vignes, du 10/09/2026
+au 30/06/2027, sauf les jeudis qui tombent pendant une vacance scolaire
+(`VACANCES_SCOLAIRES`). Semée une seule fois par `appliquer_migrations()`
+(constantes `REUNION_HEBDOMADAIRE_*`, `inc/migration.php`) si aucune sortie
+« Réunion hebdomadaire » n'existe déjà — jamais réintroduite si un
+responsable supprime ensuite tout ou partie de la série, même principe que
+les autres semis `PAR_DEFAUT` de ce fichier. Chaque séance reste ensuite une
+sortie ordinaire, modifiable ou supprimable une par une depuis
+`sorties-a-venir.php` comme n'importe quelle autre.
+
 **« Galerie » existe en trois versions**, sans confondre les deux publiques
 avec la privée : `galerie.html` (page publique, ouverte à tous) d'un côté,
 `galerie.php` (**Galerie privée**, table `photos_privees`) de l'autre —

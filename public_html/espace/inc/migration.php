@@ -14,6 +14,10 @@
 
 declare(strict_types=1);
 
+// Pour VACANCES_SCOLAIRES et vacances_du_jour(), utilisées par le semis de
+// la réunion hebdomadaire plus bas.
+require_once __DIR__ . '/agenda.php';
+
 // Colonnes attendues sur `adherents`, avec leur définition SQL.
 const COLONNES_ATTENDUES = [
     'derniere_activite' => 'DATETIME DEFAULT NULL',
@@ -111,6 +115,20 @@ const CATEGORIES_GALERIE_PAR_DEFAUT = [
     'Noir & Blanc',
     'Créatif',
 ];
+
+// Réunion hebdomadaire du club, semée une seule fois dans `sorties` — choix
+// explicite de l'utilisateur, 22/08/2026 : tous les jeudis de 20h30 à
+// 23h00, sauf pendant les vacances scolaires (VACANCES_SCOLAIRES,
+// inc/agenda.php), du 10/09/2026 au 30/06/2027. Semée par
+// appliquer_migrations() ci-dessous si aucune réunion de ce titre n'existe
+// déjà — jamais réintroduite si un responsable a depuis tout supprimé, même
+// principe que les autres semis PAR_DEFAUT de ce fichier. Chaque séance
+// reste ensuite une sortie ordinaire, modifiable ou supprimable comme les
+// autres depuis sorties-a-venir.php.
+const REUNION_HEBDOMADAIRE_TITRE = 'Réunion hebdomadaire';
+const REUNION_HEBDOMADAIRE_LIEU  = 'Foyer des Vignes, 17 rue Michelet, 44420 La Turballe';
+const REUNION_HEBDOMADAIRE_DEBUT = '2026-09-10'; // un jeudi
+const REUNION_HEBDOMADAIRE_FIN   = '2027-06-30';
 
 // Coordonnées du club, modifiables par un responsable depuis parametres.php
 // et affichées sur les pages publiques statiques via infos-club.php. Les
@@ -320,6 +338,39 @@ function appliquer_migrations(PDO $pdo): void
         $reussi = false;
     }
 
+    try {
+        // Semé une seule fois : si aucune réunion de ce titre n'existe déjà
+        // (première migration après l'ajout de ce semis, ou responsable qui
+        // a tout supprimé), on ne réintroduit jamais la série.
+        $compteur = $pdo->prepare('SELECT COUNT(*) FROM sorties WHERE titre = ?');
+        $compteur->execute([REUNION_HEBDOMADAIRE_TITRE]);
+        if ((int) $compteur->fetchColumn() === 0) {
+            $inserer_reunion = $pdo->prepare(
+                'INSERT INTO sorties (titre, categorie, description, lieu, debut, rendez_vous, covoiturage)
+                 VALUES (?, ?, ?, ?, ?, ?, 0)'
+            );
+            $jour         = new DateTime(REUNION_HEBDOMADAIRE_DEBUT);
+            $dernier_jour = new DateTime(REUNION_HEBDOMADAIRE_FIN);
+            while ($jour <= $dernier_jour) {
+                $iso = $jour->format('Y-m-d');
+                if (vacances_du_jour($iso) === null) {
+                    $inserer_reunion->execute([
+                        REUNION_HEBDOMADAIRE_TITRE,
+                        'Réunion',
+                        'De 20h30 à 23h00.',
+                        REUNION_HEBDOMADAIRE_LIEU,
+                        $iso . ' 20:30:00',
+                        null,
+                    ]);
+                }
+                $jour->modify('+7 days');
+            }
+        }
+    } catch (PDOException $e) {
+        error_log('Espace adhérents — migration réunion hebdomadaire : ' . $e->getMessage());
+        $reussi = false;
+    }
+
     if ($reussi) {
         @file_put_contents($temoin, signature_schema());
     }
@@ -335,7 +386,8 @@ function signature_schema(): string
         implode('|', array_keys(COLONNES_PHOTOS_PRIVEES_ATTENDUES)) . '||' .
         implode('|', array_keys(PARAMETRES_PAR_DEFAUT)) . '||' .
         'rubriques_documents_v1' . '||' .
-        'categories_galerie_v2'
+        'categories_galerie_v2' . '||' .
+        'reunion_hebdomadaire_v1'
     );
 }
 
