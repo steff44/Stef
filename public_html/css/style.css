@@ -1845,7 +1845,6 @@ a {
 }
 .annuaire-vide {
   color: var(--text-muted);
-  font-style: italic;
 }
 
 .grille-deux {
@@ -1901,7 +1900,6 @@ a {
 }
 .jamais-connecte {
   color: var(--text-muted);
-  font-style: italic;
 }
 .compte-inactif {
   opacity: 0.55;
