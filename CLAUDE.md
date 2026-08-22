@@ -77,7 +77,14 @@ public_html/          ← racine du site, déployée telle quelle
     `espace/inscription.php` — seule une page PHP le peut. Reprend le style
     `.cta-section` déjà utilisé sur `index.html`. Le grand titre en haut de
     page tient sur deux lignes, « Nous contacter » puis « S'inscrire »
-    (`<br>` volontaire dans le `<h1>`, même principe que le logo).
+    (`<br>` volontaire dans le `<h1>`, même principe que le logo). Le lien
+    « Nous Contacter » du menu principal reprend le même traitement
+    (`.nav-deux-lignes`, choix explicite de l'utilisateur) — présent en dur
+    dans `index.html`, `galerie.html`, `contact.html` et
+    `espace/inc/page.php` (pas de rendu centralisé pour les pages
+    statiques) ; seul le lien du menu change, pas les occurrences dans le
+    pied de page ou le bouton « Nous Contacter » de l'accueil, qui restent
+    sur une ligne.
 - **« Agenda » et « Espace Adhérent » sont des menus déroulants**
   (`.nav-dropdown` dans `css/style.css` + comportement dans `js/main.js` :
   clic pour ouvrir/fermer, clic extérieur, Échap, accordéon en dessous de

@@ -85,7 +85,7 @@ function debut_page(string $titre, string $page_active = ''): void
         </ul>
       </li>
       <li><a href="le-club.php"<?= $page_active === 'le-club' ? ' aria-current="page"' : '' ?>>Le Club</a></li>
-      <li><a href="../contact.html">Nous Contacter</a></li>
+      <li><a href="../contact.html"><span class="nav-deux-lignes">Nous Contacter<br>S'inscrire</span></a></li>
       <li class="nav-dropdown">
         <?php if ($adherent): ?>
           <a class="nav-dropdown-label" href="index.php"<?= $page_active === 'index' ? ' aria-current="page"' : '' ?>>
