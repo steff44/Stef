@@ -75,7 +75,9 @@ public_html/          ← racine du site, déployée telle quelle
     Pas de duplication du formulaire lui-même : `contact.html` reste une
     page statique, incapable de générer le jeton anti-CSRF qu'exige
     `espace/inscription.php` — seule une page PHP le peut. Reprend le style
-    `.cta-section` déjà utilisé sur `index.html`.
+    `.cta-section` déjà utilisé sur `index.html`. Le grand titre en haut de
+    page tient sur deux lignes, « Nous contacter » puis « S'inscrire »
+    (`<br>` volontaire dans le `<h1>`, même principe que le logo).
 - **« Agenda » et « Espace Adhérent » sont des menus déroulants**
   (`.nav-dropdown` dans `css/style.css` + comportement dans `js/main.js` :
   clic pour ouvrir/fermer, clic extérieur, Échap, accordéon en dessous de
