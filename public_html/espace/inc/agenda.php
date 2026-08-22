@@ -53,3 +53,19 @@ function vacances_chevauchant(string $debut, string $fin): array
         static fn(array $v) => $v['debut'] <= $fin && $v['fin'] >= $debut
     ));
 }
+
+/* Grille d'un mois, complétée aux semaines pleines (lundi à dimanche) —
+   utilisée par la vue mois et par les douze mini-mois de la vue année. */
+function grille_mois(DateTime $premier_jour_mois): array
+{
+    $decalage_lundi  = ((int) $premier_jour_mois->format('N')) - 1; // 0 = lundi
+    $jours_dans_mois = (int) $premier_jour_mois->format('t');
+    $nb_semaines     = (int) ceil(($decalage_lundi + $jours_dans_mois) / 7);
+    $debut_grille    = (clone $premier_jour_mois)->modify("-{$decalage_lundi} days");
+
+    $jours = [];
+    for ($i = 0; $i < $nb_semaines * 7; $i++) {
+        $jours[] = (clone $debut_grille)->modify("+{$i} days");
+    }
+    return $jours;
+}

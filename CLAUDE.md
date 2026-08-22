@@ -176,25 +176,35 @@ sorties et qui y participe, avec un lien « Se connecter pour participer » à
 la place du bouton d'inscription. Ne pas réintroduire de calendrier public
 séparé.
 
-`espace/agenda.php` affiche aussi un **calendrier**, en vue **mois ou
-semaine** (choix explicite de l'utilisateur, 22/08/2026 — la vue semaine
-manquait), connecté aux mêmes lignes de la table `sorties` que les listes
-juste en dessous (aucune donnée séparée) — deux onglets `.agenda-cal-onglet`
-en haut du calendrier, navigation par `?vue=mois&mois=AAAA-MM` ou
-`?vue=semaine&semaine=AAAA-MM-JJ` (le lundi de la semaine affichée — un
-paramètre pointant sur un autre jour est ramené à son lundi), en
-rechargement de page classique, sans JavaScript. Basculer d'un onglet à
-l'autre préserve le contexte plutôt que de revenir à aujourd'hui : depuis la
-vue mois, « Semaine » ouvre la semaine du 1er du mois affiché ; depuis la
-vue semaine, « Mois » ouvre le mois du lundi affiché. Les **vacances
-scolaires** (zone B, académie de Nantes, dates officielles 2026-2027 —
-vérifiées en ligne, pas inventées) sont affichées en fond teinté sur les
-jours concernés (classe `.agenda-cal-jour.vacances`) et récapitulées dans un
-bandeau au-dessus du calendrier pour toute vacance qui chevauche la période
-affichée (mois ou semaine) — `VACANCES_SCOLAIRES`, `vacances_du_jour()` et
-`vacances_chevauchant()` dans `inc/agenda.php`, à côté de
-`CATEGORIES_SORTIES` ; à compléter à la même source lors d'une prochaine
-année scolaire. Chaque sortie a une **catégorie** (colonne
+`espace/agenda.php` affiche aussi un **calendrier**, en vue **mois, semaine
+ou année** (choix explicite de l'utilisateur, 22/08/2026 — la vue semaine
+manquait, puis l'utilisateur a signalé avoir aussi oublié la vue année dans
+la foulée du même message), connecté aux mêmes lignes de la table `sorties`
+que les listes juste en dessous (aucune donnée séparée) — trois onglets
+`.agenda-cal-onglet` en haut du calendrier, navigation par
+`?vue=mois&mois=AAAA-MM`, `?vue=semaine&semaine=AAAA-MM-JJ` (le lundi de la
+semaine affichée — un paramètre pointant sur un autre jour est ramené à son
+lundi) ou `?vue=annee&annee=AAAA`, en rechargement de page classique, sans
+JavaScript. Basculer d'un onglet à l'autre préserve le contexte plutôt que
+de revenir à aujourd'hui (une date « ancre » commune aux trois vues) : depuis
+la vue mois, « Semaine » ouvre la semaine du 1er du mois affiché et
+« Année » l'année de ce mois ; depuis la vue semaine, « Mois » ouvre le mois
+du lundi affiché ; depuis la vue année, « Mois »/« Semaine » ouvrent
+janvier de cette année. La vue année affiche douze mini-mois compacts
+(`.agenda-cal-mini-mois`, grille `grille_mois()` réutilisée depuis
+`inc/agenda.php` pour la vue mois comme pour chaque mini-mois) : un point
+sous un jour signale au moins un événement ce jour-là (sans distinction de
+catégorie, faute de place), le nom du mois est un lien direct vers sa vue
+mois. Les **vacances scolaires** (zone B, académie de Nantes, dates
+officielles 2026-2027 — vérifiées en ligne, pas inventées) sont affichées en
+fond teinté sur les jours concernés (classe `.agenda-cal-jour.vacances` en
+vue mois/semaine, `.agenda-cal-mini-jour.vacances` en vue année) et
+récapitulées dans un bandeau au-dessus du calendrier pour toute vacance qui
+chevauche la période affichée (mois, semaine ou année entière) —
+`VACANCES_SCOLAIRES`, `vacances_du_jour()` et `vacances_chevauchant()` dans
+`inc/agenda.php`, à côté de `CATEGORIES_SORTIES` ; à compléter à la même
+source lors d'une prochaine année scolaire. Chaque sortie a une
+**catégorie** (colonne
 `categorie` sur `sorties`, ajoutée via `COLONNES_SORTIES_ATTENDUES` dans
 `migration.php`) parmi celles listées dans `CATEGORIES_SORTIES` en haut de
 `agenda.php` — actuellement Sortie photo / Cours / Réunion, choisie à la
