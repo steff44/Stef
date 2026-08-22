@@ -68,7 +68,14 @@ public_html/          ← racine du site, déployée telle quelle
     aux adhérents connectés depuis le 18/08/2026** — ce n'est plus la liste
     publique des adhérents. `membres.html` est désormais une redirection
     (même principe qu'`evenements.html`).
-  - Nous Contacter → `contact.html`.
+  - Nous Contacter → `contact.html`. Depuis le 22/08/2026, cette page porte
+    aussi une section **« Inscription »** (choix explicite de l'utilisateur),
+    entre le formulaire de contact et la FAQ : accroche + bouton
+    « Créer mon compte » vers `espace/inscription.php`, le vrai formulaire.
+    Pas de duplication du formulaire lui-même : `contact.html` reste une
+    page statique, incapable de générer le jeton anti-CSRF qu'exige
+    `espace/inscription.php` — seule une page PHP le peut. Reprend le style
+    `.cta-section` déjà utilisé sur `index.html`.
 - **« Agenda » et « Espace Adhérent » sont des menus déroulants**
   (`.nav-dropdown` dans `css/style.css` + comportement dans `js/main.js` :
   clic pour ouvrir/fermer, clic extérieur, Échap, accordéon en dessous de
