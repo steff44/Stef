@@ -42,6 +42,13 @@ public_html/          ← racine du site, déployée telle quelle
   (`--accent-gradient`), repris de focalclub.fr.
 - **Police : Comic Sans MS** partout (choix explicite de l'utilisateur, comme
   sur focalclub.fr). Pas de Google Fonts — police système avec repli.
+  **Sur téléphone (≤ 760px), Comic Sans est remplacée par la police système**
+  (`-apple-system, "Segoe UI", Roboto, ...` — choix explicite de
+  l'utilisateur, 22/08/2026, Comic Sans en italique étant difficile à lire
+  sur petit écran) : reste Comic Sans sur ordinateur. Un seul endroit à
+  modifier, `--font-heading`/`--font-body` redéfinies dans un bloc
+  `@media (max-width: 760px) { :root { ... } }` en haut de `style.css` —
+  tout le reste du CSS lit déjà ces variables, rien d'autre à toucher.
 - Ordre du menu (imposé par l'utilisateur, à ne pas réordonner) :
   Accueil, Galerie, Agenda, Le Club, Nous Contacter, Espace Adhérent.
   **Agenda et Espace Adhérent sont tous deux des menus déroulants**

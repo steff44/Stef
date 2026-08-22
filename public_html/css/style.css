@@ -19,6 +19,18 @@
   --font-body: "Comic Sans MS", "Comic Sans", "Chalkboard SE", cursive, sans-serif;
 }
 
+/* Sur téléphone, la police système remplace Comic Sans MS (choix explicite
+   de l'utilisateur, 22/08/2026 — Comic Sans reste la police du site sur
+   ordinateur, seule la lecture sur petit écran posait problème). Redéfinir
+   les variables dans :root suffit : tout le CSS les utilise déjà via
+   var(--font-heading)/var(--font-body), rien d'autre à changer. */
+@media (max-width: 760px) {
+  :root {
+    --font-heading: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
