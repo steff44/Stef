@@ -26,7 +26,15 @@ const COLONNES_ATTENDUES = [
     'ville'             => 'VARCHAR(120) DEFAULT NULL',
     // Distinct de `actif` — voir schema.sql. DEFAULT 1 pour que les comptes
     // déjà en base (créés avant ce champ) restent utilisables sans y toucher.
+    // Le verrou qui s'appuyait sur cette colonne a été retiré le 23/08/2026
+    // (voir la migration de rattrapage juste après ce tableau) : elle n'est
+    // plus lue par le code, conservée uniquement pour ne perdre aucune donnée.
     'valide'            => 'TINYINT(1) NOT NULL DEFAULT 1',
+    // Éditeur : mêmes droits que responsable sur les comptes, les documents
+    // et l'agenda, sans accès aux réglages du site — nouveau rôle du
+    // 23/08/2026, choix explicite de l'utilisateur. Voir est_gestionnaire()
+    // dans inc/auth.php.
+    'editeur'           => 'TINYINT(1) NOT NULL DEFAULT 0',
 ];
 
 // Colonnes attendues sur `sorties` — même principe, table différente.
@@ -177,6 +185,20 @@ function appliquer_migrations(PDO $pdo): void
                 $reussi = false;
             }
         }
+    }
+
+    try {
+        // Le verrou « inscription en attente de validation » a été retiré le
+        // 23/08/2026 (choix explicite de l'utilisateur, remplacé par une
+        // suppression directe des comptes indésirables depuis adherents.php) :
+        // sans ce rattrapage, un compte encore en attente à ce moment-là
+        // resterait bloqué pour toujours, faute de bouton pour le faire
+        // basculer. Sans effet (0 ligne) une fois qu'il n'y a plus de compte
+        // à `valide = 0` — sûr à rejouer.
+        $pdo->exec('UPDATE adherents SET valide = 1 WHERE valide = 0');
+    } catch (PDOException $e) {
+        error_log('Espace adhérents — migration valide->1 : ' . $e->getMessage());
+        $reussi = false;
     }
 
     foreach (COLONNES_SORTIES_ATTENDUES as $colonne => $definition) {

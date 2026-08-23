@@ -130,7 +130,8 @@ public_html/          ← racine du site, déployée telle quelle
   déconnecter »** (choix explicite de l'utilisateur : la déconnexion doit
   être la première action visible, pas la dernière), puis Tableau de bord,
   Galerie privée, Galerie du Club, Documents, Agenda des sorties, Sorties à venir, Annuaire,
-  Le Club (+ Adhérents, Réglages du site pour un responsable). Les classes
+  Le Club (+ Adhérents pour un responsable ou un éditeur, Réglages du site
+  pour un responsable seulement). Les classes
   `.espace-barre`/`.espace-onglets` ont été supprimées avec cette bascule
   (17/08/2026) — ne pas les réintroduire.
 - **`espace/connexion.php` et `espace/index.php` sont deux pages
@@ -254,8 +255,25 @@ public_html/          ← racine du site, déployée telle quelle
 
 Vraie authentification en **PHP + MySQL** sur Hostinger (choix explicite de
 l'utilisateur). Quatre rubriques une fois connecté : galerie privée, documents,
-agenda des sorties avec inscriptions, annuaire. Deux rôles : adhérent et
+agenda des sorties avec inscriptions, annuaire. Trois rôles : adhérent,
+**éditeur** (`editeur = 1`, nouveau rôle du 23/08/2026 — voir plus bas) et
 responsable (`administrateur = 1`).
+
+**Le rôle Éditeur** (choix explicite de l'utilisateur, 23/08/2026) a
+exactement les mêmes droits qu'un responsable sur trois pages — gérer les
+comptes (`adherents.php`, y compris nommer/retirer un rôle et supprimer un
+compte), déposer/supprimer des documents (`documents.php`) et gérer l'agenda
+(créer/modifier/supprimer une sortie depuis `sorties-a-venir.php`) — mais
+**pas d'accès aux réglages du site** (`parametres.php` reste réservé à
+`exige_administrateur()`, jamais à `exige_gestionnaire()`) ni aux privilèges
+de modération des galeries (voir toutes les photos privées, supprimer la
+photo d'un autre adhérent), non demandés pour ce rôle. `est_gestionnaire()`
+(`inc/auth.php`) renvoie vrai pour un responsable ou un éditeur, et
+`exige_gestionnaire()` protège les pages/actions partagées par les deux
+rôles — même schéma que `est_administrateur()`/`exige_administrateur()`,
+restés inchangés et toujours réservés au seul responsable. Le rôle se coche
+à la création d'un compte (case « Éditeur », `adherents.php`) ou se
+bascule ensuite via les cases à cocher carrées (voir plus bas).
 
 **L'Agenda est unique et public** (`espace/agenda.php`), choix explicite de
 l'utilisateur (17/08/2026). Il vivait au départ en double : une page publique
@@ -268,9 +286,10 @@ connecté »). Le doublon a été supprimé : `evenements.html` est désormais u
 redirection vers `espace/agenda.php` (même principe que `connexion.html`),
 et cette page n'exige plus de connexion pour être **consultée** —
 `exige_connexion()` n'est appelée qu'au moment de s'inscrire/se désinscrire
-à une sortie (`exige_administrateur()` reste nécessaire pour en créer ou en
-supprimer, y compris le formulaire « Ajouter une sortie » lui-même,
-invisible si on n'est pas responsable). Un visiteur non connecté voit les
+à une sortie (`exige_gestionnaire()` reste nécessaire pour en créer, modifier
+ou supprimer une, y compris le formulaire « Ajouter une sortie » lui-même,
+invisible si on n'est ni responsable ni éditeur — rôle éditeur ajouté le
+23/08/2026). Un visiteur non connecté voit les
 sorties et qui y participe, avec un lien « Se connecter pour participer » à
 la place du bouton d'inscription. Ne pas réintroduire de calendrier public
 séparé.
@@ -588,34 +607,54 @@ postal/ville facultatifs, mot de passe) ; le pseudo devient `identifiant`
 (unicité vérifiée avant l'INSERT, message dédié plutôt qu'une erreur SQL
 brute).
 
-**Un compte auto-inscrit doit être validé par un responsable avant de
-pouvoir se connecter** (choix explicite de l'utilisateur, 18/08/2026 —
-remplace l'activation immédiate décidée la veille). Colonne `valide` sur
-`adherents`, **distincte de `actif`** (qui sert à désactiver/bannir un
-compte existant) : DEFAULT 1, pour qu'un compte créé par un responsable
-depuis `adherents.php` (et les comptes déjà en base avant l'ajout de cette
-colonne) reste immédiatement utilisable ; l'inscription publique force
-explicitement `valide = 0` à l'INSERT. `tenter_connexion()` (`inc/auth.php`)
-refuse la connexion tant que `valide = 0`, avec un message dédié — « Votre
-inscription est en attente de validation par un responsable. » — qui ne
-compte pas comme un échec dans le compteur de blocage (le mot de passe était
-correct). Dans `adherents.php`, une case **Valider/Invalider**
-(`basculer_valide`, même schéma que `basculer_actif`/`basculer_admin`) à
-côté des autres actions, avec un badge ambre « en attente de validation »
-sur la ligne (les comptes non validés remontent en tête de liste, `ORDER BY
-valide ASC, actif DESC, nom`).
+**Un compte auto-inscrit est immédiatement utilisable** (choix explicite de
+l'utilisateur, 23/08/2026 — remplace le verrou de validation manuelle
+décidé le 18/08/2026). `inscription.php` n'insère plus explicitement
+`valide = 0` : la colonne garde son défaut (`1`), donc un compte créé par
+inscription publique se connecte tout de suite, comme un compte créé par un
+responsable depuis `adherents.php`. La colonne `valide` reste en base (ne
+plus perdre de donnée) mais n'est plus lue nulle part dans le code — la
+migration de rattrapage `UPDATE adherents SET valide = 1 WHERE valide = 0`
+(`inc/migration.php`, jouée une fois via la même mécanique que les autres
+migrations automatiques) fait sortir de l'attente tout compte qui y serait
+resté bloqué avant ce changement. **La case Valider/Invalider a disparu de
+`adherents.php`, remplacée par un bouton « Supprimer »** (action
+`supprimer`, choix explicite de l'utilisateur) : un responsable ou un
+éditeur qui ne veut pas d'un compte le supprime directement plutôt que de
+l'invalider — invalider un compte déjà actif n'avait plus vraiment
+d'utilité. La suppression est **définitive** (confirmation JavaScript avant
+envoi) : la ligne `adherents` est retirée avec `DELETE`, mais les photos et
+documents déjà déposés par la personne restent — leur colonne `depose_par`
+passe à `NULL` (clés étrangères `ON DELETE SET NULL` dans `schema.sql`,
+déjà en place) ; seules ses inscriptions à des sorties disparaissent avec
+elle (`ON DELETE CASCADE`). Un adhérent ne peut pas se supprimer lui-même
+(même garde-fou que les autres actions de cette page), et **supprimer ou
+retirer le rôle responsable du dernier responsable actif restant est
+refusé** — `dernier_responsable_actif()` dans `adherents.php`, pour ne pas
+se retrouver sans personne capable d'ouvrir `parametres.php` ; cette garde
+ne s'applique jamais à une *promotion* (nommer quelqu'un responsable ou
+éditeur reste toujours possible).
 
-Trois e-mails accompagnent ce cycle, envoyés par `envoyer_mail()`
+Deux e-mails accompagnent l'inscription, envoyés par `envoyer_mail()`
 (`inc/mail.php`, `mail()` natif de PHP — pas de PHPMailer/Composer, cohérent
 avec un projet sans build ; un échec d'envoi est seulement consigné dans
-`error_log`, il ne doit jamais faire échouer l'inscription ou la
-validation) :
-1. à l'inscription, vers l'e-mail du club (`parametres_site.email`, réglable
-   dans `parametres.php`) — nouvelle inscription à valider ;
-2. à l'inscription, vers la personne inscrite — confirmation que son compte
-   est enregistré et en attente ;
-3. à la validation (bascule de `valide` 0→1 dans `adherents.php`), vers la
-   personne — son compte est actif, elle peut se connecter.
+`error_log`, il ne doit jamais faire échouer l'inscription) :
+1. vers l'e-mail du club (`parametres_site.email`, réglable dans
+   `parametres.php`) — nouvelle inscription, pour information ;
+2. vers la personne inscrite — confirmation que son compte est actif et
+   qu'elle peut se connecter dès maintenant.
+
+**Nommer/retirer un rôle (responsable ou éditeur) se fait via une case à
+cocher carrée avec une croix**, pas un lien texte (choix explicite de
+l'utilisateur, 23/08/2026 — remplace les anciens liens « Nommer/Retirer
+responsable ») : `.case-role` dans `adherents.php`, un `<button
+type="submit">` carré (20×20px) posant `.case-role-actif` quand le rôle est
+actif — fond en dégradé et croix blanche visible — et vide sinon (croix
+transparente). Deux cases indépendantes par ligne (`.case-role-ligne`, une
+pour Responsable, une pour Éditeur), chacune dans son propre `<form>` qui
+POST l'action correspondante (`basculer_admin`/`basculer_editeur`) au clic
+— aucun JavaScript nécessaire, même principe que les autres actions de
+cette page.
 
 **Le champ `From:` de ces e-mails est toujours `noreply@myfocal.online`,
 jamais l'adresse de contact du club** (piège rencontré et corrigé le
@@ -636,7 +675,7 @@ nom/identifiant/contact).
 espace/
   connexion.php  deconnexion.php  inscription.php  index.php    ← tableau de bord
   galerie.php    galerie-club.php documents.php     agenda.php   annuaire.php
-  adherents.php      ← gestion des comptes, responsables uniquement
+  adherents.php      ← gestion des comptes, responsables et éditeurs
   parametres.php     ← coordonnées du club affichées sur le site public, responsables uniquement
   installation.php   ← à jouer UNE fois, se verrouille ensuite tout seul
   telecharger.php    ← seule porte d'accès aux fichiers privés (+ types publics : sortie, galerie_club)
@@ -724,7 +763,8 @@ Points à ne pas casser :
   `.nav-dropdown-label`), et reconstruit alors le libellé et le sous-menu à
   l'identique de `page.php` (Bonjour {nom}, Se déconnecter, Tableau de bord,
   Galerie privée, Galerie du Club, Documents, Agenda des sorties, Sorties à venir, Annuaire,
-  Le Club, + Adhérents/Réglages du site pour un responsable). Sur les pages
+  Le Club, + Adhérents pour un responsable ou un éditeur, Réglages du site
+  pour un responsable seulement). Sur les pages
   déjà connectées côté serveur (`espace/*.php`), ce script ne fait rien —
   il ne fait que compléter ce que PHP n'a pas pu savoir sur les pages
   statiques.

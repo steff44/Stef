@@ -34,4 +34,5 @@ echo json_encode([
     'identifiant'    => $adherent['identifiant'],
     'nom'            => $adherent['nom'],
     'administrateur' => (bool) $adherent['administrateur'],
+    'editeur'        => (bool) ($adherent['editeur'] ?? false),
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

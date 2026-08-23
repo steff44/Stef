@@ -1,7 +1,8 @@
 <?php
 /*
- * Envoi des e-mails de notification liés à l'inscription (en attente,
- * validée) et à la modération (nouveau compte à valider).
+ * Envoi des e-mails de notification liés à l'inscription : un vers le club
+ * (pour information) et un vers la personne inscrite (confirmation de son
+ * compte, immédiatement utilisable — voir espace/inscription.php).
  *
  * PHP mail() natif, sans dépendance externe (Composer/PHPMailer) : cohérent
  * avec le reste du projet, qui n'a ni build ni gestionnaire de paquets, et

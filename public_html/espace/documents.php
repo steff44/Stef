@@ -4,7 +4,8 @@
  * rubriques_documents / categories_documents (voir inc/documents_categories.php),
  * modifiables par un responsable depuis parametres.php (choix explicite de
  * l'utilisateur, 20/08/2026). Tous les adhérents consultent et recherchent ;
- * seuls les responsables déposent, classent et suppriment.
+ * seuls les responsables et les éditeurs (est_gestionnaire(), 23/08/2026)
+ * déposent, classent et suppriment.
  */
 
 declare(strict_types=1);
@@ -18,7 +19,7 @@ $pdo      = base_de_donnees();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verifier_csrf();
-    exige_administrateur();
+    exige_gestionnaire();
 
     if (($_POST['action'] ?? '') === 'supprimer') {
         $id      = (int) ($_POST['id'] ?? 0);
@@ -143,7 +144,7 @@ titre_page("Documents du club", "Comptes rendus, statuts, bulletins et ressource
     </p>
   <?php endif; ?>
 
-  <?php if (est_administrateur() && $rubriques): ?>
+  <?php if (est_gestionnaire() && $rubriques): ?>
     <details class="depot-bloc">
       <summary>Ajouter un document</summary>
       <form method="post" enctype="multipart/form-data" class="form-card" style="margin-top:16px;">

@@ -78,13 +78,15 @@ titre_page("Bonjour " . $adherent['nom'], "Bienvenue dans l'espace réservé aux
       <p><?= $compteurs['photos_club'] ?> photo<?= $compteurs['photos_club'] > 1 ? 's' : '' ?> partagée<?= $compteurs['photos_club'] > 1 ? 's' : '' ?>, visibles de tous.</p>
       <a class="btn btn-ghost" href="galerie-club.php">Ouvrir</a>
     </article>
-    <?php if (est_administrateur()): ?>
+    <?php if (est_gestionnaire()): ?>
       <article class="feature-card">
         <div class="feature-icon" aria-hidden="true">🛠️</div>
         <h3>Adhérents</h3>
         <p>Gérer les comptes : créer, modifier, désactiver ou déconnecter à distance.</p>
         <a class="btn btn-ghost" href="adherents.php">Ouvrir</a>
       </article>
+    <?php endif; ?>
+    <?php if (est_administrateur()): ?>
       <article class="feature-card">
         <div class="feature-icon" aria-hidden="true">⚙️</div>
         <h3>Réglages du site</h3>

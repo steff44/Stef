@@ -46,8 +46,10 @@ function debut_page(string $titre, string $page_active = ''): void
         'sorties'      => ['Sorties à venir',   'sorties-a-venir.php'],
         'annuaire'     => ['Annuaire',          'annuaire.php'],
     ];
-    if (est_administrateur()) {
+    if (est_gestionnaire()) {
         $onglets['adherents']   = ['Adhérents', 'adherents.php'];
+    }
+    if (est_administrateur()) {
         $onglets['parametres']  = ['Réglages du site', 'parametres.php'];
     }
     ?>
@@ -103,7 +105,7 @@ function debut_page(string $titre, string $page_active = ''): void
         <ul class="nav-dropdown-menu">
           <?php if ($adherent): ?>
             <li class="nav-dropdown-heading">
-              Bonjour <strong><?= e($adherent['nom']) ?></strong><?= est_administrateur() ? ' <span class="badge-admin">responsable</span>' : '' ?>
+              Bonjour <strong><?= e($adherent['nom']) ?></strong><?= est_administrateur() ? ' <span class="badge-admin">responsable</span>' : (est_editeur() ? ' <span class="badge-editeur">éditeur</span>' : '') ?>
             </li>
             <li><a href="deconnexion.php">Se déconnecter</a></li>
             <li class="nav-dropdown-divider"></li>

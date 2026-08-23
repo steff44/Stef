@@ -1,10 +1,17 @@
 <?php
 /*
- * Gestion des comptes — réservée aux responsables.
- * Créer un adhérent, réinitialiser son mot de passe, le désactiver.
+ * Gestion des comptes — réservée aux responsables et aux éditeurs
+ * (est_gestionnaire(), rôle éditeur ajouté le 23/08/2026, choix explicite
+ * de l'utilisateur, avec les mêmes droits que responsable sur cette page,
+ * y compris nommer/retirer un rôle et supprimer un compte).
  *
- * On ne supprime jamais un compte : on le désactive. Les photos et documents
- * qu'il a déposés restent ainsi rattachés à son nom.
+ * Un compte peut être supprimé définitivement (action « supprimer », choix
+ * explicite de l'utilisateur, 23/08/2026 — remplace l'ancien couple
+ * Valider/Invalider qui gérait la validation manuelle des inscriptions).
+ * Les photos et documents déjà déposés par la personne restent : leur
+ * colonne depose_par passe simplement à NULL (voir les clés étrangères
+ * ON DELETE SET NULL dans schema.sql) ; seules ses inscriptions aux sorties
+ * disparaissent avec elle (ON DELETE CASCADE).
  */
 
 declare(strict_types=1);
@@ -12,7 +19,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/inc/page.php';
 require_once __DIR__ . '/inc/mail.php';
 
-$adherent = exige_administrateur();
+$adherent = exige_gestionnaire();
 $pdo      = base_de_donnees();
 
 /* Mot de passe provisoire lisible, à transmettre au nouvel adhérent. */
@@ -25,6 +32,16 @@ function mot_de_passe_provisoire(): string
         $mot .= $alphabet[random_int(0, strlen($alphabet) - 1)];
     }
     return $mot;
+}
+
+/* Vrai si, en excluant $id_exclu, plus aucun responsable actif ne resterait
+   — évite de se fermer la porte au nez en supprimant le dernier compte
+   capable de gérer les réglages du site. */
+function dernier_responsable_actif(PDO $pdo, int $id_exclu): bool
+{
+    $requete = $pdo->prepare('SELECT COUNT(*) FROM adherents WHERE administrateur = 1 AND actif = 1 AND id != ?');
+    $requete->execute([$id_exclu]);
+    return (int) $requete->fetchColumn() === 0;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -47,8 +64,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $provisoire = mot_de_passe_provisoire();
             try {
                 $pdo->prepare(
-                    'INSERT INTO adherents (identifiant, nom, email, telephone, mot_de_passe, administrateur)
-                     VALUES (?, ?, ?, ?, ?, ?)'
+                    'INSERT INTO adherents (identifiant, nom, email, telephone, mot_de_passe, administrateur, editeur)
+                     VALUES (?, ?, ?, ?, ?, ?, ?)'
                 )->execute([
                     $identifiant,
                     $nom,
@@ -56,6 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     trim((string) ($_POST['telephone'] ?? '')) ?: null,
                     password_hash($provisoire, PASSWORD_DEFAULT),
                     isset($_POST['administrateur']) ? 1 : 0,
+                    isset($_POST['editeur']) ? 1 : 0,
                 ]);
                 // Affiché une seule fois : il n'est stocké nulle part en clair.
                 definir_message('succes', "Compte créé. Mot de passe provisoire de {$nom} : {$provisoire} — notez-le et transmettez-le, il ne sera plus affiché.");
@@ -107,37 +125,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
     } elseif ($action === 'basculer_admin') {
+        $requete = $pdo->prepare('SELECT administrateur, actif FROM adherents WHERE id = ?');
+        $requete->execute([$id]);
+        $cible = $requete->fetch();
+
         if ($id === $adherent['id']) {
             definir_message('erreur', "Vous ne pouvez pas retirer votre propre rôle de responsable.");
+        } elseif (!$cible) {
+            definir_message('erreur', "Ce compte n'existe plus.");
+        } elseif ($cible['administrateur'] && $cible['actif'] && dernier_responsable_actif($pdo, $id)) {
+            // Ne bloque que le retrait (passer 1 → 0) sur le dernier
+            // responsable actif restant ; nommer quelqu'un responsable
+            // (0 → 1) ne passe jamais par cette branche.
+            definir_message('erreur', "Impossible de retirer le rôle du dernier responsable actif.");
         } else {
             $pdo->prepare('UPDATE adherents SET administrateur = 1 - administrateur WHERE id = ?')->execute([$id]);
             definir_message('succes', "Rôle modifié.");
         }
 
-    } elseif ($action === 'basculer_valide') {
-        $requete = $pdo->prepare('SELECT nom, email, valide FROM adherents WHERE id = ?');
-        $requete->execute([$id]);
-        $ligne = $requete->fetch();
+    } elseif ($action === 'basculer_editeur') {
+        if ($id === $adherent['id']) {
+            definir_message('erreur', "Vous ne pouvez pas retirer votre propre rôle d'éditeur.");
+        } else {
+            $pdo->prepare('UPDATE adherents SET editeur = 1 - editeur WHERE id = ?')->execute([$id]);
+            definir_message('succes', "Rôle modifié.");
+        }
 
-        if ($ligne) {
-            $pdo->prepare('UPDATE adherents SET valide = 1 - valide WHERE id = ?')->execute([$id]);
+    } elseif ($action === 'supprimer') {
+        if ($id === $adherent['id']) {
+            definir_message('erreur', "Vous ne pouvez pas supprimer votre propre compte.");
+        } else {
+            $requete = $pdo->prepare('SELECT nom, administrateur, actif FROM adherents WHERE id = ?');
+            $requete->execute([$id]);
+            $cible = $requete->fetch();
 
-            // On ne prévient par e-mail que le passage de non-validé à
-            // validé : c'est l'instant où le compte devient utilisable.
-            if (!$ligne['valide'] && $ligne['email']) {
-                envoyer_mail(
-                    $ligne['email'],
-                    valeur_parametre($pdo, 'email') ?: 'cooky44.sl@gmail.com',
-                    "Votre inscription au Focal Club Turballais a été validée",
-                    "Bonjour,\n\n"
-                    . "Bonne nouvelle : votre inscription à l'espace adhérents du Focal Club "
-                    . "Turballais vient d'être validée par un responsable. Vous pouvez dès à "
-                    . "présent vous connecter avec l'identifiant et le mot de passe que vous "
-                    . "avez choisis à l'inscription.\n\n"
-                    . "À bientôt,\nLe Focal Club Turballais"
-                );
+            if (!$cible) {
+                definir_message('erreur', "Ce compte n'existe plus.");
+            } elseif ($cible['administrateur'] && $cible['actif'] && dernier_responsable_actif($pdo, $id)) {
+                definir_message('erreur', "Impossible de supprimer le dernier responsable actif.");
+            } else {
+                $pdo->prepare('DELETE FROM adherents WHERE id = ?')->execute([$id]);
+                definir_message('succes', "Compte de {$cible['nom']} supprimé.");
             }
-            definir_message('succes', "Validation de {$ligne['nom']} modifiée.");
         }
     }
 
@@ -149,13 +178,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // coupure demandée depuis. C'est le plus près de la vérité qu'on puisse être :
 // rien ne signale au serveur qu'un onglet vient d'être fermé.
 $requete = $pdo->prepare(
-    'SELECT id, identifiant, nom, email, telephone, administrateur, actif, valide,
+    'SELECT id, identifiant, nom, email, telephone, administrateur, editeur, actif,
             derniere_connexion, derniere_activite,
             (derniere_activite IS NOT NULL
               AND derniere_activite >= (NOW() - INTERVAL ? MINUTE)
               AND (deconnecte_le IS NULL OR derniere_activite > deconnecte_le)) AS en_ligne
        FROM adherents
-      ORDER BY valide ASC, actif DESC, nom'
+      ORDER BY actif DESC, nom'
 );
 $requete->execute([DELAI_PRESENCE_MINUTES]);
 $membres = $requete->fetchAll();
@@ -195,7 +224,11 @@ titre_page(
       </div>
       <label class="case-a-cocher">
         <input type="checkbox" name="administrateur" value="1">
-        Responsable (peut gérer les comptes, les documents et l'agenda)
+        Responsable (tous les droits, y compris les réglages du site)
+      </label>
+      <label class="case-a-cocher" style="margin-top:8px;">
+        <input type="checkbox" name="editeur" value="1">
+        Éditeur (peut gérer les comptes, les documents et l'agenda, sans accès aux réglages du site)
       </label>
       <p class="form-note" style="margin:14px 0;">
         Un mot de passe provisoire sera affiché une seule fois, juste après la création.
@@ -233,8 +266,8 @@ titre_page(
             <td>
               <?= e($membre['nom']) ?>
               <?= $membre['administrateur'] ? ' <span class="badge-admin">responsable</span>' : '' ?>
+              <?= $membre['editeur'] ? ' <span class="badge-editeur">éditeur</span>' : '' ?>
               <?= $membre['actif'] ? '' : ' <span class="badge-inactif">désactivé</span>' ?>
-              <?= $membre['valide'] ? '' : ' <span class="badge-attente">en attente de validation</span>' ?>
             </td>
             <td><?= e($membre['identifiant']) ?></td>
             <td>
@@ -269,22 +302,42 @@ titre_page(
               <?php if ((int) $membre['id'] !== $adherent['id']): ?>
                 <form method="post">
                   <?= champ_csrf() ?>
-                  <input type="hidden" name="action" value="basculer_valide">
-                  <input type="hidden" name="id" value="<?= (int) $membre['id'] ?>">
-                  <button type="submit" class="lien-action"><?= $membre['valide'] ? 'Invalider' : 'Valider' ?></button>
-                </form>
-                <form method="post">
-                  <?= champ_csrf() ?>
                   <input type="hidden" name="action" value="basculer_actif">
                   <input type="hidden" name="id" value="<?= (int) $membre['id'] ?>">
                   <button type="submit" class="lien-action"><?= $membre['actif'] ? 'Désactiver' : 'Réactiver' ?></button>
                 </form>
-                <form method="post">
+                <form method="post" onsubmit="return confirm('Supprimer définitivement le compte de <?= e(addslashes($membre['nom'])) ?> ? Cette action est irréversible.');">
                   <?= champ_csrf() ?>
-                  <input type="hidden" name="action" value="basculer_admin">
+                  <input type="hidden" name="action" value="supprimer">
                   <input type="hidden" name="id" value="<?= (int) $membre['id'] ?>">
-                  <button type="submit" class="lien-action"><?= $membre['administrateur'] ? 'Retirer responsable' : 'Nommer responsable' ?></button>
+                  <button type="submit" class="lien-danger">Supprimer</button>
                 </form>
+                <div class="case-role-ligne">
+                  <form method="post">
+                    <?= champ_csrf() ?>
+                    <input type="hidden" name="action" value="basculer_admin">
+                    <input type="hidden" name="id" value="<?= (int) $membre['id'] ?>">
+                    <button type="submit" class="case-role<?= $membre['administrateur'] ? ' case-role-actif' : '' ?>"
+                            aria-pressed="<?= $membre['administrateur'] ? 'true' : 'false' ?>"
+                            title="<?= $membre['administrateur'] ? 'Retirer le rôle responsable' : 'Nommer responsable' ?>">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg>
+                    </button>
+                  </form>
+                  <span class="case-role-label">Responsable</span>
+                </div>
+                <div class="case-role-ligne">
+                  <form method="post">
+                    <?= champ_csrf() ?>
+                    <input type="hidden" name="action" value="basculer_editeur">
+                    <input type="hidden" name="id" value="<?= (int) $membre['id'] ?>">
+                    <button type="submit" class="case-role<?= $membre['editeur'] ? ' case-role-actif' : '' ?>"
+                            aria-pressed="<?= $membre['editeur'] ? 'true' : 'false' ?>"
+                            title="<?= $membre['editeur'] ? "Retirer le rôle éditeur" : 'Nommer éditeur' ?>">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg>
+                    </button>
+                  </form>
+                  <span class="case-role-label">Éditeur</span>
+                </div>
               <?php endif; ?>
             </td>
           </tr>

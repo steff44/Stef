@@ -23,7 +23,7 @@ declare(strict_types=1);
           </div>
           <div class="document-actions">
             <a class="btn btn-ghost" href="telecharger.php?type=document&amp;id=<?= (int) $document['id'] ?>">Télécharger</a>
-            <?php if (est_administrateur()): ?>
+            <?php if (est_gestionnaire()): ?>
               <form method="post" onsubmit="return confirm('Supprimer ce document ?');">
                 <?= champ_csrf() ?>
                 <input type="hidden" name="action" value="supprimer">
