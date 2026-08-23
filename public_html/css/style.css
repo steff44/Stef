@@ -2213,9 +2213,12 @@ a {
   border-color: rgba(255, 255, 255, 0.18);
 }
 
-/* Boutons flottants « section précédente » / « retour en haut », posés par
-   main.js sur toute page ayant au moins deux sections — génériques, aucune
-   page (présente ou future) n'a besoin de les déclarer elle-même. */
+/* Boutons flottants « page précédente » / « section précédente » / « retour
+   en haut », posés par main.js sur toute page ayant au moins une section —
+   génériques, aucune page (présente ou future) n'a besoin de les déclarer
+   elle-même. Toujours visibles dès le chargement (choix explicite de
+   l'utilisateur, 23/08/2026 — auparavant masqués tant qu'on n'avait pas
+   défilé 60% de l'écran). */
 .retour-nav {
   position: fixed;
   right: 20px;
@@ -2224,13 +2227,6 @@ a {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
-}
-.retour-nav.is-visible {
-  opacity: 1;
-  pointer-events: auto;
 }
 .retour-bouton {
   width: 44px;
