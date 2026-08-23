@@ -144,12 +144,14 @@ function fin_page(): void
 /*
  * Bandeau de titre en haut d'une page. $large aligne le titre sur le
  * conteneur élargi des pages à tableau — sans quoi le titre paraîtrait
- * décalé vers la droite par rapport au contenu.
+ * décalé vers la droite par rapport au contenu. $reduit réduit sa hauteur
+ * de moitié (choix explicite de l'utilisateur, 23/08/2026, pour Agenda des
+ * sorties et Le Club) via .gallery-header--reduit.
  */
-function titre_page(string $titre, string $chapeau = '', bool $large = false): void
+function titre_page(string $titre, string $chapeau = '', bool $large = false, bool $reduit = false): void
 {
     ?>
-  <section class="gallery-header">
+  <section class="gallery-header<?= $reduit ? ' gallery-header--reduit' : '' ?>">
     <div class="container<?= $large ? ' container-large' : '' ?>">
       <h1 style="font-family:var(--font-heading);font-size:clamp(1.7rem,4vw,2.3rem);margin:0;"><?= e($titre) ?></h1>
       <?php if ($chapeau !== ''): ?>
