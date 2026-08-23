@@ -5,13 +5,16 @@
  * de l'utilisateur, avec les mêmes droits que responsable sur cette page,
  * y compris nommer/retirer un rôle et supprimer un compte).
  *
- * Un compte peut être supprimé définitivement (action « supprimer », choix
- * explicite de l'utilisateur, 23/08/2026 — remplace l'ancien couple
- * Valider/Invalider qui gérait la validation manuelle des inscriptions).
- * Les photos et documents déjà déposés par la personne restent : leur
- * colonne depose_par passe simplement à NULL (voir les clés étrangères
- * ON DELETE SET NULL dans schema.sql) ; seules ses inscriptions aux sorties
- * disparaissent avec elle (ON DELETE CASCADE).
+ * Un compte auto-inscrit démarre non validé (`valide = 0`, inscription.php) :
+ * l'action « valider » (bouton « Valider ») l'active et prévient la personne
+ * par e-mail. Un compte peut aussi être supprimé définitivement (action
+ * « supprimer », choix explicite de l'utilisateur, 23/08/2026 — sert à
+ * rejeter une inscription indésirable, ou à retirer un compte déjà actif
+ * plutôt que de l'invalider, ce qui n'aurait plus vraiment d'utilité une
+ * fois validé). Les photos et documents déjà déposés par la personne
+ * restent : leur colonne depose_par passe simplement à NULL (voir les clés
+ * étrangères ON DELETE SET NULL dans schema.sql) ; seules ses inscriptions
+ * aux sorties disparaissent avec elle (ON DELETE CASCADE).
  */
 
 declare(strict_types=1);
@@ -151,6 +154,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             definir_message('succes', "Rôle modifié.");
         }
 
+    } elseif ($action === 'valider') {
+        $requete = $pdo->prepare('SELECT nom, email, valide FROM adherents WHERE id = ?');
+        $requete->execute([$id]);
+        $cible = $requete->fetch();
+
+        if (!$cible) {
+            definir_message('erreur', "Ce compte n'existe plus.");
+        } elseif ($cible['valide']) {
+            definir_message('erreur', "Ce compte est déjà validé.");
+        } else {
+            $pdo->prepare('UPDATE adherents SET valide = 1 WHERE id = ?')->execute([$id]);
+
+            if ($cible['email']) {
+                envoyer_mail(
+                    $cible['email'],
+                    valeur_parametre($pdo, 'email') ?: 'cooky44.sl@gmail.com',
+                    "Votre inscription au Focal Club Turballais a été validée",
+                    "Bonjour,\n\n"
+                    . "Bonne nouvelle : votre inscription à l'espace adhérents du Focal Club "
+                    . "Turballais vient d'être validée par un responsable. Vous pouvez dès à "
+                    . "présent vous connecter avec l'identifiant et le mot de passe que vous "
+                    . "avez choisis à l'inscription.\n\n"
+                    . "À bientôt,\nLe Focal Club Turballais"
+                );
+            }
+            definir_message('succes', "Compte de {$cible['nom']} validé.");
+        }
+
     } elseif ($action === 'supprimer') {
         if ($id === $adherent['id']) {
             definir_message('erreur', "Vous ne pouvez pas supprimer votre propre compte.");
@@ -178,13 +209,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // coupure demandée depuis. C'est le plus près de la vérité qu'on puisse être :
 // rien ne signale au serveur qu'un onglet vient d'être fermé.
 $requete = $pdo->prepare(
-    'SELECT id, identifiant, nom, email, telephone, administrateur, editeur, actif,
+    'SELECT id, identifiant, nom, email, telephone, administrateur, editeur, actif, valide,
             derniere_connexion, derniere_activite,
             (derniere_activite IS NOT NULL
               AND derniere_activite >= (NOW() - INTERVAL ? MINUTE)
               AND (deconnecte_le IS NULL OR derniere_activite > deconnecte_le)) AS en_ligne
        FROM adherents
-      ORDER BY actif DESC, nom'
+      ORDER BY valide ASC, actif DESC, nom'
 );
 $requete->execute([DELAI_PRESENCE_MINUTES]);
 $membres = $requete->fetchAll();
@@ -268,6 +299,7 @@ titre_page(
               <?= $membre['administrateur'] ? ' <span class="badge-admin">responsable</span>' : '' ?>
               <?= $membre['editeur'] ? ' <span class="badge-editeur">éditeur</span>' : '' ?>
               <?= $membre['actif'] ? '' : ' <span class="badge-inactif">désactivé</span>' ?>
+              <?= $membre['valide'] ? '' : ' <span class="badge-attente">en attente de validation</span>' ?>
             </td>
             <td><?= e($membre['identifiant']) ?></td>
             <td>
@@ -300,6 +332,14 @@ titre_page(
                 <button type="submit" class="lien-action">Réinitialiser le mot de passe</button>
               </form>
               <?php if ((int) $membre['id'] !== $adherent['id']): ?>
+                <?php if (!$membre['valide']): ?>
+                  <form method="post">
+                    <?= champ_csrf() ?>
+                    <input type="hidden" name="action" value="valider">
+                    <input type="hidden" name="id" value="<?= (int) $membre['id'] ?>">
+                    <button type="submit" class="lien-action">Valider</button>
+                  </form>
+                <?php endif; ?>
                 <form method="post">
                   <?= champ_csrf() ?>
                   <input type="hidden" name="action" value="basculer_actif">
