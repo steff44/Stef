@@ -1336,21 +1336,56 @@ a {
 }
 
 /* Documents */
-.documents-intro {
-  max-width: 70ch;
-  margin: 0 0 28px;
-}
-.documents-intro p {
-  color: var(--text-muted);
-  line-height: 1.6;
-  margin: 0 0 10px;
-}
-.documents-intro strong {
-  color: var(--text);
-}
 .documents-recherche {
   max-width: 420px;
   margin: 0 0 32px;
+}
+/* Sommaire cliquable des rubriques/catégories, remplace l'ancien texte
+   d'introduction (choix explicite de l'utilisateur, 23/08/2026) : chaque
+   catégorie renvoie vers sa section plus bas via une ancre #categorie-{id}. */
+.documents-index {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin: 0 0 36px;
+}
+.documents-index-rubrique {
+  margin-bottom: 18px;
+}
+.documents-index-rubrique:last-child {
+  margin-bottom: 0;
+}
+.documents-index-rubrique h2 {
+  font-family: var(--font-heading);
+  font-size: 1.02rem;
+  margin: 0 0 10px;
+}
+.documents-index-categories {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.documents-index-categories a {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: var(--radius-btn);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.86rem;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+.documents-index-categories a:hover {
+  border-color: var(--accent-3);
+  color: var(--text);
+}
+.categorie-vide {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  margin: 0;
 }
 .rubrique-documents,
 .groupe-galerie {

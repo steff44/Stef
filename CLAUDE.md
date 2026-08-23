@@ -534,18 +534,29 @@ pas les autres d'être déposés — le message affiché résume les deux
 (« 3 documents ajoutés… » suivi de l'erreur du fichier refusé). Le formulaire
 choisit la catégorie par `categorie_id` (menu `<select>` avec un
 `<optgroup>` par rubrique) ; la page regroupe les documents par rubrique
-puis catégorie (dans l'ordre de `rubriques_documents()`, pas celui de la
-requête SQL), et n'affiche que les groupes non vides — pour ne pas montrer
-une dizaine de rubriques vides sur un club qui débute, la structure complète
-(reconstruite depuis la base, donc toujours à jour même après un
-renommage) est expliquée en tête de page dans un texte d'intro plutôt qu'en
-rubriques creuses. Un champ de recherche (affiché dès qu'au moins un
-document existe) filtre les lignes par titre en JavaScript pur, `data-titre`
-sur chaque `<li class="document-ligne">`, sans aller-retour serveur — script
-inline en bas de `documents.php`, sur le même principe que l'ancien
-`.auth-tabs` de `connexion.php` (page-spécifique, pas dans `main.js`). Le
-HTML de chaque ligne est factorisé dans `inc/document-ligne.php`, inclus une
-fois par sous-catégorie.
+puis catégorie, dans l'ordre de `rubriques_documents()` (pas celui de la
+requête SQL, reconstruit depuis la base donc toujours à jour même après un
+renommage). **Depuis le 23/08/2026** (choix explicite de l'utilisateur, qui
+a fourni une capture de la structure réelle de ses rubriques/catégories
+comme référence), la page ne montre plus de texte d'introduction expliquant
+la classification : à la place, dès qu'au moins une rubrique existe, un
+**sommaire cliquable** (`.documents-index`, juste après le champ de
+recherche remonté en tout premier) liste toutes les rubriques et leurs
+catégories en pastilles, chacune pointant via une ancre (`#categorie-{id}`)
+vers sa section plus bas sur la page. Contrairement à avant, **toutes** les
+rubriques et catégories s'affichent désormais dans la liste détaillée en
+dessous, même sans aucun document — une catégorie vide montre juste
+« Aucun document pour l'instant dans cette catégorie. » (`.categorie-vide`)
+plutôt que de disparaître entièrement : le sommaire ne doit jamais pointer
+vers une ancre absente. Le champ de recherche (affiché dès qu'au moins une
+rubrique existe, avant le sommaire) filtre les lignes par titre en
+JavaScript pur, `data-titre` sur chaque `<li class="document-ligne">`, sans
+aller-retour serveur — script inline en bas de `documents.php`, sur le même
+principe que l'ancien `.auth-tabs` de `connexion.php` (page-spécifique, pas
+dans `main.js`) ; il masque aussi une catégorie entière (donc sa pastille
+« vide ») si aucune de ses lignes ne correspond à la recherche. Le HTML de
+chaque ligne est factorisé dans `inc/document-ligne.php`, inclus une fois
+par sous-catégorie non vide.
 
 **Connexion et inscription vivent sur deux pages séparées**,
 `connexion.php` et `inscription.php` (choix explicite de l'utilisateur,

@@ -133,39 +133,15 @@ titre_page("Documents du club", "Comptes rendus, statuts, bulletins et ressource
 <section class="section"><div class="container">
   <?php afficher_message(); ?>
 
-  <div class="documents-intro">
-    <?php if ($rubriques): ?>
-      <p>
-        Les documents du club sont classés en <?= count($rubriques) ?> rubriques, elles-mêmes
-        divisées en catégories :
-        <?php
-          $descriptions = [];
-          foreach ($rubriques as $rubrique) {
-              $descriptions[] = '<strong>' . e($rubrique['nom']) . '</strong>'
-                  . ($rubrique['categories'] ? ' (' . e(implode(', ', $rubrique['categories'])) . ')' : '');
-          }
-          echo implode(', ', $descriptions);
-        ?>.
-      </p>
-      <p>
-        Un responsable dépose chaque document et lui attribue sa catégorie au moment de
-        l'envoi. Pour en retrouver un, parcourez les rubriques ci-dessous ou tapez son
-        nom dans le champ de recherche.
-        <?php if (est_administrateur()): ?>
-          Les rubriques et catégories se renomment, s'ajoutent ou se suppriment depuis
-          <a href="parametres.php">Réglages du site</a>.
-        <?php endif; ?>
-      </p>
-    <?php else: ?>
-      <p>
-        Aucune rubrique n'est encore définie.
-        <?php if (est_administrateur()): ?>
-          Créez-en une depuis <a href="parametres.php">Réglages du site</a> avant de pouvoir
-          déposer un document.
-        <?php endif; ?>
-      </p>
-    <?php endif; ?>
-  </div>
+  <?php if (!$rubriques): ?>
+    <p style="color:var(--text-muted);">
+      Aucune rubrique n'est encore définie.
+      <?php if (est_administrateur()): ?>
+        Créez-en une depuis <a href="parametres.php">Réglages du site</a> avant de pouvoir
+        déposer un document.
+      <?php endif; ?>
+    </p>
+  <?php endif; ?>
 
   <?php if (est_administrateur() && $rubriques): ?>
     <details class="depot-bloc">
@@ -202,30 +178,49 @@ titre_page("Documents du club", "Comptes rendus, statuts, bulletins et ressource
     </details>
   <?php endif; ?>
 
-  <?php if (!$documents): ?>
-    <div class="empty-state" style="margin-top:28px;">
-      <p>Aucun document pour l'instant.</p>
-    </div>
-  <?php else: ?>
+  <?php if ($rubriques): ?>
     <div class="field documents-recherche">
       <label for="recherche-documents">Rechercher un document par son nom</label>
       <input type="search" id="recherche-documents" placeholder="Ex. : compte rendu, tarifs, portrait…">
     </div>
     <div id="documents-recherche-vide" class="empty-state" hidden><p>Aucun document ne correspond à cette recherche.</p></div>
 
+    <?php
+      // Sommaire cliquable : chaque catégorie (le niveau « final » d'une
+      // rubrique) renvoie directement vers sa section plus bas sur la page —
+      // toujours affichée, même sans document pour l'instant, pour que le
+      // sommaire ne pointe jamais dans le vide.
+    ?>
+    <nav class="documents-index" aria-label="Sommaire des documents">
+      <?php foreach ($rubriques as $rubrique_id => $rubrique): ?>
+        <?php if (!$rubrique['categories']) continue; ?>
+        <div class="documents-index-rubrique">
+          <h2><?= e($rubrique['nom']) ?></h2>
+          <ul class="documents-index-categories">
+            <?php foreach ($rubrique['categories'] as $categorie_id => $nom_categorie): ?>
+              <li><a href="#categorie-<?= $categorie_id ?>"><?= e($nom_categorie) ?></a></li>
+            <?php endforeach; ?>
+          </ul>
+        </div>
+      <?php endforeach; ?>
+    </nav>
+
     <?php foreach ($rubriques as $rubrique_id => $rubrique): ?>
-      <?php if (empty($groupes[$rubrique_id])) continue; ?>
+      <?php if (!$rubrique['categories']) continue; ?>
       <div class="rubrique-documents">
         <h2><?= e($rubrique['nom']) ?></h2>
         <?php foreach ($rubrique['categories'] as $categorie_id => $nom_categorie): ?>
-          <?php if (empty($groupes[$rubrique_id][$categorie_id])) continue; ?>
-          <div class="sous-categorie-documents">
+          <div class="sous-categorie-documents" id="categorie-<?= $categorie_id ?>">
             <h3><?= e($nom_categorie) ?></h3>
-            <ul class="liste-documents">
-              <?php foreach ($groupes[$rubrique_id][$categorie_id] as $document): ?>
-                <?php include __DIR__ . '/inc/document-ligne.php'; ?>
-              <?php endforeach; ?>
-            </ul>
+            <?php if (empty($groupes[$rubrique_id][$categorie_id])): ?>
+              <p class="categorie-vide">Aucun document pour l'instant dans cette catégorie.</p>
+            <?php else: ?>
+              <ul class="liste-documents">
+                <?php foreach ($groupes[$rubrique_id][$categorie_id] as $document): ?>
+                  <?php include __DIR__ . '/inc/document-ligne.php'; ?>
+                <?php endforeach; ?>
+              </ul>
+            <?php endif; ?>
           </div>
         <?php endforeach; ?>
       </div>
