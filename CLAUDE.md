@@ -92,18 +92,23 @@ public_html/          ← racine du site, déployée telle quelle
     statiques) ; seul le lien du menu change, pas les occurrences dans le
     pied de page ou le bouton « Nous Contacter » de l'accueil, qui restent
     sur une ligne. La section Inscription est placée juste sous le bandeau
-    d'en-tête (avant le formulaire de contact), moitié moins haute que
-    d'habitude (choix explicite de l'utilisateur, 22/08/2026) —
-    `.cta-section--reduit` dans `css/style.css`, sélecteur composé avec la
-    classe de base pour l'emporter quelle que soit sa position dans la
-    feuille de style, propre à `contact.html` : ne pas réduire `.cta-section`
-    elle-même, partagée avec `index.html`. Depuis le 23/08/2026 (choix
-    explicite de l'utilisateur), le bandeau « Nous contacter / S'inscrire »
-    n'est plus une bande pleine largeur (`.gallery-header`) mais un **pavé**
-    — une `.form-card` centrée, même style que la carte « Envoyez-nous un
-    message » plus bas sur la page — et sa hauteur est encore réduite de
-    moitié par rapport à la bande d'avant. `.gallery-header--reduit` (créée
-    pour ce bandeau le 22/08/2026) est réutilisée depuis le 23/08/2026 par
+    d'en-tête (avant le formulaire de contact). Cette page a connu plusieurs
+    allers-retours de mise en page le 22 et le 23/08/2026 (choix explicite
+    de l'utilisateur à chaque fois) ; **l'état final** (23/08/2026, second
+    changement de la journée) est : le bandeau d'en-tête « Nous contacter
+    S'inscrire » est une **bande pleine largeur** (`.cta-section
+    cta-section--reduit`, le même dégradé que le CTA de `index.html`, moitié
+    moins haut que d'habitude), titre sur **une seule ligne** (pas de `<br>`
+    ni d'accroche « Contact » séparée, contrairement au lien du menu qui
+    reste sur deux lignes, voir plus bas) ; la section Inscription juste en
+    dessous est au contraire un **pavé** — une `.form-card` centrée, même
+    style que la carte « Envoyez-nous un message » plus bas sur la page,
+    hauteur réduite (`padding: 21px 32px` en ligne, plutôt que les 32px par
+    défaut de `.form-card`). `.cta-section--reduit` (créée le 22/08/2026)
+    s'applique donc aujourd'hui au bandeau du haut, pas à la section
+    Inscription — ne pas réduire `.cta-section` elle-même, partagée avec
+    `index.html`. `.gallery-header--reduit` (créée le 22/08/2026 pour cette
+    même page, plus utilisée ici depuis ce changement) est réutilisée par
     `titre_page($reduit = true)` pour Agenda des sorties et Le Club — voir
     plus bas.
 - **« Agenda » et « Espace Adhérent » sont des menus déroulants**
@@ -149,13 +154,27 @@ public_html/          ← racine du site, déployée telle quelle
   Club » puis « Turballais » centré dessous (`<span class="logo-text">Focal
   Club<br>Turballais</span>`, à côté de `.logo-mark`). La coupure est un
   `<br>` volontaire, pas un retour à la ligne automatique — sans ça, le point
-  de coupure dépendrait de la largeur disponible. Depuis le 23/08/2026 (choix
-  explicite de l'utilisateur), `.logo-mark` (le rond avec l'icône appareil
-  photo) est **carré** (`border-radius: var(--radius-btn)` au lieu de 50 %)
-  et un peu plus grand (34px → 42px), et le texte « Focal Club Turballais »
-  passe de `1.3rem` à `1.5rem` (`.logo`) — ce changement s'applique partout
-  où `.logo`/`.logo-mark` sont utilisés (en-tête et pied de page), pas
-  seulement l'en-tête.
+  de coupure dépendrait de la largeur disponible.
+- **`.logo-mark` a été redessiné le 23/08/2026** (choix explicite de
+  l'utilisateur, d'après une image fournie en référence — appareil photo en
+  traits noirs, viseur et déclencheur au-dessus, objectif rond avec une
+  forme abstraite blanche au centre) : le fichier image original n'était pas
+  accessible depuis le sandbox (aucune pièce jointe déposée sur le disque),
+  donc le dessin a été **recréé en SVG** à partir de l'image vue par le
+  modèle — proche visuellement, mais pas un pixel-à-pixel garanti. L'icône
+  est en traits noirs sur fond **blanc** (`background: #ffffff` au lieu du
+  dégradé rose/violet — un dessin en traits noirs a besoin d'un fond clair
+  pour rester lisible sur l'en-tête sombre) et nettement plus grande
+  qu'avant (34px le 18/08 → 42px le 23/08 matin → **60px** le 23/08
+  après-midi, « beaucoup plus gros » demandé explicitement). Le texte
+  « Focal Club Turballais » suit (`.logo`, `1.3rem` → `1.5rem` → `1.7rem`).
+  Le SVG (data URI dans `.logo-mark::before`, viewBox `0 0 100 100`) a été
+  vérifié en le faisant rendre par Chromium en local avant publication. Ce
+  changement s'applique partout où `.logo`/`.logo-mark` sont utilisés
+  (en-tête et pied de page de chaque page), pas seulement l'en-tête. Si
+  l'utilisateur fournit un jour le fichier image original (PNG/SVG), le
+  remplacer par une vraie image (`<img>` ou asset dans `images/`) donnerait
+  un résultat plus fidèle que ce dessin recréé.
 - **Les libellés du menu principal sont alignés sur une même ligne
   médiane** depuis le 23/08/2026 (choix explicite de l'utilisateur) :
   `.nav-links` porte désormais `align-items: center`. Avant ce changement,
@@ -428,6 +447,23 @@ peut pas exécuter PHP). Il n'y a plus de photos de démonstration depuis le
 couleur si jamais une photo sans champ `image` réapparaissait. Toute
 catégorie de photo inconnue de `CLUB_DATA.themes` s'ajoute automatiquement
 aux filtres.
+
+**L'accueil affiche un bandeau dépliant « Prochaine sortie / réunion »**
+(choix explicite de l'utilisateur, 23/08/2026), juste sous l'en-tête, avant
+le grand hero. Même principe que les autres points d'accès publics :
+`infos-prochaine-sortie.php` (à la racine, hors de `espace/`) renvoie en
+JSON la prochaine ligne de `sorties` dont `debut >= NOW()` (`{}` si aucune),
+avec la date au format ISO (`debut_iso`) pour un parsing JavaScript fiable.
+Le bandeau lui-même est un `<details class="bandeau-sortie">` **natif** —
+pas de JavaScript pour l'ouverture/fermeture, seulement pour remplir le
+texte une fois l'appel réussi (`js/main.js`) : le résumé (« Prochaine
+sortie » ou « Prochaine réunion » selon la catégorie, titre, date/heure en
+français via `toLocaleDateString('fr-FR', …)`) est toujours visible ; le
+lieu, la description et un lien vers Sorties à venir n'apparaissent qu'une
+fois déplié. Reste masqué (`hidden` posé en dur dans `index.html`) tant
+qu'aucune sortie à venir n'est chargée ou que l'appel échoue (hors ligne,
+préversion GitHub Pages qui ne peut pas exécuter PHP) — même philosophie
+que la section Galerie de l'accueil, juste au-dessus.
 
 **Le fond d'une vignette (`.photo-frame`) est posé via un attribut `style="…"`
 construit en JavaScript (`buildPhotoCard()`), pas via `element.style` :**

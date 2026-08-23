@@ -354,6 +354,44 @@
     return card;
   }
 
+  /* ---------- Page d'accueil : bandeau « prochaine sortie / réunion » ----------
+     Dépliant natif (<details>, voir css/style.css), rempli depuis
+     infos-prochaine-sortie.php ; reste masqué (hidden en dur dans
+     index.html) tant qu'aucune sortie à venir n'est disponible ou que
+     l'appel échoue (hors ligne, préversion GitHub Pages qui ne peut pas
+     exécuter PHP). */
+  (function () {
+    const bandeau = document.querySelector("[data-prochaine-sortie]");
+    if (!bandeau) return;
+
+    fetch("infos-prochaine-sortie.php")
+      .then(function (reponse) { return reponse.ok ? reponse.json() : Promise.reject(); })
+      .then(function (sortie) {
+        if (!sortie || !sortie.titre) return;
+
+        const debut = new Date(sortie.debut_iso);
+        const dateLisible = isNaN(debut.getTime())
+          ? ""
+          : debut.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }) +
+            " à " +
+            debut.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+
+        const prefixe = sortie.categorie === "Réunion" ? "Prochaine réunion : " : "Prochaine sortie : ";
+        bandeau.querySelector("[data-prochaine-sortie-resume]").innerHTML =
+          prefixe + "<strong>" + echapperHtml(sortie.titre) + "</strong>" +
+          (dateLisible ? " — " + echapperHtml(dateLisible) : "");
+
+        let detail = "";
+        if (sortie.lieu) detail += "<p>" + echapperHtml(sortie.lieu) + "</p>";
+        if (sortie.description) detail += "<p>" + echapperHtml(sortie.description) + "</p>";
+        detail += '<p><a href="espace/sorties-a-venir.php">Voir toutes les sorties à venir →</a></p>';
+        bandeau.querySelector("[data-prochaine-sortie-detail]").innerHTML = detail;
+
+        bandeau.hidden = false;
+      })
+      .catch(function () {});
+  })();
+
   /* ---------- Page d'accueil : sélection de photos ----------
      Reprend les photos les plus récentes de la Galerie du Club (même point
      d'accès que la page Galerie, voir plus bas) — il n'y a plus de photos de

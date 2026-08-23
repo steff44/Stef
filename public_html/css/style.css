@@ -111,9 +111,9 @@ a {
 .logo {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   font-family: var(--font-heading);
-  font-size: 1.5rem;
+  font-size: 1.7rem;
   letter-spacing: 0.03em;
 }
 
@@ -127,13 +127,17 @@ a {
   line-height: 1.15;
 }
 
-/* Logo un peu plus grand et carré (choix explicite de l'utilisateur,
-   23/08/2026 — était rond auparavant). */
+/* Logo redessiné (choix explicite de l'utilisateur, 23/08/2026, d'après
+   l'image fournie : appareil photo en traits noirs, viseur et déclencheur
+   au-dessus, objectif rond) et nettement plus grand qu'avant (42px → 60px).
+   Fond blanc (au lieu du dégradé rose/violet) : l'icône est dessinée en
+   noir, elle a besoin d'un fond clair pour rester lisible sur l'en-tête
+   sombre. */
 .logo-mark {
-  width: 42px;
-  height: 42px;
+  width: 60px;
+  height: 60px;
   border-radius: var(--radius-btn);
-  background: var(--accent-gradient);
+  background: #ffffff;
   border: 1px solid var(--border);
   flex-shrink: 0;
   position: relative;
@@ -142,10 +146,10 @@ a {
   content: "";
   position: absolute;
   inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z'%3E%3C/path%3E%3Ccircle cx='12' cy='13' r='4'%3E%3C/circle%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none' stroke='black' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M34 34 Q34 12 50 10 Q66 12 66 34'%3E%3C/path%3E%3Crect x='16' y='20' width='16' height='16' rx='3'%3E%3C/rect%3E%3Crect x='6' y='34' width='88' height='50' rx='12'%3E%3C/rect%3E%3Ccircle cx='78' cy='26' r='5'%3E%3C/circle%3E%3Ccircle cx='50' cy='60' r='22' fill='black'%3E%3C/circle%3E%3Ccircle cx='50' cy='45' r='3' fill='white' stroke='none'%3E%3C/circle%3E%3Cpath d='M50 50 C46 56 44 65 48 72 C50 74 52 72 53 68 C55 60 54 53 50 50 Z' fill='white' stroke='none'%3E%3C/path%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: center;
-  background-size: 60%;
+  background-size: 78%;
 }
 
 /* align-items: center aligne tous les libellés du menu (Accueil, Galerie,
@@ -522,11 +526,13 @@ a {
 .cta-section {
   background: linear-gradient(90deg, #581c87, #3730a3, #1e3a8a);
 }
-/* Bandeau « Inscription » de contact.html : moitié moins haut que le CTA
-   habituel (choix explicite de l'utilisateur, 22/08/2026), pour rester
-   compact juste sous le bandeau « Nous contacter / S'inscrire ». Sélecteur
-   composé (.section.cta-section--reduit) pour l'emporter sur .section
-   quelle que soit sa position dans la feuille de style. */
+/* Bandeau « Nous contacter S'inscrire » de contact.html : moitié moins haut
+   que le CTA habituel (choix explicite de l'utilisateur, 22/08/2026 pour la
+   réduction, réutilisée le 23/08/2026 pour ce bandeau après une nouvelle
+   inversion des deux blocs de la page — voir « Inscription » plus bas,
+   devenue un pavé .form-card). Sélecteur composé
+   (.section.cta-section--reduit) pour l'emporter sur .section quelle que
+   soit sa position dans la feuille de style. */
 .section.cta-section--reduit {
   padding: 44px 0;
 }
@@ -2122,6 +2128,51 @@ a {
   .field-row {
     grid-template-columns: 1fr;
   }
+}
+
+/* Bandeau dépliant « Prochaine sortie / réunion » sur l'accueil (choix
+   explicite de l'utilisateur, 23/08/2026). <details> natif pour le
+   dépliant (pas de JS de bascule dédié) : main.js ne fait qu'en remplir le
+   texte, depuis infos-prochaine-sortie.php. Reste masqué (hidden en dur
+   dans index.html) tant qu'aucune sortie à venir n'est chargée. */
+.bandeau-sortie {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius);
+}
+.bandeau-sortie-resume {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 0.92rem;
+}
+.bandeau-sortie-resume::-webkit-details-marker {
+  display: none;
+}
+.bandeau-sortie-resume strong {
+  color: var(--accent-3);
+}
+.bandeau-sortie-resume .nav-dropdown-caret {
+  flex-shrink: 0;
+}
+.bandeau-sortie[open] .bandeau-sortie-resume .nav-dropdown-caret {
+  transform: rotate(180deg);
+}
+.bandeau-sortie-detail {
+  padding: 0 20px 18px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+.bandeau-sortie-detail p {
+  margin: 4px 0;
+}
+.bandeau-sortie-detail a {
+  text-decoration: underline;
 }
 
 /* Boutons flottants « section précédente » / « retour en haut », posés par
