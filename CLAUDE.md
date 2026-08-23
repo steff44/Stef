@@ -155,23 +155,32 @@ public_html/          ← racine du site, déployée telle quelle
   Club<br>Turballais</span>`, à côté de `.logo-mark`). La coupure est un
   `<br>` volontaire, pas un retour à la ligne automatique — sans ça, le point
   de coupure dépendrait de la largeur disponible.
-- **Le logo est la vraie image fournie par l'utilisateur**, déposée dans
+- **Le logo utilise la vraie image fournie par l'utilisateur**, déposée dans
   `images/logo.png` (600×600, fond blanc, appareil photo + « FOCAL CLUB
-  TURBALLAIS » en bleu, texte compris dans l'image). Deux étapes le
-  23/08/2026 : un premier essai a recréé l'icône en SVG (`.logo-mark`,
-  dessinée à partir de l'image vue par le modèle) faute d'accès au fichier
-  — coller une image dans la conversation ne dépose rien d'exploitable dans
-  ce sandbox (vérifié : `/mnt/attach`, le dossier réservé aux pièces
-  jointes, restait vide). L'utilisateur a ensuite déposé le fichier
-  directement dans le dépôt GitHub (Upload files, avec un contournement par
-  URL directe `github.com/<repo>/upload/<branche>/<dossier>` — le bouton
-  « Add file » n'apparaissait pas dans son interface), ce qui a permis de
-  récupérer le vrai fichier et de l'utiliser tel quel. Résultat : `.logo-mark`
-  et `.logo-text` (l'ancien texte HTML « Focal Club\nTurballais ») sont
-  **supprimés** — remplacés par un unique `<img class="logo-image" src=".../images/logo.png">`,
-  hauteur fixée à 84px (largeur automatique, proportions carrées
-  conservées). S'applique partout où `.logo` est utilisé (en-tête et pied
-  de page de chaque page).
+  TURBALLAIS » en bleu, texte compris dans l'image). Plusieurs étapes le
+  23/08/2026 : un premier essai a recréé l'icône en SVG (`.logo-mark`)
+  faute d'accès au fichier — coller une image dans la conversation ne
+  dépose rien d'exploitable dans ce sandbox (vérifié : `/mnt/attach`, le
+  dossier réservé aux pièces jointes, restait vide). L'utilisateur a
+  ensuite déposé le fichier directement dans le dépôt GitHub (Upload
+  files, avec un contournement par URL directe
+  `github.com/<repo>/upload/<branche>/<dossier>` — le bouton « Add file »
+  n'apparaissait pas dans son interface), ce qui a permis de récupérer le
+  vrai fichier. Un premier essai l'a utilisé tel quel (icône + texte en un
+  seul `<img>`), mais l'utilisateur a ensuite redemandé le texte sur deux
+  lignes « comme avant » et un logo un peu plus grand : `images/logo.png`
+  reste le fichier source, mais **`images/logo-icone.png`** (recadrée avec
+  Pillow — bbox de l'appareil photo repérée par détection des pixels non
+  blancs, marge de 20px, complétée en carré sur fond blanc — vérifiée par
+  rendu Chromium local avant publication) n'en garde que l'appareil photo,
+  sans le texte. Le texte redevient du HTML (`.logo-text`, « Focal
+  Club<br>Turballais », comme avant le 23/08/2026) — plus net et plus
+  facile à agrandir qu'un texte figé dans une image. `.logo-mark`
+  (l'`<img>` de l'icône recadrée, 72px, carrée avec coins arrondis) et
+  `.logo-text` sont redevenus deux éléments distincts, comme à l'origine,
+  simplement avec la vraie icône à la place du dessin SVG recréé. Texte
+  du logo (`.logo`) à `1.85rem`. S'applique partout où `.logo` est utilisé
+  (en-tête et pied de page de chaque page).
 - **Les libellés du menu principal sont alignés sur une même ligne
   médiane** depuis le 23/08/2026 (choix explicite de l'utilisateur) :
   `.nav-links` porte désormais `align-items: center`. Avant ce changement,
