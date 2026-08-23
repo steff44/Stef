@@ -111,19 +111,37 @@ a {
 .logo {
   display: flex;
   align-items: center;
+  gap: 12px;
+  font-family: var(--font-heading);
+  font-size: 1.85rem;
+  letter-spacing: 0.03em;
 }
 
-/* Vrai logo du club (choix explicite de l'utilisateur, 23/08/2026) : image
-   fournie par l'utilisateur (appareil photo + « Focal Club Turballais »),
+/* Icône du vrai logo (choix explicite de l'utilisateur, 23/08/2026) :
+   recadrée depuis l'image fournie par l'utilisateur (images/logo.png,
    déposée directement dans le dépôt GitHub faute d'accès aux pièces
-   jointes de la conversation depuis ce sandbox. Remplace le dessin recréé
-   en SVG utilisé plus tôt dans la journée. Fond blanc déjà intégré à
-   l'image, hauteur seule contrainte (largeur automatique) pour garder ses
-   proportions carrées. */
-.logo-image {
-  height: 84px;
-  width: auto;
+   jointes de la conversation depuis ce sandbox) pour n'en garder que
+   l'appareil photo, sans le texte qui y était intégré — le texte redevient
+   du HTML (.logo-text ci-dessous, sur deux lignes comme avant), plus net
+   et plus facile à agrandir qu'un texte figé dans une image. */
+.logo-mark {
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-btn);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
   display: block;
+  object-fit: cover;
+}
+
+/* Titre sur deux lignes : « Focal Club » puis « Turballais » centré dessous
+   (choix explicite de l'utilisateur) — un <br> fixe la coupure plutôt que de
+   compter sur le retour à la ligne automatique, qui dépend de la largeur
+   disponible et pourrait couper ailleurs. */
+.logo-text {
+  display: inline-block;
+  text-align: center;
+  line-height: 1.15;
 }
 
 /* align-items: center aligne tous les libellés du menu (Accueil, Galerie,
