@@ -650,9 +650,27 @@ validation) :
 1. à l'inscription, vers l'e-mail du club (`parametres_site.email`, réglable
    dans `parametres.php`) — nouvelle inscription à valider ;
 2. à l'inscription, vers la personne inscrite — confirmation que son compte
-   est enregistré et en attente ;
+   est enregistré et en attente, **avec un rappel en gras** de vérifier
+   aussi son dossier de spams si l'e-mail de validation à venir n'arrive
+   pas (choix explicite de l'utilisateur, 23/08/2026) ;
 3. à la validation (action `valider` dans `adherents.php`), vers la
-   personne — son compte est actif, elle peut se connecter.
+   personne — reprend **textuellement** le message affiché à l'écran au
+   responsable/éditeur qui valide (`$message_validation`, une seule
+   variable utilisée à la fois pour `definir_message()` et dans le corps de
+   l'e-mail, choix explicite de l'utilisateur, 23/08/2026 — une seule
+   formulation à tenir à jour), plus le même rappel spams en gras.
+
+**Les e-mails de `envoyer_mail()` sont envoyés en HTML** (`Content-Type:
+text/html`), pas en texte brut comme avant le 23/08/2026 — seul moyen
+d'afficher du gras. Les appelants continuent d'écrire un corps en texte
+brut avec des retours à la ligne normaux (`\n`) : `corps_html()`
+(`inc/mail.php`) échappe l'ensemble (`htmlspecialchars`, avant toute autre
+transformation — protège contre l'injection si un champ dynamique comme un
+nom contenait `<`/`>`), convertit une convention Markdown minimale
+`**texte**` en `<strong>texte</strong>`, puis les retours à la ligne en
+`<br>` (`nl2br`). Pour mettre un passage en gras dans un futur e-mail, il
+suffit de l'entourer de `**` dans le texte passé à `envoyer_mail()` — rien
+d'autre à changer.
 
 **Nommer/retirer un rôle (responsable ou éditeur) se fait via une case à
 cocher carrée avec une croix**, pas un lien texte (choix explicite de

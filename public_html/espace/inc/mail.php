@@ -38,10 +38,27 @@ function envoyer_mail(string $destinataire, string $expediteur, string $sujet, s
 {
     $entetes = "From: Focal Club Turballais <noreply@myfocal.online>\r\n"
              . "Reply-To: {$expediteur}\r\n"
-             . "Content-Type: text/plain; charset=UTF-8\r\n";
+             . "Content-Type: text/html; charset=UTF-8\r\n";
     $sujet_encode = '=?UTF-8?B?' . base64_encode($sujet) . '?=';
 
-    if (!@mail($destinataire, $sujet_encode, $corps, $entetes)) {
+    if (!@mail($destinataire, $sujet_encode, corps_html($corps), $entetes)) {
         error_log("Espace adhérents — échec d'envoi de mail à {$destinataire} : {$sujet}");
     }
+}
+
+/*
+ * $corps reste écrit en texte brut par les appelants (comme avant) — pas de
+ * HTML à la main dans chaque message. Une seule convention Markdown minimale
+ * est reconnue ici : **texte** devient du gras (choix explicite de
+ * l'utilisateur, 23/08/2026, pour la mention « pensez à vérifier vos
+ * spams »). Échapper AVANT de reposer les <strong> évite qu'un nom ou un
+ * texte contenant `<`/`>` ne casse le rendu ou n'injecte du HTML.
+ */
+function corps_html(string $corps): string
+{
+    $echappe = htmlspecialchars($corps, ENT_QUOTES, 'UTF-8');
+    $gras    = preg_replace('/\*\*(.+?)\*\*/s', '<strong>$1</strong>', $echappe);
+    return '<!DOCTYPE html><html><body style="font-family:sans-serif;font-size:15px;line-height:1.6;color:#111111;">'
+        . nl2br($gras)
+        . '</body></html>';
 }
