@@ -166,20 +166,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $pdo->prepare('UPDATE adherents SET valide = 1 WHERE id = ?')->execute([$id]);
 
+            // Même texte affiché au responsable (definir_message ci-dessous)
+            // et envoyé par e-mail à l'adhérent (choix explicite de
+            // l'utilisateur, 23/08/2026) : une seule confirmation, pas deux
+            // formulations différentes à tenir à jour.
+            $message_validation = "Compte de {$cible['nom']} validé.";
+
             if ($cible['email']) {
                 envoyer_mail(
                     $cible['email'],
                     valeur_parametre($pdo, 'email') ?: 'cooky44.sl@gmail.com',
                     "Votre inscription au Focal Club Turballais a été validée",
                     "Bonjour,\n\n"
+                    . "**{$message_validation}**\n\n"
                     . "Bonne nouvelle : votre inscription à l'espace adhérents du Focal Club "
                     . "Turballais vient d'être validée par un responsable. Vous pouvez dès à "
                     . "présent vous connecter avec l'identifiant et le mot de passe que vous "
                     . "avez choisis à l'inscription.\n\n"
+                    . "**Pensez à vérifier aussi votre dossier de courriers indésirables "
+                    . "(spams)** si vous ne trouvez pas nos prochains e-mails.\n\n"
                     . "À bientôt,\nLe Focal Club Turballais"
                 );
             }
-            definir_message('succes', "Compte de {$cible['nom']} validé.");
+            definir_message('succes', $message_validation);
         }
 
     } elseif ($action === 'supprimer') {

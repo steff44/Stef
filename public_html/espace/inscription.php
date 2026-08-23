@@ -116,6 +116,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             . "vous recevrez un nouvel e-mail dès que votre compte sera activé, et pourrez "
             . "alors vous connecter avec le pseudo « {$valeurs['pseudo']} » et le "
             . "mot de passe que vous venez de choisir.\n\n"
+            . "**Pensez à vérifier aussi votre dossier de courriers indésirables (spams)** "
+            . "si vous ne voyez pas cet e-mail de validation arriver.\n\n"
             . "À bientôt,\nLe Focal Club Turballais"
         );
 
