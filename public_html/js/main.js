@@ -544,24 +544,42 @@
     }
   }
 
-  /* ---------- Boutons « section précédente » / « retour en haut » ----------
-     Génériques : posés sur toute page ayant au moins deux <section>, qu'elle
+  /* ---------- Boutons « page précédente » / « section précédente » / « retour en haut » ----------
+     Génériques : posés sur toute page ayant au moins une <section>, qu'elle
      soit publique ou dans l'espace adhérents (page.php partage ce même
-     script) — jamais besoin de les ajouter à la main sur une page neuve. */
+     script) — jamais besoin de les ajouter à la main sur une page neuve.
+     « Page précédente » (choix explicite de l'utilisateur, 23/08/2026,
+     history.back() — comme .lien-retour sur connexion.php/inscription.php,
+     mais générique et flottant) et « retour en haut » apparaissent dès
+     qu'il y a une section (les boutons restent invisibles tant qu'on n'a
+     pas assez défilé, voir actualiserVisibilite) ; « section précédente »
+     n'a de sens qu'à partir de deux sections, comme sur
+     `espace/documents.php`, une seule longue section mais qui a besoin de
+     pouvoir remonter en haut (choix explicite de l'utilisateur, 23/08/2026
+     — le seuil de deux sections empêchait tout bouton d'y apparaître). */
   (function () {
     const sections = Array.from(document.querySelectorAll("main section"));
-    if (sections.length < 2) return;
+    if (!sections.length) return;
 
     const nav = document.createElement("div");
     nav.className = "retour-nav";
     nav.innerHTML =
-      '<button type="button" class="retour-bouton retour-section" aria-label="Remonter à la section précédente">' +
-      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="18 15 12 9 6 15"></polyline></svg>' +
+      '<button type="button" class="retour-bouton retour-precedente" aria-label="Revenir à la page précédente">' +
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>' +
       "</button>" +
+      (sections.length >= 2
+        ? '<button type="button" class="retour-bouton retour-section" aria-label="Remonter à la section précédente">' +
+          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="18 15 12 9 6 15"></polyline></svg>' +
+          "</button>"
+        : "") +
       '<button type="button" class="retour-bouton retour-haut" aria-label="Retour en haut de la page">' +
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="18 11 12 5 6 11"></polyline><polyline points="18 18 12 12 6 18"></polyline></svg>' +
       "</button>";
     document.body.appendChild(nav);
+
+    nav.querySelector(".retour-precedente").addEventListener("click", function () {
+      history.back();
+    });
 
     // Index de la section dont le haut est déjà dépassé (ou en vue) — la
     // dernière dont offsetTop est sous le décalage de l'en-tête collant.
@@ -574,14 +592,17 @@
       return idx;
     }
 
-    nav.querySelector(".retour-section").addEventListener("click", function () {
-      const idx = sectionActuelle();
-      if (idx > 0) {
-        sections[idx - 1].scrollIntoView({ behavior: "smooth", block: "start" });
-      } else {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }
-    });
+    const boutonSection = nav.querySelector(".retour-section");
+    if (boutonSection) {
+      boutonSection.addEventListener("click", function () {
+        const idx = sectionActuelle();
+        if (idx > 0) {
+          sections[idx - 1].scrollIntoView({ behavior: "smooth", block: "start" });
+        } else {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      });
+    }
 
     nav.querySelector(".retour-haut").addEventListener("click", function () {
       window.scrollTo({ top: 0, behavior: "smooth" });
