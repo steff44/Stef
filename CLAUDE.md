@@ -220,10 +220,15 @@ public_html/          ← racine du site, déployée telle quelle
 - **Boutons flottants « section précédente » / « retour en haut »** (choix
   explicite de l'utilisateur, 20/08/2026) : posés automatiquement par
   `js/main.js` (`.retour-nav`, bas-droite de l'écran) sur toute page comptant
-  au moins deux `<section>` — générique, s'applique donc à toute page
+  au moins une `<section>` — générique, s'applique donc à toute page
   publique ou de l'espace adhérents (y compris les pages réservées aux
   responsables) sans rien ajouter à la main, y compris pour une page future.
-  Absent sur une page à une seule section (rien à survoler). Le premier
+  Le bouton « section précédente » ne s'affiche qu'à partir de deux
+  `<section>` (rien à survoler avec une seule) ; « retour en haut », lui,
+  s'affiche dès qu'il y a au moins une section — depuis le 23/08/2026 (choix
+  explicite de l'utilisateur, revient sur le seuil de deux sections posé le
+  20/08/2026, qui empêchait tout bouton d'apparaître sur une page à une
+  seule section mais longue, comme `espace/documents.php`). Le premier
   bouton remonte au début de la `<section>` précédente (pas seulement en
   haut de la section actuelle) ; le second va toujours en haut de la page.
   Les deux restent invisibles (`opacity:0` + `pointer-events:none`) tant que
