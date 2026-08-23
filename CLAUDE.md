@@ -607,42 +607,52 @@ postal/ville facultatifs, mot de passe) ; le pseudo devient `identifiant`
 (unicité vérifiée avant l'INSERT, message dédié plutôt qu'une erreur SQL
 brute).
 
-**Un compte auto-inscrit est immédiatement utilisable** (choix explicite de
-l'utilisateur, 23/08/2026 — remplace le verrou de validation manuelle
-décidé le 18/08/2026). `inscription.php` n'insère plus explicitement
-`valide = 0` : la colonne garde son défaut (`1`), donc un compte créé par
-inscription publique se connecte tout de suite, comme un compte créé par un
-responsable depuis `adherents.php`. La colonne `valide` reste en base (ne
-plus perdre de donnée) mais n'est plus lue nulle part dans le code — la
-migration de rattrapage `UPDATE adherents SET valide = 1 WHERE valide = 0`
-(`inc/migration.php`, jouée une fois via la même mécanique que les autres
-migrations automatiques) fait sortir de l'attente tout compte qui y serait
-resté bloqué avant ce changement. **La case Valider/Invalider a disparu de
-`adherents.php`, remplacée par un bouton « Supprimer »** (action
-`supprimer`, choix explicite de l'utilisateur) : un responsable ou un
-éditeur qui ne veut pas d'un compte le supprime directement plutôt que de
-l'invalider — invalider un compte déjà actif n'avait plus vraiment
-d'utilité. La suppression est **définitive** (confirmation JavaScript avant
-envoi) : la ligne `adherents` est retirée avec `DELETE`, mais les photos et
-documents déjà déposés par la personne restent — leur colonne `depose_par`
-passe à `NULL` (clés étrangères `ON DELETE SET NULL` dans `schema.sql`,
-déjà en place) ; seules ses inscriptions à des sorties disparaissent avec
-elle (`ON DELETE CASCADE`). Un adhérent ne peut pas se supprimer lui-même
-(même garde-fou que les autres actions de cette page), et **supprimer ou
-retirer le rôle responsable du dernier responsable actif restant est
-refusé** — `dernier_responsable_actif()` dans `adherents.php`, pour ne pas
-se retrouver sans personne capable d'ouvrir `parametres.php` ; cette garde
-ne s'applique jamais à une *promotion* (nommer quelqu'un responsable ou
+**Un compte auto-inscrit doit être validé par un responsable ou un éditeur
+avant de pouvoir se connecter** (choix explicite de l'utilisateur, remis en
+place le 23/08/2026 après un aller-retour le même jour : une version
+« activation immédiate » testée entre-temps a laissé un adhérent se
+connecter sans validation, ce qui n'était pas voulu — revenu au
+comportement du 18/08/2026). `inscription.php` force `valide = 0` à
+l'INSERT ; `tenter_connexion()` (`inc/auth.php`) refuse la connexion tant
+que `valide = 0`, avec un message dédié — « Votre inscription est en
+attente de validation par un responsable. » — qui ne compte pas comme un
+échec dans le compteur de blocage (le mot de passe était correct). Dans
+`adherents.php`, un bouton **Valider** (action `valider`, réservée à
+`est_gestionnaire()` comme le reste de la page) active le compte et
+prévient la personne par e-mail ; il ne s'affiche que sur un compte non
+validé (badge ambre « en attente de validation » sur sa ligne, comptes non
+validés remontés en tête de liste — `ORDER BY valide ASC, actif DESC,
+nom`). Pas d'action inverse (« invalider ») : un compte déjà validé qu'on
+ne veut plus se retire avec **Supprimer** plutôt que d'être renvoyé en
+attente, ce qui n'aurait pas de sens.
+
+**Un bouton « Supprimer » sur chaque ligne** (action `supprimer`, choix
+explicite de l'utilisateur, 23/08/2026) permet de rejeter une inscription
+en attente ou de retirer un compte déjà actif. La suppression est
+**définitive** (confirmation JavaScript avant envoi) : la ligne
+`adherents` est retirée avec `DELETE`, mais les photos et documents déjà
+déposés par la personne restent — leur colonne `depose_par` passe à `NULL`
+(clés étrangères `ON DELETE SET NULL` dans `schema.sql`, déjà en place) ;
+seules ses inscriptions à des sorties disparaissent avec elle (`ON DELETE
+CASCADE`). Un adhérent ne peut pas se supprimer lui-même (même garde-fou
+que les autres actions de cette page), et **supprimer ou retirer le rôle
+responsable du dernier responsable actif restant est refusé** —
+`dernier_responsable_actif()` dans `adherents.php`, pour ne pas se
+retrouver sans personne capable d'ouvrir `parametres.php` ; cette garde ne
+s'applique jamais à une *promotion* (nommer quelqu'un responsable ou
 éditeur reste toujours possible).
 
-Deux e-mails accompagnent l'inscription, envoyés par `envoyer_mail()`
+Trois e-mails accompagnent ce cycle, envoyés par `envoyer_mail()`
 (`inc/mail.php`, `mail()` natif de PHP — pas de PHPMailer/Composer, cohérent
 avec un projet sans build ; un échec d'envoi est seulement consigné dans
-`error_log`, il ne doit jamais faire échouer l'inscription) :
-1. vers l'e-mail du club (`parametres_site.email`, réglable dans
-   `parametres.php`) — nouvelle inscription, pour information ;
-2. vers la personne inscrite — confirmation que son compte est actif et
-   qu'elle peut se connecter dès maintenant.
+`error_log`, il ne doit jamais faire échouer l'inscription ou la
+validation) :
+1. à l'inscription, vers l'e-mail du club (`parametres_site.email`, réglable
+   dans `parametres.php`) — nouvelle inscription à valider ;
+2. à l'inscription, vers la personne inscrite — confirmation que son compte
+   est enregistré et en attente ;
+3. à la validation (action `valider` dans `adherents.php`), vers la
+   personne — son compte est actif, elle peut se connecter.
 
 **Nommer/retirer un rôle (responsable ou éditeur) se fait via une case à
 cocher carrée avec une croix**, pas un lien texte (choix explicite de
