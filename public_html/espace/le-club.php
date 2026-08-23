@@ -22,7 +22,7 @@ if (!adherent_connecte()) {
 exige_connexion();
 
 debut_page("Le Club", 'le-club');
-titre_page("Le Club", "Réservé aux adhérents du Focal Club Turballais.");
+titre_page("Le Club", "Réservé aux adhérents du Focal Club Turballais.", false, true);
 ?>
 <section class="section"><div class="container">
   <?php afficher_message(); ?>

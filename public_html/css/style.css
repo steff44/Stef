@@ -113,7 +113,7 @@ a {
   align-items: center;
   gap: 10px;
   font-family: var(--font-heading);
-  font-size: 1.3rem;
+  font-size: 1.5rem;
   letter-spacing: 0.03em;
 }
 
@@ -127,10 +127,12 @@ a {
   line-height: 1.15;
 }
 
+/* Logo un peu plus grand et carré (choix explicite de l'utilisateur,
+   23/08/2026 — était rond auparavant). */
 .logo-mark {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-btn);
   background: var(--accent-gradient);
   border: 1px solid var(--border);
   flex-shrink: 0;
@@ -146,8 +148,16 @@ a {
   background-size: 60%;
 }
 
+/* align-items: center aligne tous les libellés du menu (Accueil, Galerie,
+   Agenda…) sur la même ligne médiane, y compris « Nous Contacter /
+   S'inscrire » sur deux lignes — sans cela, les libellés à une ligne
+   restaient plaqués en haut de la barre tandis que les menus déroulants
+   (.nav-dropdown, déjà centrés sur eux-mêmes) semblaient plus bas, choix
+   explicite de l'utilisateur, 23/08/2026. Repris à stretch en mobile, où le
+   menu devient une colonne : voir plus bas. */
 .nav-links {
   display: flex;
+  align-items: center;
   gap: 32px;
   list-style: none;
   margin: 0;
@@ -770,17 +780,19 @@ a {
   border-bottom: 1px solid var(--border);
   background: var(--bg-alt);
 }
-/* Bandeau « Nous contacter / S'inscrire » de contact.html : moitié moins
-   haut que le bandeau habituel (choix explicite de l'utilisateur,
-   22/08/2026). Sélecteur composé pour l'emporter sur .gallery-header quelle
-   que soit sa position dans la feuille de style. */
+/* Bandeau de titre moitié moins haut que l'habituel (choix explicite de
+   l'utilisateur) : posé par titre_page($reduit = true) — actuellement
+   Agenda des sorties et Le Club, 23/08/2026. Sélecteur composé pour
+   l'emporter sur .gallery-header quelle que soit sa position dans la
+   feuille de style. */
 .gallery-header.gallery-header--reduit {
   padding: 32px 0 20px;
 }
 
-/* Gallery hero (page "Notre Galerie") */
+/* Gallery hero (page "Notre Galerie") — réduit d'un tiers (choix explicite
+   de l'utilisateur, 23/08/2026 : 64px/40px devient 43px/27px). */
 .gallery-hero {
-  padding: 64px 0 40px;
+  padding: 43px 0 27px;
   border-bottom: 1px solid var(--border);
   background: var(--bg-alt);
   text-align: center;
@@ -1140,6 +1152,7 @@ a {
     background: var(--bg);
     border-bottom: 1px solid var(--border);
     flex-direction: column;
+    align-items: stretch;
     padding: 20px 24px 28px;
     gap: 18px;
     transform: translateY(-130%);

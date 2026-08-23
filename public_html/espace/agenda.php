@@ -126,7 +126,7 @@ if ($vue === 'semaine') {
 $vacances_affichees = vacances_chevauchant($debut_periode, $fin_periode);
 
 debut_page("Agenda", 'agenda');
-titre_page("Agenda des sorties", "Le calendrier des sorties, cours et réunions du club.");
+titre_page("Agenda des sorties", "Le calendrier des sorties, cours et réunions du club.", false, true);
 ?>
 <section class="section"><div class="container">
   <p style="margin:-8px 0 24px;">

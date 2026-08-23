@@ -91,15 +91,21 @@ public_html/          ← racine du site, déployée telle quelle
     `espace/inc/page.php` (pas de rendu centralisé pour les pages
     statiques) ; seul le lien du menu change, pas les occurrences dans le
     pied de page ou le bouton « Nous Contacter » de l'accueil, qui restent
-    sur une ligne. La section Inscription est placée juste sous ce grand
-    titre (avant le formulaire de contact), et les deux bandeaux sont moitié
-    moins hauts que d'habitude (choix explicite de l'utilisateur,
-    22/08/2026) — `.gallery-header--reduit` et `.cta-section--reduit` dans
-    `css/style.css`, sélecteurs composés avec la classe de base pour
-    l'emporter quelle que soit leur position dans la feuille de style,
-    propres à `contact.html` : ne pas réduire `.gallery-header` ou
-    `.cta-section` eux-mêmes, partagés avec les pages de l'espace adhérents
-    et `index.html`.
+    sur une ligne. La section Inscription est placée juste sous le bandeau
+    d'en-tête (avant le formulaire de contact), moitié moins haute que
+    d'habitude (choix explicite de l'utilisateur, 22/08/2026) —
+    `.cta-section--reduit` dans `css/style.css`, sélecteur composé avec la
+    classe de base pour l'emporter quelle que soit sa position dans la
+    feuille de style, propre à `contact.html` : ne pas réduire `.cta-section`
+    elle-même, partagée avec `index.html`. Depuis le 23/08/2026 (choix
+    explicite de l'utilisateur), le bandeau « Nous contacter / S'inscrire »
+    n'est plus une bande pleine largeur (`.gallery-header`) mais un **pavé**
+    — une `.form-card` centrée, même style que la carte « Envoyez-nous un
+    message » plus bas sur la page — et sa hauteur est encore réduite de
+    moitié par rapport à la bande d'avant. `.gallery-header--reduit` (créée
+    pour ce bandeau le 22/08/2026) est réutilisée depuis le 23/08/2026 par
+    `titre_page($reduit = true)` pour Agenda des sorties et Le Club — voir
+    plus bas.
 - **« Agenda » et « Espace Adhérent » sont des menus déroulants**
   (`.nav-dropdown` dans `css/style.css` + comportement dans `js/main.js` :
   clic pour ouvrir/fermer, clic extérieur, Échap, accordéon en dessous de
@@ -143,7 +149,34 @@ public_html/          ← racine du site, déployée telle quelle
   Club » puis « Turballais » centré dessous (`<span class="logo-text">Focal
   Club<br>Turballais</span>`, à côté de `.logo-mark`). La coupure est un
   `<br>` volontaire, pas un retour à la ligne automatique — sans ça, le point
-  de coupure dépendrait de la largeur disponible.
+  de coupure dépendrait de la largeur disponible. Depuis le 23/08/2026 (choix
+  explicite de l'utilisateur), `.logo-mark` (le rond avec l'icône appareil
+  photo) est **carré** (`border-radius: var(--radius-btn)` au lieu de 50 %)
+  et un peu plus grand (34px → 42px), et le texte « Focal Club Turballais »
+  passe de `1.3rem` à `1.5rem` (`.logo`) — ce changement s'applique partout
+  où `.logo`/`.logo-mark` sont utilisés (en-tête et pied de page), pas
+  seulement l'en-tête.
+- **Les libellés du menu principal sont alignés sur une même ligne
+  médiane** depuis le 23/08/2026 (choix explicite de l'utilisateur) :
+  `.nav-links` porte désormais `align-items: center`. Avant ce changement,
+  les liens à une seule ligne (Accueil, Galerie, Le Club…) restaient plaqués
+  en haut de la barre (comportement par défaut d'un conteneur flex) tandis
+  que les menus déroulants (`.nav-dropdown`, déjà centrés sur eux-mêmes via
+  leur propre `align-items: center`) semblaient plus bas — d'où un menu à
+  l'air désaligné, surtout à côté du lien « Nous Contacter / S'inscrire »
+  sur deux lignes. En dessous de 760px, où le menu devient une colonne
+  dépliante, `align-items: stretch` est réappliqué explicitement (sans quoi
+  les liens rétréciraient à la largeur de leur texte au lieu de rester
+  cliquables sur toute la largeur).
+- **Bandeaux de titre réduits** (choix explicite de l'utilisateur,
+  23/08/2026) : celui de `galerie.html` (`.gallery-hero`, propre à cette
+  page) est réduit d'un tiers (64px/40px → 43px/27px). Celui d'Agenda des
+  sorties et du Club (`titre_page()` dans `espace/inc/page.php`, partagé par
+  toutes les pages de l'espace adhérents) est réduit de moitié sur ces deux
+  pages seulement, via un 4ᵉ paramètre `$reduit` qui ajoute
+  `.gallery-header--reduit` — les autres pages de l'espace (Documents,
+  Galerie privée, Annuaire, Réglages du site…) gardent le bandeau standard,
+  n'ayant pas été citées par l'utilisateur.
 - **`js/main.js` et `js/data.js` sont versionnés comme `style.css`** (voir
   plus bas « Hostinger sert... ») : `?v=AAAAMMJJHHmm` en dur sur les pages
   statiques, `lien_js()` (calqué sur `lien_css()`) sur les pages PHP. Sans
