@@ -23,10 +23,20 @@ function valeur_parametre(PDO $pdo, string $cle): ?string
  * Échoue silencieusement (juste consigné dans error_log) : un e-mail qui ne
  * part pas ne doit jamais empêcher une inscription ou une validation
  * d'aboutir — l'action en base a déjà réussi quand celle-ci est appelée.
+ *
+ * Le champ From utilise toujours une adresse du domaine du site
+ * (myfocal.online), jamais l'adresse de contact réelle (souvent une
+ * adresse Gmail) : Hostinger envoie mail() sous ce domaine, et un From qui
+ * prétend venir d'une autre adresse (ex. Gmail) échoue à la vérification
+ * DMARC du destinataire — Gmail rejette alors le message en silence, sans
+ * même le déposer dans les spams. Piège constaté le 23/08/2026 : aucun mail
+ * de notification reçu malgré une adresse correctement réglée dans
+ * Réglages du site. $expediteur reste utilisé comme Reply-To, pour que
+ * répondre au mail atterrisse bien sur la bonne adresse.
  */
 function envoyer_mail(string $destinataire, string $expediteur, string $sujet, string $corps): void
 {
-    $entetes = "From: Focal Club Turballais <{$expediteur}>\r\n"
+    $entetes = "From: Focal Club Turballais <noreply@myfocal.online>\r\n"
              . "Reply-To: {$expediteur}\r\n"
              . "Content-Type: text/plain; charset=UTF-8\r\n";
     $sujet_encode = '=?UTF-8?B?' . base64_encode($sujet) . '?=';

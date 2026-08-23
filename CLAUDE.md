@@ -515,6 +515,16 @@ validation) :
 3. à la validation (bascule de `valide` 0→1 dans `adherents.php`), vers la
    personne — son compte est actif, elle peut se connecter.
 
+**Le champ `From:` de ces e-mails est toujours `noreply@myfocal.online`,
+jamais l'adresse de contact du club** (piège rencontré et corrigé le
+23/08/2026 : aucun e-mail de notification n'arrivait, même pas en spam).
+Hostinger envoie `mail()` sous le domaine `myfocal.online` ; un `From:` qui
+prétend venir d'une autre adresse (l'e-mail du club, une adresse Gmail dans
+ce cas) échoue à la vérification DMARC du destinataire — Gmail rejette
+alors le message en silence, avant même de le classer en spam. L'adresse de
+contact réelle (`parametres_site.email`) reste utilisée en `Reply-To`, pour
+que répondre au mail atterrisse au bon endroit.
+
 `code_postal` et `ville` sont des colonnes ajoutées à `adherents` (voir
 `schema.sql` et `COLONNES_ATTENDUES` dans `migration.php`) ; rien d'autre ne
 les affiche pour l'instant (l'annuaire ne montre encore que
