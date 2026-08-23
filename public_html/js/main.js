@@ -551,12 +551,12 @@
      « Page précédente » (choix explicite de l'utilisateur, 23/08/2026,
      history.back() — comme .lien-retour sur connexion.php/inscription.php,
      mais générique et flottant) et « retour en haut » apparaissent dès
-     qu'il y a une section (les boutons restent invisibles tant qu'on n'a
-     pas assez défilé, voir actualiserVisibilite) ; « section précédente »
-     n'a de sens qu'à partir de deux sections, comme sur
-     `espace/documents.php`, une seule longue section mais qui a besoin de
-     pouvoir remonter en haut (choix explicite de l'utilisateur, 23/08/2026
-     — le seuil de deux sections empêchait tout bouton d'y apparaître). */
+     qu'il y a une section ; « section précédente » n'a de sens qu'à partir
+     de deux sections, comme sur `espace/documents.php`, une seule longue
+     section mais qui a besoin de pouvoir remonter en haut. Toujours visibles
+     dès le chargement de la page (choix explicite de l'utilisateur,
+     23/08/2026 — auparavant masqués tant qu'on n'avait pas défilé 60% de
+     l'écran, ce qui les rendait difficiles à trouver). */
   (function () {
     const sections = Array.from(document.querySelectorAll("main section"));
     if (!sections.length) return;
@@ -607,12 +607,6 @@
     nav.querySelector(".retour-haut").addEventListener("click", function () {
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
-
-    function actualiserVisibilite() {
-      nav.classList.toggle("is-visible", window.scrollY > window.innerHeight * 0.6);
-    }
-    window.addEventListener("scroll", actualiserVisibilite, { passive: true });
-    actualiserVisibilite();
   })();
 
   /* ---------- Agrandissement des photos (Galerie privée, Galerie du Club) ----------

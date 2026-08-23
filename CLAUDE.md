@@ -233,9 +233,11 @@ public_html/          ← racine du site, déployée telle quelle
   à une seule section mais longue, comme `espace/documents.php`. Le bouton
   « section précédente » remonte au début de la `<section>` précédente
   (pas seulement en haut de la section actuelle) ; « retour en haut » va
-  toujours en haut de la page. Les trois restent invisibles (`opacity:0` +
-  `pointer-events:none`) tant que la page n'a pas défilé d'au moins 60 %
-  de la hauteur de l'écran.
+  toujours en haut de la page. **Les trois sont toujours visibles dès le
+  chargement de la page** (choix explicite de l'utilisateur, 23/08/2026,
+  second changement de la journée à leur sujet — ils n'apparaissaient
+  auparavant qu'après un défilement d'au moins 60 % de la hauteur de
+  l'écran, ce qui les rendait difficiles à trouver).
 
 ## Modifier le contenu
 
