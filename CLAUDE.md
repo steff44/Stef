@@ -449,8 +449,14 @@ catégorie de photo inconnue de `CLUB_DATA.themes` s'ajoute automatiquement
 aux filtres.
 
 **L'accueil affiche un bandeau dépliant « Prochaine sortie / réunion »**
-(choix explicite de l'utilisateur, 23/08/2026), juste sous l'en-tête, avant
-le grand hero. Même principe que les autres points d'accès publics :
+(choix explicite de l'utilisateur, 23/08/2026), posé **sur la photo du grand
+hero**, tout en haut (premier élément à l'intérieur de `.hero-full .container`,
+avant `.hero-content` — pas dans une section séparée au-dessus, comme lors
+d'un premier essai le même jour, revenu en arrière car pas assez « sur la
+photo »). Fond semi-transparent flouté (`.bandeau-sortie--sur-photo`, même
+traitement que l'en-tête collant) plutôt que le fond uni utilisé ailleurs,
+pour rester lisible sur l'image. Même principe que les autres points d'accès
+publics :
 `infos-prochaine-sortie.php` (à la racine, hors de `espace/`) renvoie en
 JSON la prochaine ligne de `sorties` dont `debut >= NOW()` (`{}` si aucune),
 avec la date au format ISO (`debut_iso`) pour un parsing JavaScript fiable.

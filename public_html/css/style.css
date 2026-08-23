@@ -2174,6 +2174,17 @@ a {
 .bandeau-sortie-detail a {
   text-decoration: underline;
 }
+/* Posé en haut du hero, sur la photo (choix explicite de l'utilisateur,
+   23/08/2026) : fond semi-transparent avec flou, comme l'en-tête collant,
+   pour rester lisible sur l'image plutôt que sur le fond uni utilisé
+   ailleurs (tableau de bord, autres pages). */
+.bandeau-sortie--sur-photo {
+  max-width: 560px;
+  margin: 0 auto 28px;
+  background: rgba(15, 15, 40, 0.72);
+  backdrop-filter: blur(8px);
+  border-color: rgba(255, 255, 255, 0.18);
+}
 
 /* Boutons flottants « section précédente » / « retour en haut », posés par
    main.js sur toute page ayant au moins deux sections — génériques, aucune
