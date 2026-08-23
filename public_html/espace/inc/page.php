@@ -67,7 +67,7 @@ function debut_page(string $titre, string $page_active = ''): void
 
 <header class="site-header">
   <nav class="nav" aria-label="Navigation principale">
-    <a class="logo" href="../index.html"><span class="logo-mark" aria-hidden="true"></span><span class="logo-text">Focal Club<br>Turballais</span></a>
+    <a class="logo" href="../index.html"><img class="logo-image" src="../images/logo.png" alt="Focal Club Turballais"></a>
     <button class="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Ouvrir le menu">
       <span></span>
     </button>

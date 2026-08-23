@@ -155,26 +155,23 @@ public_html/          ← racine du site, déployée telle quelle
   Club<br>Turballais</span>`, à côté de `.logo-mark`). La coupure est un
   `<br>` volontaire, pas un retour à la ligne automatique — sans ça, le point
   de coupure dépendrait de la largeur disponible.
-- **`.logo-mark` a été redessiné le 23/08/2026** (choix explicite de
-  l'utilisateur, d'après une image fournie en référence — appareil photo en
-  traits noirs, viseur et déclencheur au-dessus, objectif rond avec une
-  forme abstraite blanche au centre) : le fichier image original n'était pas
-  accessible depuis le sandbox (aucune pièce jointe déposée sur le disque),
-  donc le dessin a été **recréé en SVG** à partir de l'image vue par le
-  modèle — proche visuellement, mais pas un pixel-à-pixel garanti. L'icône
-  est en traits noirs sur fond **blanc** (`background: #ffffff` au lieu du
-  dégradé rose/violet — un dessin en traits noirs a besoin d'un fond clair
-  pour rester lisible sur l'en-tête sombre) et nettement plus grande
-  qu'avant (34px le 18/08 → 42px le 23/08 matin → **60px** le 23/08
-  après-midi, « beaucoup plus gros » demandé explicitement). Le texte
-  « Focal Club Turballais » suit (`.logo`, `1.3rem` → `1.5rem` → `1.7rem`).
-  Le SVG (data URI dans `.logo-mark::before`, viewBox `0 0 100 100`) a été
-  vérifié en le faisant rendre par Chromium en local avant publication. Ce
-  changement s'applique partout où `.logo`/`.logo-mark` sont utilisés
-  (en-tête et pied de page de chaque page), pas seulement l'en-tête. Si
-  l'utilisateur fournit un jour le fichier image original (PNG/SVG), le
-  remplacer par une vraie image (`<img>` ou asset dans `images/`) donnerait
-  un résultat plus fidèle que ce dessin recréé.
+- **Le logo est la vraie image fournie par l'utilisateur**, déposée dans
+  `images/logo.png` (600×600, fond blanc, appareil photo + « FOCAL CLUB
+  TURBALLAIS » en bleu, texte compris dans l'image). Deux étapes le
+  23/08/2026 : un premier essai a recréé l'icône en SVG (`.logo-mark`,
+  dessinée à partir de l'image vue par le modèle) faute d'accès au fichier
+  — coller une image dans la conversation ne dépose rien d'exploitable dans
+  ce sandbox (vérifié : `/mnt/attach`, le dossier réservé aux pièces
+  jointes, restait vide). L'utilisateur a ensuite déposé le fichier
+  directement dans le dépôt GitHub (Upload files, avec un contournement par
+  URL directe `github.com/<repo>/upload/<branche>/<dossier>` — le bouton
+  « Add file » n'apparaissait pas dans son interface), ce qui a permis de
+  récupérer le vrai fichier et de l'utiliser tel quel. Résultat : `.logo-mark`
+  et `.logo-text` (l'ancien texte HTML « Focal Club\nTurballais ») sont
+  **supprimés** — remplacés par un unique `<img class="logo-image" src=".../images/logo.png">`,
+  hauteur fixée à 84px (largeur automatique, proportions carrées
+  conservées). S'applique partout où `.logo` est utilisé (en-tête et pied
+  de page de chaque page).
 - **Les libellés du menu principal sont alignés sur une même ligne
   médiane** depuis le 23/08/2026 (choix explicite de l'utilisateur) :
   `.nav-links` porte désormais `align-items: center`. Avant ce changement,
