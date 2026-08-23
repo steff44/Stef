@@ -91,7 +91,15 @@ public_html/          ← racine du site, déployée telle quelle
     `espace/inc/page.php` (pas de rendu centralisé pour les pages
     statiques) ; seul le lien du menu change, pas les occurrences dans le
     pied de page ou le bouton « Nous Contacter » de l'accueil, qui restent
-    sur une ligne.
+    sur une ligne. La section Inscription est placée juste sous ce grand
+    titre (avant le formulaire de contact), et les deux bandeaux sont moitié
+    moins hauts que d'habitude (choix explicite de l'utilisateur,
+    22/08/2026) — `.gallery-header--reduit` et `.cta-section--reduit` dans
+    `css/style.css`, sélecteurs composés avec la classe de base pour
+    l'emporter quelle que soit leur position dans la feuille de style,
+    propres à `contact.html` : ne pas réduire `.gallery-header` ou
+    `.cta-section` eux-mêmes, partagés avec les pages de l'espace adhérents
+    et `index.html`.
 - **« Agenda » et « Espace Adhérent » sont des menus déroulants**
   (`.nav-dropdown` dans `css/style.css` + comportement dans `js/main.js` :
   clic pour ouvrir/fermer, clic extérieur, Échap, accordéon en dessous de
