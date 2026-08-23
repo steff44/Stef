@@ -2,9 +2,10 @@
 /*
  * Sorties à venir — liste détaillée des sorties (inscriptions, ajout,
  * suppression), sous-page de l'Agenda à côté du calendrier (agenda.php).
- * Seuls s'inscrire/se désinscrire exigent d'être connecté, et créer/
- * supprimer une sortie d'être responsable (choix explicite de l'utilisateur,
- * 17/08/2026, hérité de l'ancien agenda.php).
+ * Seuls s'inscrire/se désinscrire exigent d'être connecté, et créer/modifier/
+ * supprimer une sortie d'être responsable ou éditeur (choix explicite de
+ * l'utilisateur, 17/08/2026, hérité de l'ancien agenda.php ; rôle éditeur
+ * ajouté le 23/08/2026 — voir est_gestionnaire() dans inc/auth.php).
  *
  * Cliquer sur une sortie dans le calendrier de agenda.php renvoie ici, à
  * l'ancre #sortie-{id} — posée sur chaque carte, à venir comme passée.
@@ -40,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         definir_message('succes', "Vous n'êtes plus inscrit à cette sortie.");
 
     } elseif ($action === 'supprimer') {
-        exige_administrateur();
+        exige_gestionnaire();
         $requete = $pdo->prepare('SELECT photo FROM sorties WHERE id = ?');
         $requete->execute([$id]);
         $sortie_supprimee = $requete->fetch();
@@ -52,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         definir_message('succes', "Sortie supprimée.");
 
     } elseif ($action === 'modifier') {
-        exige_administrateur();
+        exige_gestionnaire();
         $titre     = trim((string) ($_POST['titre'] ?? ''));
         $debut     = trim((string) ($_POST['debut'] ?? ''));
         $categorie = (string) ($_POST['categorie'] ?? '');
@@ -109,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
     } elseif ($action === 'creer') {
-        exige_administrateur();
+        exige_gestionnaire();
         $titre     = trim((string) ($_POST['titre'] ?? ''));
         $debut     = trim((string) ($_POST['debut'] ?? ''));
         $categorie = (string) ($_POST['categorie'] ?? '');
@@ -196,7 +197,7 @@ titre_page("Sorties à venir", "Les prochaines sorties du club, et qui y partici
     <a class="btn btn-ghost" href="agenda.php">← Voir le calendrier</a>
   </p>
 
-  <?php if (est_administrateur()): ?>
+  <?php if (est_gestionnaire()): ?>
     <details class="depot-bloc">
       <summary>Ajouter une sortie</summary>
       <form method="post" enctype="multipart/form-data" class="form-card" style="margin-top:16px;">
@@ -299,7 +300,7 @@ titre_page("Sorties à venir", "Les prochaines sorties du club, et qui y partici
               <?php else: ?>
                 <a class="btn btn-ghost" href="connexion.php">Se connecter pour participer</a>
               <?php endif; ?>
-              <?php if (est_administrateur()): ?>
+              <?php if (est_gestionnaire()): ?>
                 <details class="sortie-modifier">
                   <summary class="btn btn-ghost">Modifier</summary>
                   <form method="post" enctype="multipart/form-data" class="form-card" style="margin-top:16px;">

@@ -188,11 +188,16 @@
 
         const badge = donnees.administrateur
           ? ' <span class="badge-admin">responsable</span>'
+          : donnees.editeur
+          ? ' <span class="badge-editeur">éditeur</span>'
           : "";
-        const pagesAdmin = donnees.administrateur
-          ? '<li><a href="espace/adherents.php">Adhérents</a></li>' +
-            '<li><a href="espace/parametres.php">Réglages du site</a></li>'
-          : "";
+        const pagesAdmin =
+          (donnees.administrateur || donnees.editeur
+            ? '<li><a href="espace/adherents.php">Adhérents</a></li>'
+            : "") +
+          (donnees.administrateur
+            ? '<li><a href="espace/parametres.php">Réglages du site</a></li>'
+            : "");
         menu.innerHTML =
           '<li class="nav-dropdown-heading">Bonjour <strong>' + echapperHtml(donnees.nom) + "</strong>" + badge + "</li>" +
           '<li><a href="espace/deconnexion.php">Se déconnecter</a></li>' +

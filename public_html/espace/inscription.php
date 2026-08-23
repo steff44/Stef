@@ -5,11 +5,13 @@
  * (choix explicite, 20/08/2026 : revient sur la version à deux onglets sur
  * une seule page du 18/08/2026, qui ne correspondait pas à la maquette).
  *
- * Un compte créé ici démarre non validé (`valide = 0`) : un responsable doit
- * cocher « Validé » dans adherents.php avant que la personne puisse se
- * connecter. Trois e-mails accompagnent le cycle : à l'inscription, un vers
- * le club (à valider) et un vers la personne inscrite (en attente) ; à la
- * validation, un vers la personne (compte validé).
+ * Un compte créé ici est immédiatement utilisable (choix explicite de
+ * l'utilisateur, 23/08/2026 — remplace le verrou de validation manuelle du
+ * 18/08/2026 : un responsable ou un éditeur qui ne veut pas d'un compte le
+ * supprime directement depuis adherents.php plutôt que de le laisser en
+ * attente). Deux e-mails accompagnent l'inscription : un vers le club, pour
+ * information, et un vers la personne inscrite, qui confirme qu'elle peut
+ * se connecter dès maintenant.
  */
 
 declare(strict_types=1);
@@ -74,8 +76,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$erreurs) {
         $pdo->prepare(
             'INSERT INTO adherents
-                (identifiant, nom, email, telephone, code_postal, ville, mot_de_passe, administrateur, actif, valide)
-             VALUES (?, ?, ?, ?, ?, ?, ?, 0, 1, 0)'
+                (identifiant, nom, email, telephone, code_postal, ville, mot_de_passe, administrateur, actif)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 0, 1)'
         )->execute([
             $valeurs['pseudo'],
             trim($valeurs['prenom'] . ' ' . $valeurs['nom']),
@@ -94,30 +96,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         envoyer_mail(
             $email_club,
             $email_club,
-            "Nouvelle inscription à valider : {$valeurs['prenom']} {$valeurs['nom']}",
+            "Nouvelle inscription : {$valeurs['prenom']} {$valeurs['nom']}",
             "Une nouvelle personne s'est inscrite sur le site du Focal Club Turballais.\n\n"
             . "Nom : {$valeurs['prenom']} {$valeurs['nom']}\n"
             . "Pseudo : {$valeurs['pseudo']}\n"
             . "E-mail : {$valeurs['email']}\n"
             . ($valeurs['telephone'] !== '' ? "Téléphone : {$valeurs['telephone']}\n" : '')
-            . "\nPour valider son compte, connectez-vous à l'espace adhérents puis ouvrez "
-            . "l'onglet Adhérents, et cochez « Validé » sur sa ligne."
+            . "\nSon compte est actif dès maintenant. Pour le retirer, connectez-vous à "
+            . "l'espace adhérents, ouvrez l'onglet Adhérents, et supprimez sa ligne."
         );
 
         envoyer_mail(
             $valeurs['email'],
             $email_club,
-            "Votre inscription au Focal Club Turballais est en attente de validation",
+            "Votre inscription au Focal Club Turballais est confirmée",
             "Bonjour {$valeurs['prenom']},\n\n"
             . "Votre inscription à l'espace adhérents du Focal Club Turballais a bien été "
-            . "enregistrée. Elle est en attente de validation par un responsable du club : "
-            . "vous recevrez un nouvel e-mail dès que votre compte sera activé, et pourrez "
-            . "alors vous connecter avec le pseudo « {$valeurs['pseudo']} » et le "
-            . "mot de passe que vous venez de choisir.\n\n"
+            . "enregistrée. Vous pouvez dès à présent vous connecter avec le pseudo "
+            . "« {$valeurs['pseudo']} » et le mot de passe que vous venez de choisir.\n\n"
             . "À bientôt,\nLe Focal Club Turballais"
         );
 
-        definir_message('succes', "Votre inscription a bien été enregistrée. Elle est en attente de validation par un responsable du club — vous recevrez un e-mail dès qu'elle sera validée.");
+        definir_message('succes', "Votre inscription a bien été enregistrée. Vous pouvez vous connecter dès maintenant.");
         header('Location: connexion.php');
         exit;
     }
@@ -188,8 +188,8 @@ titre_page("Rejoignez le club", "Créez votre compte pour accéder à l'espace a
       </div>
       <button type="submit" class="btn btn-primary" style="width:100%;">Créer le compte</button>
       <p class="form-note">
-        Après inscription, votre compte est en attente de validation par un responsable du
-        club : vous recevrez un e-mail dès qu'il sera activé.
+        Vous pourrez vous connecter dès la création de votre compte, avec le pseudo et le
+        mot de passe choisis ci-dessus.
       </p>
     </form>
 

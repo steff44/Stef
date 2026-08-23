@@ -1217,6 +1217,7 @@ a {
 
 /* Pastilles */
 .badge-admin,
+.badge-editeur,
 .badge-inactif {
   display: inline-block;
   font-size: 0.68rem;
@@ -1230,21 +1231,59 @@ a {
   color: #e9d5ff;
   border: 1px solid rgba(168, 85, 247, 0.45);
 }
+/* Éditeur : même traitement que responsable, teinte bleue pour rester
+   distinguable au premier coup d'œil (choix explicite de l'utilisateur,
+   23/08/2026). */
+.badge-editeur {
+  background: rgba(56, 189, 248, 0.14);
+  color: #7dd3fc;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+}
 .badge-inactif {
   background: rgba(255, 255, 255, 0.08);
   color: var(--text-muted);
   border: 1px solid var(--border);
 }
-.badge-attente {
-  display: inline-block;
-  font-size: 0.68rem;
-  padding: 3px 9px;
-  border-radius: 999px;
-  vertical-align: middle;
-  margin-left: 6px;
-  background: rgba(245, 158, 11, 0.16);
-  color: #fcd34d;
-  border: 1px solid rgba(245, 158, 11, 0.45);
+
+/* Case à cocher stylée en carré avec une croix, pour activer/désactiver un
+   rôle (responsable ou éditeur) directement depuis le tableau des adhérents
+   — remplace les anciens liens texte « Nommer/Retirer responsable » (choix
+   explicite de l'utilisateur, 23/08/2026). */
+.case-role-ligne {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.case-role {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-alt);
+  color: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.case-role svg {
+  width: 13px;
+  height: 13px;
+}
+.case-role:hover {
+  border-color: var(--accent);
+}
+.case-role-actif {
+  background: var(--accent-gradient);
+  border-color: transparent;
+  color: #fff;
+}
+.case-role-label {
+  color: var(--text-muted);
+  font-size: 0.82rem;
 }
 
 /* Messages de confirmation / d'erreur */

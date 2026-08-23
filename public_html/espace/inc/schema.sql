@@ -12,10 +12,18 @@ CREATE TABLE IF NOT EXISTS adherents (
   code_postal        VARCHAR(10)  DEFAULT NULL,
   ville              VARCHAR(120) DEFAULT NULL,
   administrateur     TINYINT(1)   NOT NULL DEFAULT 0,
+  -- Éditeur : mêmes droits que responsable sur les comptes, les documents
+  -- et l'agenda, sans accès aux réglages du site (parametres.php reste
+  -- réservé à administrateur) — nouveau rôle du 23/08/2026, choix explicite
+  -- de l'utilisateur.
+  editeur            TINYINT(1)   NOT NULL DEFAULT 0,
   actif              TINYINT(1)   NOT NULL DEFAULT 1,
-  -- Distinct de `actif` : un compte créé par inscription.php démarre à 0
-  -- (en attente qu'un responsable valide), un compte créé par un
-  -- responsable depuis adherents.php démarre à 1 (défaut de la colonne).
+  -- Historique : servait de verrou d'inscription (un compte devait être
+  -- validé par un responsable avant de pouvoir se connecter). Ce verrou a
+  -- été retiré le 23/08/2026 (choix explicite de l'utilisateur) au profit
+  -- d'une suppression directe des comptes indésirables depuis
+  -- adherents.php — colonne conservée pour ne perdre aucune donnée, mais
+  -- plus lue par le code.
   valide             TINYINT(1)   NOT NULL DEFAULT 1,
   derniere_connexion DATETIME     DEFAULT NULL,
   -- Horodatage rafraîchi à chaque page consultée : sert à afficher qui est

@@ -48,6 +48,22 @@ function est_administrateur(): bool
     return (bool) (adherent_connecte()['administrateur'] ?? false);
 }
 
+function est_editeur(): bool
+{
+    return (bool) (adherent_connecte()['editeur'] ?? false);
+}
+
+/*
+ * Éditeur : rôle du 23/08/2026 (choix explicite de l'utilisateur), mêmes
+ * droits que responsable sur les comptes (adherents.php), les documents
+ * (documents.php) et l'agenda (sorties-a-venir.php), mais sans accès aux
+ * réglages du site (parametres.php reste réservé à exige_administrateur()).
+ */
+function est_gestionnaire(): bool
+{
+    return est_administrateur() || est_editeur();
+}
+
 /*
  * À placer en tête de chaque page réservée. Renvoie vers la page de
  * connexion si la personne n'est pas identifiée — qui, une fois connectée,
@@ -136,6 +152,19 @@ function exige_administrateur(): array
     return $adherent;
 }
 
+function exige_gestionnaire(): array
+{
+    $adherent = exige_connexion();
+    if (!est_gestionnaire()) {
+        page_erreur(
+            "Accès réservé",
+            "Cette page est réservée aux responsables et aux éditeurs du club.",
+            403
+        );
+    }
+    return $adherent;
+}
+
 /*
  * Vérifie l'identifiant et le mot de passe. Renvoie un message d'erreur, ou
  * null si la connexion a réussi.
@@ -154,7 +183,7 @@ function tenter_connexion(string $identifiant, string $mot_de_passe): ?string
     }
 
     $requete = base_de_donnees()->prepare(
-        'SELECT id, identifiant, nom, email, telephone, mot_de_passe, administrateur, actif, valide
+        'SELECT id, identifiant, nom, email, telephone, mot_de_passe, administrateur, editeur, actif
            FROM adherents
           WHERE identifiant = ?
           LIMIT 1'
@@ -173,15 +202,6 @@ function tenter_connexion(string $identifiant, string $mot_de_passe): ?string
         // Message unique : ne jamais indiquer si c'est l'identifiant ou le mot
         // de passe qui est faux.
         return "Identifiant ou mot de passe incorrect.";
-    }
-
-    // Identifiants corrects, mais inscription pas encore validée par un
-    // responsable (voir la case « Validé » dans adherents.php) : le message
-    // peut être spécifique ici — la personne vient de créer ce compte
-    // elle-même, ça ne révèle rien qu'elle ne sache déjà. On ne compte pas ça
-    // comme un échec (compteur de blocage) : le mot de passe était correct.
-    if (!$ligne['valide']) {
-        return "Votre inscription est en attente de validation par un responsable.";
     }
 
     // Le mot de passe est bon : on réinitialise les compteurs.
@@ -219,6 +239,7 @@ function tenter_connexion(string $identifiant, string $mot_de_passe): ?string
         'email'           => $ligne['email'],
         'telephone'       => $ligne['telephone'],
         'administrateur'  => (bool) $ligne['administrateur'],
+        'editeur'         => (bool) $ligne['editeur'],
         'connecte_depuis' => $ouverture,
     ];
 
