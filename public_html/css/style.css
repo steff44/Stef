@@ -892,10 +892,23 @@ a {
 .lightbox.is-open {
   display: flex;
 }
+/* Plafond de l'agrandissement : 1920px dans la plus grande dimension
+   (choix explicite de l'utilisateur, 24/08/2026 — avant, 900px bridaient
+   la photo bien en deçà sur un grand écran). Voir aussi .lightbox-image
+   pour le plafond en hauteur, et infos-expo-2026.php, qui demande à Google
+   une image de 1920px de large pour l'agrandissement : sans ça, on
+   étirerait une image de 1000px et la photo paraîtrait floue. */
 .lightbox-content {
-  max-width: 900px;
+  max-width: 1920px;
   width: 100%;
   text-align: center;
+}
+/* À partir de la tablette, laisse la place aux flèches précédente/suivante
+   sur les côtés : sans cette marge, une photo large passerait dessous. */
+@media (min-width: 761px) {
+  .lightbox {
+    padding: 24px 80px;
+  }
 }
 /* Le cadre n'impose plus de format : il se contente de centrer la photo,
    qui s'affiche en entier (24/08/2026 — avant, un fond « cover » en 4/3
@@ -911,9 +924,10 @@ a {
 .lightbox-image {
   display: block;
   max-width: 100%;
-  /* Laisse la place à la légende et aux marges de la lightbox sous la
-     photo, quelle que soit la hauteur de l'écran. */
-  max-height: 70vh;
+  /* 70vh laisse la place à la légende sous la photo quelle que soit la
+     hauteur de l'écran ; 1920px est le plafond demandé, qui ne joue que
+     sur un écran très haut (au-delà de ~2740px). */
+  max-height: min(70vh, 1920px);
   border-radius: var(--radius);
   border: 1px solid var(--border);
   box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.75), 0 8px 20px rgba(0, 0, 0, 0.5);

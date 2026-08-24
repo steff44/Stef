@@ -146,9 +146,17 @@ function collecter_images_drive(string $racine, callable $interroger, ?bool &$ec
                 // Adresse de vignette publique de Google Drive :
                 // fonctionne pour n'importe quel fichier partagé « avec
                 // le lien », sans passer par une API à chaque affichage
-                // d'image. sz=w1000 : largeur maximale demandée, Google
+                // d'image. sz=wNNN : largeur maximale demandée, Google
                 // renvoie une image plus petite si l'original l'est déjà.
-                'image' => 'https://drive.google.com/thumbnail?id=' . rawurlencode($id) . '&sz=w1000',
+                // Deux tailles plutôt qu'une seule : la grille affiche des
+                // vignettes de quelques centaines de pixels (1000 suffit,
+                // écrans à haute densité compris), tandis que
+                // l'agrandissement va jusqu'à 1920 (voir .lightbox-image
+                // dans css/style.css) — servir 1920 partout alourdirait
+                // inutilement le chargement de la grille, et servir 1000
+                // partout rendrait la photo agrandie floue.
+                'image'        => 'https://drive.google.com/thumbnail?id=' . rawurlencode($id) . '&sz=w1000',
+                'image_grande' => 'https://drive.google.com/thumbnail?id=' . rawurlencode($id) . '&sz=w1920',
             ];
         }
     };

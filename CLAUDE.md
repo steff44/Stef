@@ -580,7 +580,29 @@ verticale. La taille est bornée par `max-width: 100%` (900px via
 légende quelle que soit la hauteur de l'écran. `.lightbox-frame--degrade`
 reprend l'ancien cadre 4/3 pour le seul cas d'une photo **sans** fichier
 image (dégradé de repli de `photoGradient()`, qui n'a aucune dimension
-propre à donner au cadre). La fonction est partagée par les **deux**
+propre à donner au cadre).
+
+**Plafond de l'agrandissement : 1920px sur la plus grande dimension**
+(choix explicite de l'utilisateur, 24/08/2026 — `.lightbox-content`
+plafonnait à 900px, ce qui bridait la photo bien en deçà sur un grand
+écran). Trois réglages qui vont ensemble, à ne pas changer isolément :
+`.lightbox-content { max-width: 1920px }`, `.lightbox-image
+{ max-height: min(70vh, 1920px) }` (70vh garde la légende visible ; le
+1920 ne joue qu'au-delà d'un écran de ~2740px de haut), et une marge
+latérale de 80px sur `.lightbox` **à partir de 761px** de large, sans
+quoi une photo large passerait sous les flèches précédente/suivante. En
+dessous de 761px, les flèches restent volontairement en surimpression sur
+les bords de la photo : réserver 2×68px sur un écran de 390px la
+réduirait beaucoup trop — c'est le comportement du site depuis toujours.
+Côté source, `infos-expo-2026.php` renvoie **deux** adresses par photo :
+`image` en `sz=w1000` pour la vignette de la grille, et `image_grande` en
+`sz=w1920` pour l'agrandissement — servir 1920 partout alourdirait la
+grille, et servir 1000 partout rendrait la photo agrandie floue une fois
+étirée. `poserPhotoAgrandie()` prend `photo.imageGrande || photo.image` :
+le repli couvre les photos hébergées sur le serveur du club (Galerie du
+Club, galeries de l'espace adhérents), qui n'ont qu'une seule taille.
+
+La fonction est partagée par les **deux**
 systèmes d'agrandissement du site — celui des pages publiques
 (`renderLightbox()`) et celui des galeries de l'espace adhérents
 (`afficher()`, cartes `.photo-card[data-titre]`) — donc les deux ont été
