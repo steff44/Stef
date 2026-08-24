@@ -512,6 +512,25 @@ La requête à `files.list` inclut `supportsAllDrives`/
 `includeItemsFromAllDrives` (sans quoi un dossier vivant dans un Drive
 partagé — « Shared Drive » — resterait invisible même bien partagé).
 
+**Les sous-dossiers sont explorés** (24/08/2026) : le dossier du club range
+ses photos par adhérent (`Expo FOCAL 2026 / {Prénom} / 1920 / …`), donc se
+limiter aux images posées directement dans le dossier racine ne remonterait
+jamais rien. L'API Google ne sait pas répondre « et tout ce qu'il y a en
+dessous » : `collecter_images_drive()` descend niveau par niveau, en
+groupant tous les dossiers d'un même niveau dans **un seul** appel
+(`'a' in parents or 'b' in parents …`, par lots de `PARENTS_PAR_REQUETE`).
+Le parcours est borné par `PROFONDEUR_MAX` (5) et `REQUETES_MAX` (15) —
+une arborescence profonde ne doit ni user le quota gratuit ni faire
+attendre la page — et retient les dossiers déjà vus, sans quoi deux
+raccourcis Drive pointant l'un vers l'autre boucleraient à l'infini. Seul
+l'échec du **premier** appel fait replier sur le cache ; un échec plus tard
+garde les photos déjà récoltées plutôt que de tout perdre. La fonction
+reçoit son « interrogeur » en argument (`callable`) au lieu d'appeler
+l'API en dur : c'est ce qui permet de tester tout ce parcours hors ligne
+avec un faux annuaire Drive, le domaine du site étant bloqué depuis ce
+sandbox. L'identifiant de dossier est validé (`[A-Za-z0-9_-]+`) avant
+d'entrer dans la clause `q`.
+
 **Piège rencontré le 24/08/2026** : après la première configuration par
 l'utilisateur, la section restait vide. Diagnostic via un point d'accès
 temporaire (`?diag=...`, retiré une fois la cause trouvée — le domaine du
@@ -527,6 +546,23 @@ fichiers individuels à l'intérieur avaient été mis en ligne *avant* ce
 changement, ils peuvent avoir gardé leur propre restriction : les
 sélectionner tous dans Drive et les partager explicitement au même réglage
 résout ce cas.
+
+**Les outils Google Drive de Claude ne savent pas régler ce partage**
+(constaté le 24/08/2026, à ne pas repromettre) : `share_file` exige une
+adresse e-mail précise, et ne peut donc pas poser un partage « tous les
+utilisateurs disposant du lien » (`type: anyone`) ; `update_file` ne
+touche qu'au titre et au dossier parent. Cette étape reste à faire à la
+main par l'utilisateur. En revanche `get_file_permissions`,
+`get_file_metadata` et `search_files` permettent de **diagnostiquer**
+beaucoup plus vite qu'en déployant un point d'accès temporaire : lire les
+permissions réelles d'un dossier (un partage public y apparaît en
+`type: anyone`) et vérifier ce qu'il contient vraiment. C'est ainsi qu'on
+a découvert, le 24/08/2026, que le dossier configuré ne contenait
+**aucune photo** — seulement une arborescence de sous-dossiers vides au
+nom de chaque adhérent, plus deux fichiers Word/Excel : même
+parfaitement partagé, la galerie serait restée vide. Réflexe à garder :
+vérifier d'abord *qu'il y a des photos*, avant de chercher pourquoi elles
+ne s'affichent pas.
 
 Pour activer cette section, un responsable doit (une seule fois, sur
 [console.cloud.google.com](https://console.cloud.google.com)) :

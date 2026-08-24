@@ -16,6 +16,14 @@
  * disposant du lien » — une clé API (sans OAuth) ne peut lire que des
  * fichiers Drive publics, jamais un dossier resté privé.
  *
+ * Les SOUS-DOSSIERS sont explorés (24/08/2026) : le dossier du club range
+ * ses photos par adhérent (Expo FOCAL 2026 / {Prénom} / …), donc se limiter
+ * aux images posées directement dans le dossier racine ne remonterait
+ * jamais rien. L'exploration est bornée (PROFONDEUR_MAX / REQUETES_MAX) :
+ * l'API Google ne sait pas répondre « et tout ce qu'il y a en dessous », il
+ * faut descendre niveau par niveau, et une arborescence profonde ne doit ni
+ * user le quota gratuit ni faire attendre la page.
+ *
  * Même principe que infos-club.php : autonome (ne dépend pas de la base ni
  * de espace/inc/), pour rester debout même si le reste du site est cassé.
  * Résultat mis en cache sur disque (voir CACHE_DUREE_SECONDES) : sans ça,
@@ -30,6 +38,13 @@ header('Cache-Control: public, max-age=300');
 
 const CACHE_DUREE_SECONDES = 900; // 15 minutes
 const CACHE_CHEMIN         = __DIR__ . '/espace/inc/.cache-galerie-drive.json';
+
+// Bornes de l'exploration des sous-dossiers.
+const PROFONDEUR_MAX       = 5;  // niveaux de sous-dossiers parcourus
+const REQUETES_MAX         = 15; // appels à l'API Google par rafraîchissement
+const PARENTS_PAR_REQUETE  = 20; // dossiers interrogés en un seul appel
+
+const MIME_DOSSIER = 'application/vnd.google-apps.folder';
 
 /* Sert le dernier résultat connu (même expiré) plutôt qu'un tableau vide,
    si l'appel à l'API échoue — une panne ou un quota dépassé côté Google ne
@@ -48,6 +63,91 @@ function repondre_depuis_le_cache(): never
     exit;
 }
 
+/*
+ * Parcourt le dossier racine et ses sous-dossiers, et renvoie les images
+ * trouvées. $interroger reçoit une clause `q` et renvoie la liste de
+ * fichiers (tableau), ou null si l'appel a échoué — l'injecter en argument
+ * plutôt que d'appeler l'API en dur permet de tester ce parcours hors ligne.
+ * $echec passe à true seulement si le TOUT PREMIER appel échoue : au-delà,
+ * on préfère afficher les photos déjà récoltées plutôt que rien.
+ */
+function collecter_images_drive(string $racine, callable $interroger, ?bool &$echec = null): array
+{
+    $echec    = false;
+    $images   = [];
+    $niveau   = [$racine];
+    $vus      = [$racine => true];
+    $requetes = 0;
+
+    for ($profondeur = 0; $profondeur < PROFONDEUR_MAX && $niveau !== []; $profondeur++) {
+        $suivant = [];
+
+        foreach (array_chunk($niveau, PARENTS_PAR_REQUETE) as $lot) {
+            if ($requetes >= REQUETES_MAX) {
+                break 2;
+            }
+            $requetes++;
+
+            $clauses = [];
+            foreach ($lot as $id) {
+                $clauses[] = "'" . $id . "' in parents";
+            }
+            $fichiers = $interroger(
+                '(' . implode(' or ', $clauses) . ')'
+                . " and trashed = false"
+                . " and (mimeType contains 'image/' or mimeType = '" . MIME_DOSSIER . "')"
+            );
+
+            if ($fichiers === null) {
+                // Premier appel raté : rien à afficher, on repassera par le
+                // cache. Sinon, on garde ce qui a déjà été récolté.
+                if ($requetes === 1) {
+                    $echec = true;
+                    return [];
+                }
+                continue;
+            }
+
+            foreach ($fichiers as $fichier) {
+                if (!isset($fichier['id'], $fichier['name'], $fichier['mimeType'])) {
+                    continue;
+                }
+                $id = (string) $fichier['id'];
+
+                if ($fichier['mimeType'] === MIME_DOSSIER) {
+                    // Un raccourci Drive peut faire pointer deux dossiers
+                    // l'un vers l'autre : sans ce garde-fou, boucle infinie.
+                    if (!isset($vus[$id])) {
+                        $vus[$id]  = true;
+                        $suivant[] = $id;
+                    }
+                    continue;
+                }
+
+                $images[$id] = [
+                    // Nom du fichier sans son extension, comme pour un
+                    // document déposé dans l'espace adhérents — pas de titre
+                    // à saisir à la main.
+                    'titre' => pathinfo((string) $fichier['name'], PATHINFO_FILENAME),
+                    // Adresse de vignette publique de Google Drive :
+                    // fonctionne pour n'importe quel fichier partagé « avec
+                    // le lien », sans passer par une API à chaque affichage
+                    // d'image. sz=w1000 : largeur maximale demandée, Google
+                    // renvoie une image plus petite si l'original l'est déjà.
+                    'image' => 'https://drive.google.com/thumbnail?id=' . rawurlencode($id) . '&sz=w1000',
+                ];
+            }
+        }
+
+        $niveau = $suivant;
+    }
+
+    $images = array_values($images);
+    usort($images, static fn(array $a, array $b): int => strnatcasecmp($a['titre'], $b['titre']));
+
+    return $images;
+}
+
 $chemin_config = __DIR__ . '/espace/inc/config.local.php';
 if (!is_file($chemin_config)) {
     repondre_depuis_le_cache();
@@ -64,54 +164,56 @@ if ($cle_api === '' || $dossier === '') {
     exit;
 }
 
+// Un identifiant Drive n'est fait que de lettres, chiffres, tiret et
+// souligné : tout le reste sortirait de la clause `q` construite plus bas.
+if (preg_match('/^[A-Za-z0-9_-]+$/', $dossier) !== 1) {
+    error_log('infos-galerie-drive.php — identifiant de dossier invalide.');
+    echo '[]';
+    exit;
+}
+
 // Cache encore valable : on ne rappelle pas l'API à chaque visite.
 if (is_file(CACHE_CHEMIN) && (time() - (int) @filemtime(CACHE_CHEMIN)) < CACHE_DUREE_SECONDES) {
     repondre_depuis_le_cache();
 }
 
-$requete = 'https://www.googleapis.com/drive/v3/files?' . http_build_query([
-    'q'                         => "'" . $dossier . "' in parents and mimeType contains 'image/' and trashed = false",
-    'fields'                    => 'files(id,name)',
-    'orderBy'                   => 'name',
-    'pageSize'                  => 1000,
-    // Nécessaire si le dossier vit dans un Drive partagé (« Shared Drive »)
-    // plutôt que dans « Mon Drive » — sans ça, ses fichiers sont invisibles
-    // à cette requête même si le dossier est bien public.
-    'supportsAllDrives'         => 'true',
-    'includeItemsFromAllDrives' => 'true',
-    'key'                       => $cle_api,
-]);
+$photos = collecter_images_drive(
+    $dossier,
+    /* Délai court : une API Google lente ou injoignable ne doit pas faire
+       attendre indéfiniment le chargement de la page Galerie. */
+    static function (string $q) use ($cle_api): ?array {
+        $url = 'https://www.googleapis.com/drive/v3/files?' . http_build_query([
+            'q'        => $q,
+            'fields'   => 'files(id,name,mimeType)',
+            'orderBy'  => 'name',
+            'pageSize' => 1000,
+            // Nécessaires si le dossier vit dans un Drive partagé
+            // (« Shared Drive ») plutôt que dans « Mon Drive » — sans ça,
+            // ses fichiers restent invisibles même bien partagés.
+            'supportsAllDrives'         => 'true',
+            'includeItemsFromAllDrives' => 'true',
+            'key'      => $cle_api,
+        ]);
 
-// Délai court : une API Google lente ou injoignable ne doit pas faire
-// attendre indéfiniment le chargement de la page Galerie.
-$contexte = stream_context_create(['http' => ['timeout' => 6, 'ignore_errors' => true]]);
-$brut     = @file_get_contents($requete, false, $contexte);
-$reponse  = $brut !== false ? json_decode($brut, true) : null;
+        $contexte = stream_context_create(['http' => ['timeout' => 6, 'ignore_errors' => true]]);
+        $brut     = @file_get_contents($url, false, $contexte);
+        $reponse  = $brut !== false ? json_decode($brut, true) : null;
 
-if (!is_array($reponse) || !isset($reponse['files']) || !is_array($reponse['files'])) {
-    $motif = is_array($reponse) && isset($reponse['error']['message'])
-        ? $reponse['error']['message']
-        : ($brut === false ? 'file_get_contents a échoué (allow_url_fopen désactivé ?)' : 'réponse invalide');
-    error_log('infos-galerie-drive.php — appel Google Drive échoué : ' . $motif);
+        if (!is_array($reponse) || !isset($reponse['files']) || !is_array($reponse['files'])) {
+            $motif = is_array($reponse) && isset($reponse['error']['message'])
+                ? $reponse['error']['message']
+                : ($brut === false ? 'file_get_contents a échoué (allow_url_fopen désactivé ?)' : 'réponse invalide');
+            error_log('infos-galerie-drive.php — appel Google Drive échoué : ' . $motif);
+            return null;
+        }
+
+        return $reponse['files'];
+    },
+    $echec
+);
+
+if ($echec) {
     repondre_depuis_le_cache();
-}
-
-$photos = [];
-foreach ($reponse['files'] as $fichier) {
-    if (!isset($fichier['id'], $fichier['name'])) {
-        continue;
-    }
-    $photos[] = [
-        // Nom du fichier sans son extension, comme pour un document déposé
-        // dans l'espace adhérents — pas de titre à saisir à la main.
-        'titre' => pathinfo((string) $fichier['name'], PATHINFO_FILENAME),
-        // Adresse de vignette publique de Google Drive : fonctionne pour
-        // n'importe quel fichier partagé « avec le lien », sans passer par
-        // une API à chaque affichage d'image. sz=w1000 : largeur maximale
-        // demandée, Google renvoie une image plus petite si l'original
-        // l'est déjà.
-        'image' => 'https://drive.google.com/thumbnail?id=' . rawurlencode((string) $fichier['id']) . '&sz=w1000',
-    ];
 }
 
 @file_put_contents(CACHE_CHEMIN, json_encode($photos, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
