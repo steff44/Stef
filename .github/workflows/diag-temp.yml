@@ -9,5 +9,7 @@ jobs:
     steps:
       - name: Config Drive (sans clé)
         run: curl -s 'https://myfocal.online/infos-galerie-drive.php?diag=fctdiag2026'
-      - name: Appel réel à l'API Google Drive
+      - name: Le dossier lui-même est-il visible publiquement ?
+        run: curl -s 'https://myfocal.online/infos-galerie-drive.php?diag=fctdiag2026&etape=dossier'
+      - name: Appel réel à l'API Google Drive (liste des fichiers)
         run: curl -s 'https://myfocal.online/infos-galerie-drive.php?diag=fctdiag2026&etape=appel'
