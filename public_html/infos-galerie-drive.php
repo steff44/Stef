@@ -231,7 +231,9 @@ if (preg_match('/^[A-Za-z0-9_-]+$/', $dossier) !== 1) {
 }
 
 // Cache encore valable : on ne rappelle pas l'API à chaque visite.
-if (is_file(CACHE_CHEMIN) && (time() - (int) @filemtime(CACHE_CHEMIN)) < CACHE_DUREE_SECONDES) {
+// ?forcer=1 (temporaire, à retirer) : bypass le cache pour vérifier le
+// correctif du 24/08/2026 sans attendre les 15 minutes.
+if (($_GET['forcer'] ?? '') !== '1' && is_file(CACHE_CHEMIN) && (time() - (int) @filemtime(CACHE_CHEMIN)) < CACHE_DUREE_SECONDES) {
     repondre_depuis_le_cache();
 }
 
