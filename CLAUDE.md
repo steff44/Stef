@@ -508,6 +508,25 @@ fonctionne aussi sur ces photos. Deux réglages dans
 erreur. **Le dossier Drive doit être partagé « Accessible à tous les
 utilisateurs disposant du lien »** : une clé API seule (sans OAuth) ne
 peut lire que des fichiers Drive publics, jamais un dossier resté privé.
+La requête à `files.list` inclut `supportsAllDrives`/
+`includeItemsFromAllDrives` (sans quoi un dossier vivant dans un Drive
+partagé — « Shared Drive » — resterait invisible même bien partagé).
+
+**Piège rencontré le 24/08/2026** : après la première configuration par
+l'utilisateur, la section restait vide. Diagnostic via un point d'accès
+temporaire (`?diag=...`, retiré une fois la cause trouvée — le domaine du
+site étant bloqué depuis ce sandbox, un appel direct à l'API Google
+`files.get` sur l'identifiant du dossier configuré a montré une erreur
+« File not found », alors que la clé API et l'identifiant de dossier
+étaient corrects. Le dossier n'était en réalité **pas encore partagé
+publiquement** malgré l'étape 5 suivie : à vérifier en premier lieu en cas
+de section vide — rouvrir le dossier sur drive.google.com, bouton de
+partage, « Accès général » doit afficher « Tous les utilisateurs disposant
+du lien » (pas « Restreint »). Si le dossier est bien partagé mais que des
+fichiers individuels à l'intérieur avaient été mis en ligne *avant* ce
+changement, ils peuvent avoir gardé leur propre restriction : les
+sélectionner tous dans Drive et les partager explicitement au même réglage
+résout ce cas.
 
 Pour activer cette section, un responsable doit (une seule fois, sur
 [console.cloud.google.com](https://console.cloud.google.com)) :

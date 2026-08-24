@@ -48,33 +48,14 @@ function repondre_depuis_le_cache(): never
     exit;
 }
 
-// Diagnostic temporaire (à retirer une fois la section fonctionnelle) :
-// ?diag=fctdiag2026 renvoie l'état de la config et de l'appel Google, sans
-// jamais exposer la clé API elle-même.
-$diag = ($_GET['diag'] ?? '') === 'fctdiag2026';
-
 $chemin_config = __DIR__ . '/espace/inc/config.local.php';
 if (!is_file($chemin_config)) {
-    if ($diag) {
-        echo json_encode(['config_trouve' => false]);
-        exit;
-    }
     repondre_depuis_le_cache();
 }
 
 $config   = require $chemin_config;
 $cle_api  = (string) ($config['google_drive_cle_api'] ?? '');
 $dossier  = (string) ($config['google_drive_dossier_id'] ?? '');
-
-if ($diag && ($_GET['etape'] ?? '') === '') {
-    echo json_encode([
-        'config_trouve'     => true,
-        'cle_api_definie'   => $cle_api !== '',
-        'cle_api_longueur'  => strlen($cle_api),
-        'dossier_id'        => $dossier,
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
-}
 
 if ($cle_api === '' || $dossier === '') {
     // Réglage facultatif non renseigné : section simplement absente du
@@ -83,34 +64,22 @@ if ($cle_api === '' || $dossier === '') {
     exit;
 }
 
-// Cache encore valable : on ne rappelle pas l'API à chaque visite (sauf en
-// diagnostic explicite, qui doit toujours refaire l'appel réel).
-if (!$diag && is_file(CACHE_CHEMIN) && (time() - (int) @filemtime(CACHE_CHEMIN)) < CACHE_DUREE_SECONDES) {
+// Cache encore valable : on ne rappelle pas l'API à chaque visite.
+if (is_file(CACHE_CHEMIN) && (time() - (int) @filemtime(CACHE_CHEMIN)) < CACHE_DUREE_SECONDES) {
     repondre_depuis_le_cache();
 }
 
-if ($diag && ($_GET['etape'] ?? '') === 'dossier') {
-    // Le dossier lui-même est-il visible par la clé API (donc bien partagé
-    // publiquement) ? Un dossier non partagé renvoie ici "File not found".
-    $requete_dossier = 'https://www.googleapis.com/drive/v3/files/' . rawurlencode($dossier)
-        . '?' . http_build_query(['fields' => 'id,name,mimeType', 'key' => $cle_api]);
-    $contexte_dossier = stream_context_create(['http' => ['timeout' => 6, 'ignore_errors' => true]]);
-    $brut_dossier = @file_get_contents($requete_dossier, false, $contexte_dossier);
-    echo $brut_dossier !== false ? $brut_dossier : json_encode(['erreur' => 'appel échoué']);
-    exit;
-}
-
 $requete = 'https://www.googleapis.com/drive/v3/files?' . http_build_query([
-    'q'                       => "'" . $dossier . "' in parents and mimeType contains 'image/' and trashed = false",
-    'fields'                  => 'files(id,name)',
-    'orderBy'                 => 'name',
-    'pageSize'                => 1000,
+    'q'                         => "'" . $dossier . "' in parents and mimeType contains 'image/' and trashed = false",
+    'fields'                    => 'files(id,name)',
+    'orderBy'                   => 'name',
+    'pageSize'                  => 1000,
     // Nécessaire si le dossier vit dans un Drive partagé (« Shared Drive »)
     // plutôt que dans « Mon Drive » — sans ça, ses fichiers sont invisibles
     // à cette requête même si le dossier est bien public.
-    'supportsAllDrives'       => 'true',
+    'supportsAllDrives'         => 'true',
     'includeItemsFromAllDrives' => 'true',
-    'key'                     => $cle_api,
+    'key'                       => $cle_api,
 ]);
 
 // Délai court : une API Google lente ou injoignable ne doit pas faire
@@ -124,16 +93,7 @@ if (!is_array($reponse) || !isset($reponse['files']) || !is_array($reponse['file
         ? $reponse['error']['message']
         : ($brut === false ? 'file_get_contents a échoué (allow_url_fopen désactivé ?)' : 'réponse invalide');
     error_log('infos-galerie-drive.php — appel Google Drive échoué : ' . $motif);
-    if ($diag) {
-        echo json_encode(['erreur' => $motif, 'reponse_brute' => $reponse], JSON_UNESCAPED_UNICODE);
-        exit;
-    }
     repondre_depuis_le_cache();
-}
-
-if ($diag) {
-    echo json_encode(['nombre_fichiers_trouves' => count($reponse['files'])], JSON_UNESCAPED_UNICODE);
-    exit;
 }
 
 $photos = [];
