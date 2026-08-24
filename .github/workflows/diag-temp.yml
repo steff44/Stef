@@ -1,0 +1,18 @@
+name: Diagnostic temporaire — Galerie Drive
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Appelle infos-galerie-drive.php et affiche la réponse
+        run: |
+          echo "--- Code HTTP ---"
+          curl -s -o /tmp/reponse.json -w '%{http_code}\n' https://myfocal.online/infos-galerie-drive.php
+          echo "--- Corps de la réponse ---"
+          cat /tmp/reponse.json
+          echo ""
+          echo "--- En-têtes ---"
+          curl -sI https://myfocal.online/infos-galerie-drive.php
