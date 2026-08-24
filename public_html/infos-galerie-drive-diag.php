@@ -10,8 +10,18 @@ $config  = require __DIR__ . '/espace/inc/config.local.php';
 $cle_api = (string) ($config['google_drive_cle_api'] ?? '');
 $dossier = (string) ($config['google_drive_dossier_id'] ?? '');
 
-$url = 'https://www.googleapis.com/drive/v3/files/' . rawurlencode($dossier) . '?'
-    . http_build_query(['fields' => 'id,name,mimeType,shared,permissions', 'supportsAllDrives' => 'true', 'key' => $cle_api]);
+// Exactement la même requête que le code réel, pour voir la réponse brute
+// (le code réel n'affiche jamais ça, seulement le nombre de photos).
+$q = "('" . $dossier . "' in parents) and trashed = false and (mimeType contains 'image/' or mimeType = 'application/vnd.google-apps.folder')";
+$url = 'https://www.googleapis.com/drive/v3/files?' . http_build_query([
+    'q'                         => $q,
+    'fields'                    => 'files(id,name,mimeType)',
+    'orderBy'                   => 'name',
+    'pageSize'                  => 1000,
+    'supportsAllDrives'         => 'true',
+    'includeItemsFromAllDrives' => 'true',
+    'key'                       => $cle_api,
+]);
 $contexte = stream_context_create(['http' => ['timeout' => 6, 'ignore_errors' => true]]);
 $brut = @file_get_contents($url, false, $contexte);
-echo $brut !== false ? $brut : json_encode(['erreur' => 'appel échoué']);
+echo json_encode(['q' => $q, 'reponse' => json_decode($brut !== false ? $brut : 'null', true)], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
