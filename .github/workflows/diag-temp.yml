@@ -7,9 +7,9 @@ jobs:
   diag:
     runs-on: ubuntu-latest
     steps:
-      - name: Combien de photos le site renvoie-t-il ?
+      - name: Combien de photos le site renvoie-t-il (cache ignoré) ?
         run: |
-          curl -s --max-time 30 https://myfocal.online/infos-galerie-drive.php -o /tmp/r.json
+          curl -s --max-time 30 'https://myfocal.online/infos-galerie-drive.php?forcer=1' -o /tmp/r.json
           echo "Nombre de photos : $(python3 -c 'import json;print(len(json.load(open("/tmp/r.json"))))')"
-      - name: Le dossier lui-même est-il visible par la clé API ?
-        run: curl -s --max-time 30 'https://myfocal.online/infos-galerie-drive-diag.php'
+          echo "--- 5 premieres ---"
+          python3 -c 'import json;[print("-",p["titre"]) for p in json.load(open("/tmp/r.json"))[:5]]'
