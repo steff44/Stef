@@ -306,7 +306,7 @@
     frame.style.background = photoBackground(photo);
     lightbox.querySelector(".lightbox-title").textContent = photo.titre;
     lightbox.querySelector(".lightbox-meta").textContent =
-      photo.membreNom + " — " + photo.theme;
+      [photo.membreNom, photo.theme].filter(Boolean).join(" — ");
     const descriptionEl = lightbox.querySelector(".lightbox-description");
     if (descriptionEl) {
       descriptionEl.textContent = photo.description || "";
@@ -348,7 +348,7 @@
       '"></span>' +
       '<span class="photo-caption">' +
       '<span class="title">' + echapperHtml(photo.titre) + "</span>" +
-      '<span class="meta">' + echapperHtml(membreNom) + " · " + echapperHtml(photo.theme) + "</span>" +
+      '<span class="meta">' + echapperHtml([membreNom, photo.theme].filter(Boolean).join(" · ")) + "</span>" +
       "</span>";
     card.addEventListener("click", function () {
       const idx = photosForLightbox.findIndex(function (p) {
@@ -548,6 +548,35 @@
       });
     }
   }
+
+  /* ---------- Page galerie : section séparée « Photos Google Drive » ----------
+     Choix explicite de l'utilisateur, 23/08/2026 : des photos conservées sur
+     Google Drive plutôt que déposées sur l'hébergement Hostinger, affichées
+     dans leur propre section (pas mêlées aux photos de la Galerie du Club ni
+     à ses filtres par thème). infos-galerie-drive.php renvoie [] si la clé
+     API/le dossier ne sont pas encore réglés dans config.local.php : la
+     section reste alors masquée (hidden posé en dur dans galerie.html), même
+     philosophie que les autres sections chargées en JSON de cette page. */
+  (function () {
+    const section = document.querySelector("[data-drive-gallery-section]");
+    const grid = document.querySelector("[data-drive-gallery]");
+    if (!section || !grid) return;
+
+    fetch("infos-galerie-drive.php")
+      .then(function (reponse) { return reponse.ok ? reponse.json() : Promise.reject(); })
+      .then(function (photos) {
+        if (!Array.isArray(photos) || !photos.length) return;
+
+        const enrichies = photos.map(function (p) {
+          return { titre: p.titre, theme: "Google Drive", membreNom: "", image: p.image, hue: 0, index: 0 };
+        });
+        enrichies.forEach(function (photo) {
+          grid.appendChild(buildPhotoCard(photo, photo.hue, photo.membreNom, photo.index, enrichies));
+        });
+        section.hidden = false;
+      })
+      .catch(function () {});
+  })();
 
   /* ---------- Boutons « page précédente » / « section précédente » / « retour en haut » ----------
      Génériques : posés sur toute page ayant au moins une <section>, qu'elle
