@@ -46,6 +46,33 @@ const PARENTS_PAR_REQUETE  = 20; // dossiers interrogés en un seul appel
 
 const MIME_DOSSIER = 'application/vnd.google-apps.folder';
 
+/*
+ * Récupère une URL avec un délai VRAIMENT respecté. file_get_contents +
+ * stream_context_create('timeout') n'applique pas toujours fiablement son
+ * délai sur les flux HTTPS (bug PHP connu, dépend de la version/plateforme)
+ * — un appel qui devrait échouer au bout de 6 secondes peut alors rester
+ * bloqué plusieurs minutes, gelant tout le chargement de la page Galerie.
+ * cURL, quand il est disponible (presque toujours en hébergement mutualisé),
+ * respecte ses délais de façon bien plus fiable.
+ */
+function recuperer_url(string $url, int $delai_secondes): string|false
+{
+    if (function_exists('curl_init')) {
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => $delai_secondes,
+            CURLOPT_CONNECTTIMEOUT => $delai_secondes,
+        ]);
+        $brut = curl_exec($ch);
+        curl_close($ch);
+        return $brut === false ? false : $brut;
+    }
+
+    $contexte = stream_context_create(['http' => ['timeout' => $delai_secondes, 'ignore_errors' => true]]);
+    return @file_get_contents($url, false, $contexte);
+}
+
 /* Sert le dernier résultat connu (même expiré) plutôt qu'un tableau vide,
    si l'appel à l'API échoue — une panne ou un quota dépassé côté Google ne
    doit pas faire disparaître toute la section pour les visiteurs. */
@@ -195,14 +222,13 @@ $photos = collecter_images_drive(
             'key'      => $cle_api,
         ]);
 
-        $contexte = stream_context_create(['http' => ['timeout' => 6, 'ignore_errors' => true]]);
-        $brut     = @file_get_contents($url, false, $contexte);
-        $reponse  = $brut !== false ? json_decode($brut, true) : null;
+        $brut    = recuperer_url($url, 6);
+        $reponse = $brut !== false ? json_decode($brut, true) : null;
 
         if (!is_array($reponse) || !isset($reponse['files']) || !is_array($reponse['files'])) {
             $motif = is_array($reponse) && isset($reponse['error']['message'])
                 ? $reponse['error']['message']
-                : ($brut === false ? 'file_get_contents a échoué (allow_url_fopen désactivé ?)' : 'réponse invalide');
+                : ($brut === false ? 'appel réseau échoué (délai dépassé ou allow_url_fopen désactivé)' : 'réponse invalide');
             error_log('infos-galerie-drive.php — appel Google Drive échoué : ' . $motif);
             return null;
         }
