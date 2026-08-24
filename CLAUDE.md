@@ -517,19 +517,50 @@ ses photos par adhérent (`Expo FOCAL 2026 / {Prénom} / 1920 / …`), donc se
 limiter aux images posées directement dans le dossier racine ne remonterait
 jamais rien. L'API Google ne sait pas répondre « et tout ce qu'il y a en
 dessous » : `collecter_images_drive()` descend niveau par niveau, en
-groupant tous les dossiers d'un même niveau dans **un seul** appel
-(`'a' in parents or 'b' in parents …`, par lots de `PARENTS_PAR_REQUETE`).
-Le parcours est borné par `PROFONDEUR_MAX` (5) et `REQUETES_MAX` (15) —
-une arborescence profonde ne doit ni user le quota gratuit ni faire
-attendre la page — et retient les dossiers déjà vus, sans quoi deux
-raccourcis Drive pointant l'un vers l'autre boucleraient à l'infini. Seul
-l'échec du **premier** appel fait replier sur le cache ; un échec plus tard
-garde les photos déjà récoltées plutôt que de tout perdre. La fonction
-reçoit son « interrogeur » en argument (`callable`) au lieu d'appeler
-l'API en dur : c'est ce qui permet de tester tout ce parcours hors ligne
-avec un faux annuaire Drive, le domaine du site étant bloqué depuis ce
-sandbox. L'identifiant de dossier est validé (`[A-Za-z0-9_-]+`) avant
-d'entrer dans la clause `q`.
+groupant les dossiers d'un même niveau dans un seul appel
+(`'a' in parents or 'b' in parents …`, par lots de `PARENTS_PAR_REQUETE`,
+8 dossiers). Le parcours est borné par `PROFONDEUR_MAX` (5) et
+`REQUETES_MAX` (40) — une arborescence profonde ne doit ni user le quota
+gratuit ni faire attendre la page — et retient les dossiers déjà vus, sans
+quoi deux raccourcis Drive pointant l'un vers l'autre boucleraient à
+l'infini. Seul l'échec du **premier** appel fait replier sur le cache ; un
+échec plus tard garde les photos déjà récoltées plutôt que de tout perdre.
+La fonction reçoit son « interrogeur » en argument (`callable`) au lieu
+d'appeler l'API en dur : c'est ce qui permet de tester tout ce parcours
+hors ligne avec un faux annuaire Drive, le domaine du site étant bloqué
+depuis ce sandbox. L'identifiant de dossier est validé (`[A-Za-z0-9_-]+`)
+avant d'entrer dans la clause `q`.
+
+**Un seul dossier inaccessible dans un lot fait échouer tout le lot**
+(piège découvert et corrigé le 24/08/2026, distinct de celui décrit plus
+bas) : une requête groupée (`'a' in parents or 'b' in parents or …`) où
+**un seul** des identifiants n'est pas lisible par la clé API renvoie
+« The user does not have sufficient permissions for this file » pour
+**toute** la requête — pas seulement pour le dossier fautif. Constaté avec
+le dossier « Logo Focal Club », resté sans partage individuel alors que
+les 16 autres sous-dossiers d'adhérents, eux, étaient bien accessibles :
+sans retraitement, cela aurait fait disparaître les photos de tous les
+adhérents à cause d'un seul dossier oublié. Quand un lot échoue et que ce
+n'est pas le tout premier appel, `collecter_images_drive()` relance donc
+chaque dossier du lot **individuellement** (`construire_requete_dossier()`
+avec un seul identifiant) : les dossiers accessibles remontent leurs
+photos normalement, et seul celui réellement bloqué est ignoré en
+silence — d'où `PARENTS_PAR_REQUETE` volontairement modeste (8, pas 20) et
+`REQUETES_MAX` généreux (40) pour laisser de la marge à ces relances.
+Couvert par un test hors ligne dédié qui simule ce comportement exact de
+l'API (un lot contenant un identifiant bloqué échoue en bloc, chaque
+identifiant relancé seul réussit ou échoue pour de bon).
+
+**`file_get_contents` + `stream_context_create('timeout')` peut rester
+bloqué plusieurs minutes au lieu d'échouer** (constaté le 24/08/2026,
+piège distinct des deux précédents) : en diagnostiquant ce qui précède, un
+appel resté bloqué plus de deux minutes — largement au-delà du délai de
+6 secondes configuré — a fait perdre du temps avant qu'on comprenne que
+le délai de `stream_context_create` ne s'applique pas toujours de façon
+fiable sur les flux HTTPS (limitation connue de PHP, variable selon la
+version/plateforme). `recuperer_url()` utilise désormais cURL quand il est
+disponible (`CURLOPT_TIMEOUT`/`CURLOPT_CONNECTTIMEOUT`, bien plus fiables
+sur ce point), avec repli sur `file_get_contents` sinon.
 
 **Piège rencontré le 24/08/2026** : après la première configuration par
 l'utilisateur, la section restait vide. Diagnostic via un point d'accès
