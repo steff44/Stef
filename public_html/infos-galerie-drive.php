@@ -48,14 +48,33 @@ function repondre_depuis_le_cache(): never
     exit;
 }
 
+// Diagnostic temporaire (à retirer une fois la section fonctionnelle) :
+// ?diag=fctdiag2026 renvoie l'état de la config et de l'appel Google, sans
+// jamais exposer la clé API elle-même.
+$diag = ($_GET['diag'] ?? '') === 'fctdiag2026';
+
 $chemin_config = __DIR__ . '/espace/inc/config.local.php';
 if (!is_file($chemin_config)) {
+    if ($diag) {
+        echo json_encode(['config_trouve' => false]);
+        exit;
+    }
     repondre_depuis_le_cache();
 }
 
 $config   = require $chemin_config;
 $cle_api  = (string) ($config['google_drive_cle_api'] ?? '');
 $dossier  = (string) ($config['google_drive_dossier_id'] ?? '');
+
+if ($diag && ($_GET['etape'] ?? '') !== 'appel') {
+    echo json_encode([
+        'config_trouve'     => true,
+        'cle_api_definie'   => $cle_api !== '',
+        'cle_api_longueur'  => strlen($cle_api),
+        'dossier_id'        => $dossier,
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
 
 if ($cle_api === '' || $dossier === '') {
     // Réglage facultatif non renseigné : section simplement absente du
@@ -64,8 +83,9 @@ if ($cle_api === '' || $dossier === '') {
     exit;
 }
 
-// Cache encore valable : on ne rappelle pas l'API à chaque visite.
-if (is_file(CACHE_CHEMIN) && (time() - (int) @filemtime(CACHE_CHEMIN)) < CACHE_DUREE_SECONDES) {
+// Cache encore valable : on ne rappelle pas l'API à chaque visite (sauf en
+// diagnostic explicite, qui doit toujours refaire l'appel réel).
+if (!$diag && is_file(CACHE_CHEMIN) && (time() - (int) @filemtime(CACHE_CHEMIN)) < CACHE_DUREE_SECONDES) {
     repondre_depuis_le_cache();
 }
 
@@ -86,9 +106,18 @@ $reponse  = $brut !== false ? json_decode($brut, true) : null;
 if (!is_array($reponse) || !isset($reponse['files']) || !is_array($reponse['files'])) {
     $motif = is_array($reponse) && isset($reponse['error']['message'])
         ? $reponse['error']['message']
-        : 'réponse invalide';
+        : ($brut === false ? 'file_get_contents a échoué (allow_url_fopen désactivé ?)' : 'réponse invalide');
     error_log('infos-galerie-drive.php — appel Google Drive échoué : ' . $motif);
+    if ($diag) {
+        echo json_encode(['erreur' => $motif, 'reponse_brute' => $reponse], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
     repondre_depuis_le_cache();
+}
+
+if ($diag) {
+    echo json_encode(['nombre_fichiers_trouves' => count($reponse['files'])], JSON_UNESCAPED_UNICODE);
+    exit;
 }
 
 $photos = [];
