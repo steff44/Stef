@@ -262,6 +262,33 @@
       : photoGradient(photo.hue, photo.index);
   }
 
+  /* Remplit le cadre de la lightbox avec la photo ENTIÈRE (24/08/2026 :
+     le fond CSS « cover » recadrait tout ce qui n'était pas au format 4/3
+     — les photos verticales étaient coupées en haut et en bas). Une vraie
+     <img> plutôt qu'un fond : le cadre épouse alors la photo, donc la
+     bordure et l'ombre entourent l'image elle-même, sans bandes vides
+     autour. Le recadrage reste voulu sur les VIGNETTES (.photo-card, voir
+     buildPhotoCard) : c'est ce qui leur donne des tailles uniformes.
+     Partagée par les deux systèmes d'agrandissement du site (celui des
+     pages publiques et celui des galeries de l'espace adhérents). */
+  function poserPhotoAgrandie(frame, photo) {
+    frame.innerHTML = "";
+    if (photo.image) {
+      frame.classList.remove("lightbox-frame--degrade");
+      frame.style.background = "";
+      const img = document.createElement("img");
+      img.className = "lightbox-image";
+      img.src = photo.image;
+      img.alt = photo.titre || "";
+      frame.appendChild(img);
+      return;
+    }
+    // Photo sans fichier : dégradé de repli, qui a besoin d'une taille
+    // puisqu'il n'y a pas d'image pour donner ses dimensions au cadre.
+    frame.classList.add("lightbox-frame--degrade");
+    frame.style.background = photoGradient(photo.hue, photo.index);
+  }
+
   /* ---------- Lightbox ---------- */
   const lightbox = document.querySelector("[data-lightbox]");
   let activePhotos = [];
@@ -317,8 +344,7 @@
 
   function renderLightbox() {
     const photo = activePhotos[activeIndex];
-    const frame = lightbox.querySelector(".lightbox-frame");
-    frame.style.background = photoBackground(photo);
+    poserPhotoAgrandie(lightbox.querySelector(".lightbox-frame"), photo);
     lightbox.querySelector(".lightbox-title").textContent = photo.titre;
     lightbox.querySelector(".lightbox-meta").textContent =
       [photo.membreNom, photo.theme].filter(Boolean).join(" — ");
@@ -758,8 +784,7 @@
 
     function afficher() {
       const photo = photos[indexActif];
-      boite.querySelector(".lightbox-frame").style.background =
-        "center / cover no-repeat url('" + photo.image + "')";
+      poserPhotoAgrandie(boite.querySelector(".lightbox-frame"), photo);
       boite.querySelector(".lightbox-title").textContent = photo.titre;
       boite.querySelector(".lightbox-meta").textContent = photo.meta;
       const descriptionEl = boite.querySelector(".lightbox-description");
