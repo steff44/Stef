@@ -1,0 +1,15 @@
+name: Diagnostic temporaire — Galerie Drive
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Combien de photos le site renvoie-t-il ?
+        run: |
+          curl -s https://myfocal.online/infos-galerie-drive.php -o /tmp/r.json
+          echo "Nombre de photos : $(python3 -c 'import json;print(len(json.load(open("/tmp/r.json"))))')"
+          echo "--- 5 premières ---"
+          python3 -c 'import json;[print("-",p["titre"],"->",p["image"]) for p in json.load(open("/tmp/r.json"))[:5]]'
