@@ -89,12 +89,28 @@ if (!$diag && is_file(CACHE_CHEMIN) && (time() - (int) @filemtime(CACHE_CHEMIN))
     repondre_depuis_le_cache();
 }
 
+if ($diag && ($_GET['etape'] ?? '') === 'dossier') {
+    // Le dossier lui-même est-il visible par la clé API (donc bien partagé
+    // publiquement) ? Un dossier non partagé renvoie ici "File not found".
+    $requete_dossier = 'https://www.googleapis.com/drive/v3/files/' . rawurlencode($dossier)
+        . '?' . http_build_query(['fields' => 'id,name,mimeType', 'key' => $cle_api]);
+    $contexte_dossier = stream_context_create(['http' => ['timeout' => 6, 'ignore_errors' => true]]);
+    $brut_dossier = @file_get_contents($requete_dossier, false, $contexte_dossier);
+    echo $brut_dossier !== false ? $brut_dossier : json_encode(['erreur' => 'appel échoué']);
+    exit;
+}
+
 $requete = 'https://www.googleapis.com/drive/v3/files?' . http_build_query([
-    'q'        => "'" . $dossier . "' in parents and mimeType contains 'image/' and trashed = false",
-    'fields'   => 'files(id,name)',
-    'orderBy'  => 'name',
-    'pageSize' => 1000,
-    'key'      => $cle_api,
+    'q'                       => "'" . $dossier . "' in parents and mimeType contains 'image/' and trashed = false",
+    'fields'                  => 'files(id,name)',
+    'orderBy'                 => 'name',
+    'pageSize'                => 1000,
+    // Nécessaire si le dossier vit dans un Drive partagé (« Shared Drive »)
+    // plutôt que dans « Mon Drive » — sans ça, ses fichiers sont invisibles
+    // à cette requête même si le dossier est bien public.
+    'supportsAllDrives'       => 'true',
+    'includeItemsFromAllDrives' => 'true',
+    'key'                     => $cle_api,
 ]);
 
 // Délai court : une API Google lente ou injoignable ne doit pas faire
