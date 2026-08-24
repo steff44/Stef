@@ -268,11 +268,25 @@
   let activeIndex = 0;
   let diaporamaTimer = null;
 
+  /* Reflète l'état marche/arrêt sur le bouton de la lightbox (◻, si présent
+     sur la page) : centralisé ici plutôt que dupliqué à chaque appelant, que
+     le diaporama soit arrêté par ce bouton, par les flèches précédent/
+     suivant, ou par la fermeture de la lightbox. */
+  function reglerBoutonDiaporama(actif) {
+    if (!lightbox) return;
+    const bouton = lightbox.querySelector(".lightbox-diaporama");
+    if (!bouton) return;
+    bouton.classList.toggle("is-playing", actif);
+    bouton.textContent = actif ? "⏸" : "▶";
+    bouton.setAttribute("aria-label", actif ? "Arrêter le diaporama" : "Lancer le diaporama");
+  }
+
   function stopDiaporama() {
     if (diaporamaTimer) {
       clearInterval(diaporamaTimer);
       diaporamaTimer = null;
     }
+    reglerBoutonDiaporama(false);
   }
 
   function startDiaporama() {
@@ -281,6 +295,7 @@
       activeIndex = (activeIndex + 1) % activePhotos.length;
       renderLightbox();
     }, 3500);
+    reglerBoutonDiaporama(true);
   }
 
   function openLightbox(photos, index) {
@@ -316,6 +331,16 @@
 
   if (lightbox) {
     lightbox.querySelector(".lightbox-close").addEventListener("click", closeLightbox);
+    const boutonDiaporama = lightbox.querySelector(".lightbox-diaporama");
+    if (boutonDiaporama) {
+      boutonDiaporama.addEventListener("click", function () {
+        if (diaporamaTimer) {
+          stopDiaporama();
+        } else {
+          startDiaporama();
+        }
+      });
+    }
     lightbox.querySelector(".lightbox-prev").addEventListener("click", function () {
       stopDiaporama();
       activeIndex = (activeIndex - 1 + activePhotos.length) % activePhotos.length;
@@ -358,6 +383,99 @@
     });
     return card;
   }
+
+  /* ---------- Page « Expo 2026 » : dossiers par adhérent ----------
+     Choix explicite de l'utilisateur, 24/08/2026 : les photos Google Drive
+     ne sont plus une section de galerie.html, mais leur propre page. Un
+     dossier Drive = un adhérent ; sa carte porte la miniature de sa
+     première photo. Au clic, la grille des dossiers laisse place à celle de
+     ses photos (bascule de vue, pas de navigation : rien à recharger,
+     l'appel à infos-expo-2026.php n'a lieu qu'une fois). Au clic sur une
+     photo, la lightbox partagée s'ouvre, avec son bouton de diaporama.
+     infos-expo-2026.php renvoie [] si la clé API/le dossier ne sont pas
+     encore réglés dans config.local.php, ou en cas d'échec de l'appel
+     (hors ligne, préversion GitHub Pages qui ne peut pas exécuter PHP) :
+     la page affiche alors son message « aucune photo », jamais d'erreur. */
+  (function () {
+    const page = document.querySelector("[data-expo-page]");
+    if (!page) return;
+
+    const grilleDossiers = page.querySelector("[data-expo-dossiers]");
+    const vuePhotos = page.querySelector("[data-expo-vue-photos]");
+    const grillePhotos = page.querySelector("[data-expo-photos]");
+    const titrePhotos = page.querySelector("[data-expo-titre-adherent]");
+    const retour = page.querySelector("[data-expo-retour]");
+    const vide = page.querySelector("[data-expo-vide]");
+    const chargement = page.querySelector("[data-expo-chargement]");
+    if (!grilleDossiers || !vuePhotos || !grillePhotos) return;
+
+    function montrerDossiers() {
+      vuePhotos.hidden = true;
+      grilleDossiers.hidden = false;
+      grillePhotos.innerHTML = "";
+    }
+
+    function ouvrirDossier(adherent) {
+      grillePhotos.innerHTML = "";
+      if (titrePhotos) titrePhotos.textContent = adherent.nom;
+
+      // Mêmes champs que les autres appelants de buildPhotoCard : le nom de
+      // l'adhérent tient lieu de « membre », il n'y a pas de thème ici.
+      const photos = adherent.photos.map(function (p) {
+        return { titre: p.titre, theme: "", membreNom: adherent.nom, image: p.image, hue: 0, index: 0 };
+      });
+      photos.forEach(function (photo) {
+        grillePhotos.appendChild(buildPhotoCard(photo, 0, adherent.nom, 0, photos));
+      });
+
+      grilleDossiers.hidden = true;
+      vuePhotos.hidden = false;
+      vuePhotos.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    /* Carte de dossier : même habillage que .photo-card (vignette de la
+       première photo, légende en incrustation), mais son clic ouvre le
+       dossier au lieu de la lightbox. */
+    function construireCarteDossier(adherent) {
+      const carte = document.createElement("button");
+      carte.type = "button";
+      carte.className = "photo-card";
+      carte.setAttribute("aria-label", "Voir les photos de " + adherent.nom);
+      const nombre = adherent.photos.length;
+      carte.innerHTML =
+        '<span class="photo-frame" style="background:' +
+        photoBackground({ image: adherent.vignette, hue: 0, index: 0 }) +
+        '"></span>' +
+        '<span class="photo-caption">' +
+        '<span class="title">' + echapperHtml(adherent.nom) + "</span>" +
+        '<span class="meta">' + nombre + (nombre > 1 ? " photos" : " photo") + "</span>" +
+        "</span>";
+      carte.addEventListener("click", function () {
+        ouvrirDossier(adherent);
+      });
+      return carte;
+    }
+
+    if (retour) retour.addEventListener("click", montrerDossiers);
+
+    fetch("infos-expo-2026.php")
+      .then(function (reponse) { return reponse.ok ? reponse.json() : Promise.reject(); })
+      .then(function (adherents) {
+        if (chargement) chargement.hidden = true;
+        if (!Array.isArray(adherents) || !adherents.length) {
+          if (vide) vide.hidden = false;
+          return;
+        }
+        adherents.forEach(function (adherent) {
+          if (!adherent || !Array.isArray(adherent.photos) || !adherent.photos.length) return;
+          grilleDossiers.appendChild(construireCarteDossier(adherent));
+        });
+      })
+      .catch(function () {
+        if (chargement) chargement.hidden = true;
+        if (vide) vide.hidden = false;
+      });
+  })();
 
   /* ---------- Page d'accueil : bandeau « prochaine sortie / réunion » ----------
      Dépliant natif (<details>, voir css/style.css), rempli depuis
@@ -548,35 +666,6 @@
       });
     }
   }
-
-  /* ---------- Page galerie : section séparée « Photos Google Drive » ----------
-     Choix explicite de l'utilisateur, 23/08/2026 : des photos conservées sur
-     Google Drive plutôt que déposées sur l'hébergement Hostinger, affichées
-     dans leur propre section (pas mêlées aux photos de la Galerie du Club ni
-     à ses filtres par thème). infos-galerie-drive.php renvoie [] si la clé
-     API/le dossier ne sont pas encore réglés dans config.local.php : la
-     section reste alors masquée (hidden posé en dur dans galerie.html), même
-     philosophie que les autres sections chargées en JSON de cette page. */
-  (function () {
-    const section = document.querySelector("[data-drive-gallery-section]");
-    const grid = document.querySelector("[data-drive-gallery]");
-    if (!section || !grid) return;
-
-    fetch("infos-galerie-drive.php")
-      .then(function (reponse) { return reponse.ok ? reponse.json() : Promise.reject(); })
-      .then(function (photos) {
-        if (!Array.isArray(photos) || !photos.length) return;
-
-        const enrichies = photos.map(function (p) {
-          return { titre: p.titre, theme: "Google Drive", membreNom: "", image: p.image, hue: 0, index: 0 };
-        });
-        enrichies.forEach(function (photo) {
-          grid.appendChild(buildPhotoCard(photo, photo.hue, photo.membreNom, photo.index, enrichies));
-        });
-        section.hidden = false;
-      })
-      .catch(function () {});
-  })();
 
   /* ---------- Boutons « page précédente » / « section précédente » / « retour en haut » ----------
      Génériques : posés sur toute page ayant au moins une <section>, qu'elle

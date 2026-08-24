@@ -24,10 +24,10 @@ return [
     'utilisateur'  => 'UTILISATEUR_DE_LA_BASE',
     'mot_de_passe' => 'MOT_DE_PASSE_DE_LA_BASE',
 
-    // Facultatif — voir infos-galerie-drive.php : section « Photos Google
-    // Drive » de la page Galerie, qui affiche des photos conservées sur
-    // Google Drive sans les héberger sur ce serveur. Laisser tel quel
-    // (chaînes vides) désactive simplement cette section. Voir
+    // Facultatif — voir infos-expo-2026.php : page « Expo 2026 », qui
+    // affiche les photos conservées sur Google Drive (un dossier par
+    // adhérent) sans les héberger sur ce serveur. Laisser tel quel
+    // (chaînes vides) désactive simplement cette page. Voir
     // CLAUDE.md pour la procédure complète de création de la clé.
     'google_drive_cle_api'     => '',
     'google_drive_dossier_id'  => '',

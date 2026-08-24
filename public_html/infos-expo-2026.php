@@ -1,33 +1,30 @@
 <?php
 /*
  * Point d'accès PUBLIC, en lecture seule, à un dossier Google Drive
- * (choix explicite de l'utilisateur, 23/08/2026) : liste les images qu'il
- * contient, pour la section « Photos Google Drive » de galerie.html — les
- * photos restent hébergées sur Google, jamais copiées sur ce serveur (c'est
- * tout l'intérêt : ne pas encombrer l'hébergement Hostinger).
+ * (choix explicite de l'utilisateur, 24/08/2026) : liste les photos de
+ * l'exposition « Expo 2026 » (expo-2026.html), groupées par ADHÉRENT — un
+ * dossier direct sous le dossier racine configuré = un adhérent, sa
+ * vignette = la première de ses photos. Remplace infos-galerie-drive.php,
+ * qui renvoyait un tableau plat sans distinguer les dossiers : la page
+ * Expo 2026 a besoin de cette frontière pour afficher une carte par
+ * adhérent, dont le clic révèle ses photos. Les photos restent hébergées
+ * sur Google, jamais copiées sur ce serveur.
  *
  * Nécessite deux réglages dans espace/inc/config.local.php :
  *   'google_drive_cle_api'    => une clé API Google Cloud (API Key, pas
  *                                 OAuth — voir CLAUDE.md pour la procédure),
- *   'google_drive_dossier_id' => l'identifiant du dossier Drive à afficher
+ *   'google_drive_dossier_id' => l'identifiant du dossier Drive racine
  *                                 (dans son URL : drive.google.com/drive/
- *                                 folders/CET_IDENTIFIANT).
+ *                                 folders/CET_IDENTIFIANT), qui contient un
+ *                                 sous-dossier par adhérent.
  * Le dossier doit être partagé en « Accessible à tous les utilisateurs
  * disposant du lien » — une clé API (sans OAuth) ne peut lire que des
  * fichiers Drive publics, jamais un dossier resté privé.
  *
- * Les SOUS-DOSSIERS sont explorés (24/08/2026) : le dossier du club range
- * ses photos par adhérent (Expo FOCAL 2026 / {Prénom} / …), donc se limiter
- * aux images posées directement dans le dossier racine ne remonterait
- * jamais rien. L'exploration est bornée (PROFONDEUR_MAX / REQUETES_MAX) :
- * l'API Google ne sait pas répondre « et tout ce qu'il y a en dessous », il
- * faut descendre niveau par niveau, et une arborescence profonde ne doit ni
- * user le quota gratuit ni faire attendre la page.
- *
  * Même principe que infos-club.php : autonome (ne dépend pas de la base ni
  * de espace/inc/), pour rester debout même si le reste du site est cassé.
  * Résultat mis en cache sur disque (voir CACHE_DUREE_SECONDES) : sans ça,
- * chaque visite de la page Galerie interrogerait l'API Google, ce qui
+ * chaque visite de la page Expo 2026 interrogerait l'API Google, ce qui
  * userait vite le quota gratuit et ralentirait la page.
  */
 
@@ -37,11 +34,13 @@ header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: public, max-age=300');
 
 const CACHE_DUREE_SECONDES = 900; // 15 minutes
-const CACHE_CHEMIN         = __DIR__ . '/espace/inc/.cache-galerie-drive.json';
+const CACHE_CHEMIN         = __DIR__ . '/espace/inc/.cache-expo-2026.json';
 
-// Bornes de l'exploration des sous-dossiers.
+// Bornes de l'exploration des sous-dossiers, à l'intérieur du dossier de
+// chaque adhérent (le dossier racine lui-même n'est parcouru qu'un niveau,
+// juste pour lister les adhérents).
 const PROFONDEUR_MAX       = 5;  // niveaux de sous-dossiers parcourus
-const REQUETES_MAX         = 40; // appels à l'API Google par rafraîchissement
+const REQUETES_MAX         = 40; // appels à l'API Google par adhérent
 const PARENTS_PAR_REQUETE  = 8;  // dossiers interrogés en un seul appel
 
 const MIME_DOSSIER = 'application/vnd.google-apps.folder';
@@ -51,7 +50,7 @@ const MIME_DOSSIER = 'application/vnd.google-apps.folder';
  * stream_context_create('timeout') n'applique pas toujours fiablement son
  * délai sur les flux HTTPS (bug PHP connu, dépend de la version/plateforme)
  * — un appel qui devrait échouer au bout de 6 secondes peut alors rester
- * bloqué plusieurs minutes, gelant tout le chargement de la page Galerie.
+ * bloqué plusieurs minutes, gelant tout le chargement de la page Expo 2026.
  * cURL, quand il est disponible (presque toujours en hébergement mutualisé),
  * respecte ses délais de façon bien plus fiable.
  */
@@ -75,7 +74,7 @@ function recuperer_url(string $url, int $delai_secondes): string|false
 
 /* Sert le dernier résultat connu (même expiré) plutôt qu'un tableau vide,
    si l'appel à l'API échoue — une panne ou un quota dépassé côté Google ne
-   doit pas faire disparaître toute la section pour les visiteurs. */
+   doit pas faire disparaître toute la page pour les visiteurs. */
 function repondre_depuis_le_cache(): never
 {
     if (is_file(CACHE_CHEMIN)) {
@@ -104,12 +103,13 @@ function construire_requete_dossier(array $ids): string
 }
 
 /*
- * Parcourt le dossier racine et ses sous-dossiers, et renvoie les images
- * trouvées. $interroger reçoit une clause `q` et renvoie la liste de
- * fichiers (tableau), ou null si l'appel a échoué — l'injecter en argument
- * plutôt que d'appeler l'API en dur permet de tester ce parcours hors ligne.
- * $echec passe à true seulement si le TOUT PREMIER appel échoue : au-delà,
- * on préfère afficher les photos déjà récoltées plutôt que rien.
+ * Parcourt le dossier d'UN adhérent et ses sous-dossiers (ex. « 1920 »), et
+ * renvoie les images trouvées. $interroger reçoit une clause `q` et renvoie
+ * la liste de fichiers (tableau), ou null si l'appel a échoué — l'injecter
+ * en argument plutôt que d'appeler l'API en dur permet de tester ce
+ * parcours hors ligne. $echec passe à true seulement si le TOUT PREMIER
+ * appel échoue : au-delà, on préfère afficher les photos déjà récoltées
+ * plutôt que rien.
  */
 function collecter_images_drive(string $racine, callable $interroger, ?bool &$echec = null): array
 {
@@ -165,8 +165,8 @@ function collecter_images_drive(string $racine, callable $interroger, ?bool &$ec
             $fichiers = $interroger(construire_requete_dossier($lot));
 
             if ($fichiers === null) {
-                // Premier appel raté : rien à afficher, on repassera par le
-                // cache.
+                // Premier appel raté : rien à afficher pour cet adhérent, on
+                // repassera par le cache.
                 if ($requetes === 1) {
                     $echec = true;
                     return [];
@@ -189,7 +189,7 @@ function collecter_images_drive(string $racine, callable $interroger, ?bool &$ec
                     }
                     // Sinon : ce dossier précis reste inaccessible, on
                     // l'ignore silencieusement plutôt que de faire
-                    // disparaître toute la section.
+                    // disparaître toute la page.
                 }
                 continue;
             }
@@ -216,8 +216,8 @@ $cle_api  = (string) ($config['google_drive_cle_api'] ?? '');
 $dossier  = (string) ($config['google_drive_dossier_id'] ?? '');
 
 if ($cle_api === '' || $dossier === '') {
-    // Réglage facultatif non renseigné : section simplement absente du
-    // site, pas une erreur.
+    // Réglage facultatif non renseigné : page simplement vide, pas une
+    // erreur.
     echo '[]';
     exit;
 }
@@ -225,7 +225,7 @@ if ($cle_api === '' || $dossier === '') {
 // Un identifiant Drive n'est fait que de lettres, chiffres, tiret et
 // souligné : tout le reste sortirait de la clause `q` construite plus bas.
 if (preg_match('/^[A-Za-z0-9_-]+$/', $dossier) !== 1) {
-    error_log('infos-galerie-drive.php — identifiant de dossier invalide.');
+    error_log('infos-expo-2026.php — identifiant de dossier invalide.');
     echo '[]';
     exit;
 }
@@ -235,44 +235,74 @@ if (is_file(CACHE_CHEMIN) && (time() - (int) @filemtime(CACHE_CHEMIN)) < CACHE_D
     repondre_depuis_le_cache();
 }
 
-$photos = collecter_images_drive(
-    $dossier,
-    /* Délai court : une API Google lente ou injoignable ne doit pas faire
-       attendre indéfiniment le chargement de la page Galerie. */
-    static function (string $q) use ($cle_api): ?array {
-        $url = 'https://www.googleapis.com/drive/v3/files?' . http_build_query([
-            'q'        => $q,
-            'fields'   => 'files(id,name,mimeType)',
-            'orderBy'  => 'name',
-            'pageSize' => 1000,
-            // Nécessaires si le dossier vit dans un Drive partagé
-            // (« Shared Drive ») plutôt que dans « Mon Drive » — sans ça,
-            // ses fichiers restent invisibles même bien partagés.
-            'supportsAllDrives'         => 'true',
-            'includeItemsFromAllDrives' => 'true',
-            'key'      => $cle_api,
-        ]);
+/* Délai court : une API Google lente ou injoignable ne doit pas faire
+   attendre indéfiniment le chargement de la page Expo 2026. */
+$interroger = static function (string $q) use ($cle_api): ?array {
+    $url = 'https://www.googleapis.com/drive/v3/files?' . http_build_query([
+        'q'        => $q,
+        'fields'   => 'files(id,name,mimeType)',
+        'orderBy'  => 'name',
+        'pageSize' => 1000,
+        // Nécessaires si le dossier vit dans un Drive partagé
+        // (« Shared Drive ») plutôt que dans « Mon Drive » — sans ça,
+        // ses fichiers restent invisibles même bien partagés.
+        'supportsAllDrives'         => 'true',
+        'includeItemsFromAllDrives' => 'true',
+        'key'      => $cle_api,
+    ]);
 
-        $brut    = recuperer_url($url, 6);
-        $reponse = $brut !== false ? json_decode($brut, true) : null;
+    $brut    = recuperer_url($url, 6);
+    $reponse = $brut !== false ? json_decode($brut, true) : null;
 
-        if (!is_array($reponse) || !isset($reponse['files']) || !is_array($reponse['files'])) {
-            $motif = is_array($reponse) && isset($reponse['error']['message'])
-                ? $reponse['error']['message']
-                : ($brut === false ? 'appel réseau échoué (délai dépassé ou allow_url_fopen désactivé)' : 'réponse invalide');
-            error_log('infos-galerie-drive.php — appel Google Drive échoué : ' . $motif);
-            return null;
-        }
+    if (!is_array($reponse) || !isset($reponse['files']) || !is_array($reponse['files'])) {
+        $motif = is_array($reponse) && isset($reponse['error']['message'])
+            ? $reponse['error']['message']
+            : ($brut === false ? 'appel réseau échoué (délai dépassé ou allow_url_fopen désactivé)' : 'réponse invalide');
+        error_log('infos-expo-2026.php — appel Google Drive échoué : ' . $motif);
+        return null;
+    }
 
-        return $reponse['files'];
-    },
-    $echec
-);
+    return $reponse['files'];
+};
 
-if ($echec) {
+// 1. Liste les enfants directs du dossier racine : le club range ses
+//    photos par adhérent (Expo FOCAL 2026 / {Prénom} / …), donc chaque
+//    sous-dossier trouvé ici est un adhérent.
+$enfants_racine = $interroger(construire_requete_dossier([$dossier]));
+if ($enfants_racine === null) {
+    // Premier appel raté : on repasse par le cache plutôt que d'afficher
+    // une page Expo 2026 vide.
     repondre_depuis_le_cache();
 }
 
-@file_put_contents(CACHE_CHEMIN, json_encode($photos, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+$expositions = [];
 
-echo json_encode($photos, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+foreach ($enfants_racine as $entree) {
+    if (($entree['mimeType'] ?? null) !== MIME_DOSSIER || !isset($entree['id'], $entree['name'])) {
+        // Un fichier posé directement à la racine (hors d'un dossier
+        // d'adhérent) n'a pas de nom d'adhérent à afficher : ignoré.
+        continue;
+    }
+
+    $echec_adherent = null;
+    $photos = collecter_images_drive((string) $entree['id'], $interroger, $echec_adherent);
+
+    if ($echec_adherent || $photos === []) {
+        // Dossier inaccessible (pas de partage individuel, comme
+        // « Logo Focal Club » le 24/08/2026) ou simplement encore vide :
+        // pas d'erreur, cet adhérent n'a juste pas de carte pour l'instant.
+        continue;
+    }
+
+    $expositions[] = [
+        'nom'      => (string) $entree['name'],
+        'vignette' => $photos[0]['image'],
+        'photos'   => $photos,
+    ];
+}
+
+usort($expositions, static fn(array $a, array $b): int => strnatcasecmp($a['nom'], $b['nom']));
+
+@file_put_contents(CACHE_CHEMIN, json_encode($expositions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+
+echo json_encode($expositions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
