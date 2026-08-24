@@ -1,46 +1,127 @@
 <?php
 /*
- * Diagnostic temporaire (à supprimer) : le dossier configuré est-il
- * visible par la clé API elle-même ? N'expose jamais la clé.
+ * Diagnostic temporaire (à supprimer) : rejoue exactement
+ * collecter_images_drive() en journalisant chaque appel (requête + nombre
+ * de résultats), pour voir où le parcours des sous-dossiers s'arrête.
+ * N'expose jamais la clé API.
  */
 declare(strict_types=1);
 header('Content-Type: application/json; charset=utf-8');
+
+const PROFONDEUR_MAX       = 5;
+const REQUETES_MAX         = 15;
+const PARENTS_PAR_REQUETE  = 20;
+const MIME_DOSSIER = 'application/vnd.google-apps.folder';
+
+function recuperer_url(string $url, int $delai_secondes): string|false
+{
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => $delai_secondes,
+        CURLOPT_CONNECTTIMEOUT => $delai_secondes,
+    ]);
+    $brut = curl_exec($ch);
+    curl_close($ch);
+    return $brut === false ? false : $brut;
+}
+
+function collecter_images_drive(string $racine, callable $interroger, ?bool &$echec = null): array
+{
+    $echec    = false;
+    $images   = [];
+    $niveau   = [$racine];
+    $vus      = [$racine => true];
+    $requetes = 0;
+
+    for ($profondeur = 0; $profondeur < PROFONDEUR_MAX && $niveau !== []; $profondeur++) {
+        $suivant = [];
+
+        foreach (array_chunk($niveau, PARENTS_PAR_REQUETE) as $lot) {
+            if ($requetes >= REQUETES_MAX) {
+                break 2;
+            }
+            $requetes++;
+
+            $clauses = [];
+            foreach ($lot as $id) {
+                $clauses[] = "'" . $id . "' in parents";
+            }
+            $fichiers = $interroger(
+                '(' . implode(' or ', $clauses) . ')'
+                . " and trashed = false"
+                . " and (mimeType contains 'image/' or mimeType = '" . MIME_DOSSIER . "')"
+            );
+
+            if ($fichiers === null) {
+                if ($requetes === 1) {
+                    $echec = true;
+                    return [];
+                }
+                continue;
+            }
+
+            foreach ($fichiers as $fichier) {
+                if (!isset($fichier['id'], $fichier['name'], $fichier['mimeType'])) {
+                    continue;
+                }
+                $id = (string) $fichier['id'];
+
+                if ($fichier['mimeType'] === MIME_DOSSIER) {
+                    if (!isset($vus[$id])) {
+                        $vus[$id]  = true;
+                        $suivant[] = $id;
+                    }
+                    continue;
+                }
+
+                $images[$id] = [
+                    'titre' => pathinfo((string) $fichier['name'], PATHINFO_FILENAME),
+                    'image' => 'https://drive.google.com/thumbnail?id=' . rawurlencode($id) . '&sz=w1000',
+                ];
+            }
+        }
+
+        $niveau = $suivant;
+    }
+
+    return array_values($images);
+}
 
 $config  = require __DIR__ . '/espace/inc/config.local.php';
 $cle_api = (string) ($config['google_drive_cle_api'] ?? '');
 $dossier = (string) ($config['google_drive_dossier_id'] ?? '');
 
-// Exactement la même requête que le code réel, pour voir la réponse brute
-// (le code réel n'affiche jamais ça, seulement le nombre de photos).
-$q = "('" . $dossier . "' in parents) and trashed = false and (mimeType contains 'image/' or mimeType = 'application/vnd.google-apps.folder')";
-$url = 'https://www.googleapis.com/drive/v3/files?' . http_build_query([
-    'q'                         => $q,
-    'fields'                    => 'files(id,name,mimeType)',
-    'orderBy'                   => 'name',
-    'pageSize'                  => 1000,
-    'supportsAllDrives'         => 'true',
-    'includeItemsFromAllDrives' => 'true',
-    'key'                       => $cle_api,
-]);
-// cURL avec délai explicite : file_get_contents + stream_context_create
-// n'applique pas toujours fiablement son délai sur HTTPS (constaté ici même
-// — un appel resté bloqué plusieurs minutes plutôt que d'échouer au bout de
-// 6 secondes).
-$brut = false;
-if (function_exists('curl_init')) {
-    $ch = curl_init($url);
-    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 6, CURLOPT_CONNECTTIMEOUT => 6]);
-    $brut = curl_exec($ch);
-    $erreur_curl = curl_error($ch);
-    curl_close($ch);
-} else {
-    $contexte = stream_context_create(['http' => ['timeout' => 6, 'ignore_errors' => true]]);
-    $brut = @file_get_contents($url, false, $contexte);
-    $erreur_curl = null;
-}
-echo json_encode([
-    'q'           => $q,
-    'curl_utilise' => function_exists('curl_init'),
-    'erreur_curl' => $erreur_curl ?? null,
-    'reponse'     => json_decode($brut !== false ? $brut : 'null', true),
-], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+$journal = [];
+
+$photos = collecter_images_drive(
+    $dossier,
+    function (string $q) use ($cle_api, &$journal): ?array {
+        $url = 'https://www.googleapis.com/drive/v3/files?' . http_build_query([
+            'q'                         => $q,
+            'fields'                    => 'files(id,name,mimeType)',
+            'orderBy'                   => 'name',
+            'pageSize'                  => 1000,
+            'supportsAllDrives'         => 'true',
+            'includeItemsFromAllDrives' => 'true',
+            'key'                       => $cle_api,
+        ]);
+        $brut    = recuperer_url($url, 6);
+        $reponse = $brut !== false ? json_decode($brut, true) : null;
+
+        $entree = ['q_longueur' => strlen($q), 'q_debut' => substr($q, 0, 120)];
+        if (!is_array($reponse) || !isset($reponse['files']) || !is_array($reponse['files'])) {
+            $entree['erreur'] = is_array($reponse) ? ($reponse['error']['message'] ?? 'reponse invalide') : 'appel echoue';
+            $journal[] = $entree;
+            return null;
+        }
+        $entree['nb_resultats'] = count($reponse['files']);
+        $entree['noms']         = array_column($reponse['files'], 'name');
+        $journal[] = $entree;
+
+        return $reponse['files'];
+    },
+    $echec
+);
+
+echo json_encode(['echec' => $echec, 'nb_photos' => count($photos), 'journal' => $journal], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
