@@ -564,6 +564,33 @@ bouton est absent, ce qui laisse `espace/galerie.php` et
 `espace/galerie-club.php` inchangées (elles ont leur propre
 implémentation d'agrandissement, séparée).
 
+**La photo agrandie s'affiche ENTIÈRE, jamais recadrée** (24/08/2026,
+signalé par l'utilisateur : les photos verticales — celles d'Annie sur
+Expo 2026 — étaient coupées en haut et en bas). Le cadre de la lightbox
+posait un fond CSS `center / cover` dans une boîte au format 4/3 fixe :
+`cover` remplit la boîte en rognant tout ce qui dépasse, donc toute photo
+qui n'était pas exactement en 4/3 perdait une partie de l'image.
+`poserPhotoAgrandie()` (`js/main.js`) insère désormais une **vraie
+`<img class="lightbox-image">`** dans `.lightbox-frame`, plutôt qu'un fond :
+le cadre épouse alors la photo, donc bordure, arrondi et ombre entourent
+l'image elle-même — avec un simple `background-size: contain`, ils auraient
+dessiné un rectangle 4/3 avec des bandes vides autour d'une photo
+verticale. La taille est bornée par `max-width: 100%` (900px via
+`.lightbox-content`) et `max-height: 70vh`, ce qui laisse la place à la
+légende quelle que soit la hauteur de l'écran. `.lightbox-frame--degrade`
+reprend l'ancien cadre 4/3 pour le seul cas d'une photo **sans** fichier
+image (dégradé de repli de `photoGradient()`, qui n'a aucune dimension
+propre à donner au cadre). La fonction est partagée par les **deux**
+systèmes d'agrandissement du site — celui des pages publiques
+(`renderLightbox()`) et celui des galeries de l'espace adhérents
+(`afficher()`, cartes `.photo-card[data-titre]`) — donc les deux ont été
+corrigés d'un coup ; vérifié au rendu Chromium en vertical, carré,
+panoramique et 4/3, sur ordinateur comme sur téléphone.
+**Le recadrage reste volontaire sur les vignettes** (`.photo-card`, voir
+`buildPhotoCard()` et le choix du 21/08/2026) : c'est lui qui leur donne
+des tailles uniformes. Ne pas « corriger » les vignettes en croyant
+prolonger ce correctif.
+
 **`[hidden]` est forcé à `display: none !important`** en tête de
 `css/style.css` (24/08/2026). Sans ça, masquer un élément dont une classe
 impose un `display` ne fait rien : une règle de classe (`.photo-grid {

@@ -897,7 +897,30 @@ a {
   width: 100%;
   text-align: center;
 }
+/* Le cadre n'impose plus de format : il se contente de centrer la photo,
+   qui s'affiche en entier (24/08/2026 — avant, un fond « cover » en 4/3
+   coupait toute photo d'un autre format, les verticales notamment). C'est
+   l'image elle-même qui porte bordure, arrondi et ombre, sinon celles-ci
+   dessineraient un rectangle 4/3 avec des bandes vides autour d'une photo
+   verticale. */
 .lightbox-frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lightbox-image {
+  display: block;
+  max-width: 100%;
+  /* Laisse la place à la légende et aux marges de la lightbox sous la
+     photo, quelle que soit la hauteur de l'écran. */
+  max-height: 70vh;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.75), 0 8px 20px rgba(0, 0, 0, 0.5);
+}
+/* Repli quand une photo n'a pas de fichier image : un dégradé, qui a besoin
+   qu'on lui donne une taille puisqu'il n'y a pas d'image pour la déduire. */
+.lightbox-frame--degrade {
   width: 100%;
   aspect-ratio: 4 / 3;
   border-radius: var(--radius);
