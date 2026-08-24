@@ -66,7 +66,7 @@ $config   = require $chemin_config;
 $cle_api  = (string) ($config['google_drive_cle_api'] ?? '');
 $dossier  = (string) ($config['google_drive_dossier_id'] ?? '');
 
-if ($diag && ($_GET['etape'] ?? '') !== 'appel') {
+if ($diag && ($_GET['etape'] ?? '') === '') {
     echo json_encode([
         'config_trouve'     => true,
         'cle_api_definie'   => $cle_api !== '',
