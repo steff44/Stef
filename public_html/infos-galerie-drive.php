@@ -41,8 +41,8 @@ const CACHE_CHEMIN         = __DIR__ . '/espace/inc/.cache-galerie-drive.json';
 
 // Bornes de l'exploration des sous-dossiers.
 const PROFONDEUR_MAX       = 5;  // niveaux de sous-dossiers parcourus
-const REQUETES_MAX         = 15; // appels à l'API Google par rafraîchissement
-const PARENTS_PAR_REQUETE  = 20; // dossiers interrogés en un seul appel
+const REQUETES_MAX         = 40; // appels à l'API Google par rafraîchissement
+const PARENTS_PAR_REQUETE  = 8;  // dossiers interrogés en un seul appel
 
 const MIME_DOSSIER = 'application/vnd.google-apps.folder';
 
@@ -90,6 +90,19 @@ function repondre_depuis_le_cache(): never
     exit;
 }
 
+/* Construit la clause `q` pour interroger le contenu d'un ou plusieurs
+   dossiers parents en un seul appel. */
+function construire_requete_dossier(array $ids): string
+{
+    $clauses = [];
+    foreach ($ids as $id) {
+        $clauses[] = "'" . $id . "' in parents";
+    }
+    return '(' . implode(' or ', $clauses) . ')'
+        . " and trashed = false"
+        . " and (mimeType contains 'image/' or mimeType = '" . MIME_DOSSIER . "')";
+}
+
 /*
  * Parcourt le dossier racine et ses sous-dossiers, et renvoie les images
  * trouvées. $interroger reçoit une clause `q` et renvoie la liste de
@@ -106,6 +119,40 @@ function collecter_images_drive(string $racine, callable $interroger, ?bool &$ec
     $vus      = [$racine => true];
     $requetes = 0;
 
+    // Trie les fichiers d'une réponse en images (accumulées dans $images)
+    // et sous-dossiers à visiter ensuite (ajoutés à $suivant, par référence).
+    $ranger_fichiers = static function (array $fichiers, array &$suivant) use (&$images, &$vus): void {
+        foreach ($fichiers as $fichier) {
+            if (!isset($fichier['id'], $fichier['name'], $fichier['mimeType'])) {
+                continue;
+            }
+            $id = (string) $fichier['id'];
+
+            if ($fichier['mimeType'] === MIME_DOSSIER) {
+                // Un raccourci Drive peut faire pointer deux dossiers
+                // l'un vers l'autre : sans ce garde-fou, boucle infinie.
+                if (!isset($vus[$id])) {
+                    $vus[$id]  = true;
+                    $suivant[] = $id;
+                }
+                continue;
+            }
+
+            $images[$id] = [
+                // Nom du fichier sans son extension, comme pour un
+                // document déposé dans l'espace adhérents — pas de titre
+                // à saisir à la main.
+                'titre' => pathinfo((string) $fichier['name'], PATHINFO_FILENAME),
+                // Adresse de vignette publique de Google Drive :
+                // fonctionne pour n'importe quel fichier partagé « avec
+                // le lien », sans passer par une API à chaque affichage
+                // d'image. sz=w1000 : largeur maximale demandée, Google
+                // renvoie une image plus petite si l'original l'est déjà.
+                'image' => 'https://drive.google.com/thumbnail?id=' . rawurlencode($id) . '&sz=w1000',
+            ];
+        }
+    };
+
     for ($profondeur = 0; $profondeur < PROFONDEUR_MAX && $niveau !== []; $profondeur++) {
         $suivant = [];
 
@@ -115,55 +162,39 @@ function collecter_images_drive(string $racine, callable $interroger, ?bool &$ec
             }
             $requetes++;
 
-            $clauses = [];
-            foreach ($lot as $id) {
-                $clauses[] = "'" . $id . "' in parents";
-            }
-            $fichiers = $interroger(
-                '(' . implode(' or ', $clauses) . ')'
-                . " and trashed = false"
-                . " and (mimeType contains 'image/' or mimeType = '" . MIME_DOSSIER . "')"
-            );
+            $fichiers = $interroger(construire_requete_dossier($lot));
 
             if ($fichiers === null) {
                 // Premier appel raté : rien à afficher, on repassera par le
-                // cache. Sinon, on garde ce qui a déjà été récolté.
+                // cache.
                 if ($requetes === 1) {
                     $echec = true;
                     return [];
                 }
+                // Un seul dossier du lot suffit à faire échouer toute la
+                // requête groupée (constaté le 24/08/2026 : un sous-dossier
+                // resté sans partage individuel, malgré le dossier parent
+                // bien partagé, renvoyait « The user does not have
+                // sufficient permissions » pour tout le lot). On relance
+                // chaque dossier séparément plutôt que de perdre aussi les
+                // photos des autres, correctement partagés.
+                foreach ($lot as $id_isole) {
+                    if ($requetes >= REQUETES_MAX) {
+                        break 2;
+                    }
+                    $requetes++;
+                    $fichiers_isoles = $interroger(construire_requete_dossier([$id_isole]));
+                    if ($fichiers_isoles !== null) {
+                        $ranger_fichiers($fichiers_isoles, $suivant);
+                    }
+                    // Sinon : ce dossier précis reste inaccessible, on
+                    // l'ignore silencieusement plutôt que de faire
+                    // disparaître toute la section.
+                }
                 continue;
             }
 
-            foreach ($fichiers as $fichier) {
-                if (!isset($fichier['id'], $fichier['name'], $fichier['mimeType'])) {
-                    continue;
-                }
-                $id = (string) $fichier['id'];
-
-                if ($fichier['mimeType'] === MIME_DOSSIER) {
-                    // Un raccourci Drive peut faire pointer deux dossiers
-                    // l'un vers l'autre : sans ce garde-fou, boucle infinie.
-                    if (!isset($vus[$id])) {
-                        $vus[$id]  = true;
-                        $suivant[] = $id;
-                    }
-                    continue;
-                }
-
-                $images[$id] = [
-                    // Nom du fichier sans son extension, comme pour un
-                    // document déposé dans l'espace adhérents — pas de titre
-                    // à saisir à la main.
-                    'titre' => pathinfo((string) $fichier['name'], PATHINFO_FILENAME),
-                    // Adresse de vignette publique de Google Drive :
-                    // fonctionne pour n'importe quel fichier partagé « avec
-                    // le lien », sans passer par une API à chaque affichage
-                    // d'image. sz=w1000 : largeur maximale demandée, Google
-                    // renvoie une image plus petite si l'original l'est déjà.
-                    'image' => 'https://drive.google.com/thumbnail?id=' . rawurlencode($id) . '&sz=w1000',
-                ];
-            }
+            $ranger_fichiers($fichiers, $suivant);
         }
 
         $niveau = $suivant;
