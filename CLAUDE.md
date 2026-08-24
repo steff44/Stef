@@ -483,6 +483,53 @@ couleur si jamais une photo sans champ `image` réapparaissait. Toute
 catégorie de photo inconnue de `CLUB_DATA.themes` s'ajoute automatiquement
 aux filtres.
 
+**`galerie.html` a aussi une section « Photos Google Drive »**, séparée de
+la Galerie du Club (choix explicite de l'utilisateur, 23/08/2026 — des
+photos conservées sur Google Drive plutôt que déposées sur l'hébergement
+Hostinger, pour ne pas l'encombrer). `infos-galerie-drive.php` (à la racine,
+même principe d'autonomie qu'`infos-club.php`) interroge l'API Google
+Drive (`files.list`, clé API sans OAuth) pour lister les images d'un
+dossier Drive donné, et renvoie pour chacune son titre (nom du fichier sans
+extension) et l'adresse de sa vignette publique
+(`https://drive.google.com/thumbnail?id={id}&sz=w1000` — sert l'image
+directement depuis Google, jamais copiée sur le serveur). Résultat mis en
+cache sur disque 15 minutes (`espace/inc/.cache-galerie-drive.json`, non
+versionné) pour ne pas user le quota gratuit de l'API à chaque visite ; en
+cas d'échec de l'appel (quota dépassé, clé invalide, panne), le dernier
+résultat connu est resservi plutôt que de faire disparaître la section.
+`js/main.js` peuple `[data-drive-gallery]` et affiche la section
+(`[data-drive-gallery-section]`, masquée par défaut comme les autres
+sections chargées en JSON de cette page) dès que la liste n'est pas vide ;
+réutilise `buildPhotoCard()`, donc l'agrandissement au clic (lightbox)
+fonctionne aussi sur ces photos. Deux réglages dans
+`espace/inc/config.local.php` (jamais commités, voir plus bas) :
+`google_drive_cle_api` et `google_drive_dossier_id` — vides par défaut
+(`config.example.php`), ce qui désactive simplement la section, sans
+erreur. **Le dossier Drive doit être partagé « Accessible à tous les
+utilisateurs disposant du lien »** : une clé API seule (sans OAuth) ne
+peut lire que des fichiers Drive publics, jamais un dossier resté privé.
+
+Pour activer cette section, un responsable doit (une seule fois, sur
+[console.cloud.google.com](https://console.cloud.google.com)) :
+1. Créer un projet Google Cloud (gratuit) — bouton en haut de la page,
+   nom libre (ex. « Focal Club site »).
+2. Dans ce projet, menu ☰ → *API et services* → *Bibliothèque*, chercher
+   « Google Drive API » et cliquer *Activer*.
+3. *API et services* → *Identifiants* → *Créer des identifiants* → *Clé
+   API*. La clé générée est `google_drive_cle_api`.
+4. Cliquer sur la clé pour la restreindre (recommandé, pas obligatoire) :
+   *Restrictions relatives à l'API* → limiter à « Google Drive API »
+   uniquement — une clé qui fuiterait ne donnerait alors accès à rien
+   d'autre.
+5. Sur [drive.google.com](https://drive.google.com), créer ou choisir le
+   dossier à afficher, clic droit → *Partager* → *Accès général* →
+   « Tous les utilisateurs disposant du lien » (rôle *Lecteur*).
+6. Dans l'adresse du dossier ouvert
+   (`drive.google.com/drive/folders/CET_IDENTIFIANT`), copier
+   `CET_IDENTIFIANT` : c'est `google_drive_dossier_id`.
+7. Sur le serveur (hPanel → Gestionnaire de fichiers), ouvrir
+   `public_html/espace/inc/config.local.php` et y coller les deux valeurs.
+
 **L'accueil affiche un bandeau dépliant « Prochaine sortie / réunion »**
 (choix explicite de l'utilisateur, 23/08/2026), posé **sur la photo du grand
 hero**, tout en haut (premier élément à l'intérieur de `.hero-full .container`,
