@@ -22,13 +22,16 @@ Club Turballais**, club photo associatif de La Turballe (44).
 ```
 public_html/          ← racine du site, déployée telle quelle
   index.html          ← accueil : hero photo, cartes, galerie, CTA
-  galerie.html        ← galerie publique : photos de démonstration + vraies photos de la Galerie du Club
+  galerie.html        ← galerie publique : vraies photos de la Galerie du Club
+  expo-2026.html      ← Expo 2026 : photos Google Drive, un dossier par adhérent (voir plus bas)
   evenements.html     ← redirection vers espace/agenda.php (ne pas supprimer)
   membres.html        ← redirection vers espace/le-club.php (ne pas supprimer)
   contact.html
   connexion.html      ← redirection vers espace/connexion.php (ne pas supprimer)
   infos-club.php      ← API publique en lecture seule (coordonnées du club, voir plus bas)
   infos-galerie-club.php ← API publique en lecture seule (photos de la Galerie du Club, voir plus bas)
+  infos-expo-2026.php ← API publique en lecture seule (photos Google Drive par adhérent, voir plus bas)
+  infos-prochaine-sortie.php ← API publique en lecture seule (bandeau de l'accueil, voir plus bas)
   espace/             ← ESPACE ADHÉRENTS en PHP + MySQL (voir plus bas)
   css/style.css       ← tout le style, variables CSS en haut du fichier
   js/data.js          ← DONNÉES : adhérents + leurs photos
@@ -50,10 +53,20 @@ public_html/          ← racine du site, déployée telle quelle
   `@media (max-width: 760px) { :root { ... } }` en haut de `style.css` —
   tout le reste du CSS lit déjà ces variables, rien d'autre à toucher.
 - Ordre du menu (imposé par l'utilisateur, à ne pas réordonner) :
-  Accueil, Galerie, Agenda, Le Club, Nous Contacter, Espace Adhérent.
+  Accueil, Galerie, **Expo 2026**, Agenda, Le Club, Nous Contacter, Espace
+  Adhérent. « Expo 2026 » (`expo-2026.html`, les photos Google Drive
+  groupées par adhérent — voir plus bas) a été ajouté le 24/08/2026 à cette
+  place précise, entre Galerie et Agenda, à la demande explicite de
+  l'utilisateur : c'est le seul changement de cet ordre depuis le début du
+  projet.
   **Agenda et Espace Adhérent sont tous deux des menus déroulants**
-  (`.nav-dropdown`, voir juste en dessous) ; Le Club et Nous Contacter sont
-  des liens simples.
+  (`.nav-dropdown`, voir juste en dessous) ; Galerie, Expo 2026, Le Club et
+  Nous Contacter sont des liens simples. Le menu est écrit en dur dans
+  chaque page statique (`index.html`, `galerie.html`, `expo-2026.html`,
+  `contact.html`) **et** dans `espace/inc/page.php` (`debut_page()`, avec un
+  préfixe `../`) : y ajouter une entrée demande donc **cinq** modifications
+  identiques, plus la liste « Liens rapides » du pied de page des pages
+  statiques (absente de `page.php`, dont le pied de page est minimal).
   - Agenda → deux sous-pages, ajoutées le 18/08/2026 : « Agenda des
     sorties » (`espace/agenda.php`, le calendrier — page publique malgré son
     emplacement) et « Sorties à venir » (`espace/sorties-a-venir.php`, les
@@ -483,40 +496,92 @@ couleur si jamais une photo sans champ `image` réapparaissait. Toute
 catégorie de photo inconnue de `CLUB_DATA.themes` s'ajoute automatiquement
 aux filtres.
 
-**`galerie.html` a aussi une section « Photos Google Drive »**, séparée de
-la Galerie du Club (choix explicite de l'utilisateur, 23/08/2026 — des
-photos conservées sur Google Drive plutôt que déposées sur l'hébergement
-Hostinger, pour ne pas l'encombrer). `infos-galerie-drive.php` (à la racine,
-même principe d'autonomie qu'`infos-club.php`) interroge l'API Google
-Drive (`files.list`, clé API sans OAuth) pour lister les images d'un
-dossier Drive donné, et renvoie pour chacune son titre (nom du fichier sans
-extension) et l'adresse de sa vignette publique
+**Les photos Google Drive ont leur propre page, `expo-2026.html`
+(« Expo 2026 »)**, entre Galerie et Agenda dans le menu (choix explicite de
+l'utilisateur, 24/08/2026 — c'est le seul ajout au menu depuis l'ordre fixé
+au début du projet). Elle a d'abord vécu, du 23 au 24/08/2026, comme une
+simple section « Photos Google Drive » de `galerie.html`, alimentée par
+`infos-galerie-drive.php` : cette section et ce point d'accès **ont été
+supprimés** avec cette bascule, ne pas les réintroduire. Le principe reste
+le même — des photos conservées sur Google Drive plutôt que déposées sur
+l'hébergement Hostinger, pour ne pas l'encombrer — mais elles sont
+désormais **groupées par adhérent**, comme le dossier du club les range
+déjà (`Expo FOCAL 2026 / {Prénom} / …`).
+
+`infos-expo-2026.php` (à la racine, même principe d'autonomie
+qu'`infos-club.php`) interroge l'API Google Drive (`files.list`, clé API
+sans OAuth). Il liste d'abord les **enfants directs** du dossier racine
+configuré : chaque sous-dossier est un adhérent (un fichier posé
+directement à la racine, hors dossier, est ignoré — il n'a pas de nom
+d'adhérent à afficher). Il appelle ensuite `collecter_images_drive()` **une
+fois par adhérent** — la même fonction qu'avant, inchangée, avec toute sa
+robustesse déjà éprouvée (voir plus bas) — plutôt que d'aplatir toute
+l'arborescence en une seule liste : c'est cette frontière par dossier dont
+la page a besoin. Sortie JSON : `[{nom, vignette, photos:[{titre, image}]}]`,
+trié par nom d'adhérent, `vignette` étant simplement l'adresse de sa
+première photo. Un adhérent sans aucune photo (dossier vide, ou dossier
+inaccessible faute de partage individuel) est **absent de la liste** plutôt
+que d'y figurer avec une carte vide. Chaque photo porte son titre (nom du
+fichier sans extension) et l'adresse de sa vignette publique
 (`https://drive.google.com/thumbnail?id={id}&sz=w1000` — sert l'image
 directement depuis Google, jamais copiée sur le serveur). Résultat mis en
-cache sur disque 15 minutes (`espace/inc/.cache-galerie-drive.json`, non
+cache sur disque 15 minutes (`espace/inc/.cache-expo-2026.json`, non
 versionné) pour ne pas user le quota gratuit de l'API à chaque visite ; en
-cas d'échec de l'appel (quota dépassé, clé invalide, panne), le dernier
-résultat connu est resservi plutôt que de faire disparaître la section.
-`js/main.js` peuple `[data-drive-gallery]` et affiche la section
-(`[data-drive-gallery-section]`, masquée par défaut comme les autres
-sections chargées en JSON de cette page) dès que la liste n'est pas vide ;
-réutilise `buildPhotoCard()`, donc l'agrandissement au clic (lightbox)
-fonctionne aussi sur ces photos. Deux réglages dans
+cas d'échec du **premier** appel (quota dépassé, clé invalide, panne), le
+dernier résultat connu est resservi plutôt que de vider la page.
+
+Côté page, `js/main.js` détecte `[data-expo-page]` et gère deux vues dans
+la même page, sans navigation ni second appel réseau : la grille des
+dossiers (`[data-expo-dossiers]`, une `.photo-card` par adhérent, vignette
+= sa première photo, légende = son nom et son nombre de photos) et, au
+clic, la grille de ses photos (`[data-expo-vue-photos]`, avec un bouton
+« ← Retour aux dossiers » qui rebascule). Les cartes de photo passent par
+`buildPhotoCard()`, donc l'agrandissement au clic (lightbox partagée)
+fonctionne comme ailleurs sur le site. Deux réglages dans
 `espace/inc/config.local.php` (jamais commités, voir plus bas) :
 `google_drive_cle_api` et `google_drive_dossier_id` — vides par défaut
-(`config.example.php`), ce qui désactive simplement la section, sans
-erreur. **Le dossier Drive doit être partagé « Accessible à tous les
+(`config.example.php`), ce qui affiche simplement « Aucune photo pour le
+moment. », sans erreur (même message en cas d'échec de l'appel : hors
+ligne, ou préversion GitHub Pages qui ne peut pas exécuter PHP).
+**Le dossier Drive doit être partagé « Accessible à tous les
 utilisateurs disposant du lien »** : une clé API seule (sans OAuth) ne
 peut lire que des fichiers Drive publics, jamais un dossier resté privé.
 La requête à `files.list` inclut `supportsAllDrives`/
 `includeItemsFromAllDrives` (sans quoi un dossier vivant dans un Drive
 partagé — « Shared Drive » — resterait invisible même bien partagé).
 
-**Les sous-dossiers sont explorés** (24/08/2026) : le dossier du club range
-ses photos par adhérent (`Expo FOCAL 2026 / {Prénom} / 1920 / …`), donc se
-limiter aux images posées directement dans le dossier racine ne remonterait
-jamais rien. L'API Google ne sait pas répondre « et tout ce qu'il y a en
-dessous » : `collecter_images_drive()` descend niveau par niveau, en
+**Le diaporama se lance depuis la photo agrandie** (choix explicite de
+l'utilisateur, 24/08/2026) : un bouton `.lightbox-diaporama` (▶ / ⏸) dans
+la lightbox elle-même, à côté de Fermer. Il réutilise
+`startDiaporama()`/`stopDiaporama()`, déjà en place pour le bouton
+« Lancer le diaporama » en haut de `galerie.html` (conservé) ; ces deux
+fonctions reflètent maintenant l'état sur le bouton
+(`reglerBoutonDiaporama()`), donc le diaporama s'affiche bien comme
+arrêté quand on clique sur une flèche ou qu'on ferme la lightbox.
+Générique : présent dans le HTML de la lightbox d'`index.html`,
+`galerie.html` et `expo-2026.html` ; `js/main.js` ne câble rien si le
+bouton est absent, ce qui laisse `espace/galerie.php` et
+`espace/galerie-club.php` inchangées (elles ont leur propre
+implémentation d'agrandissement, séparée).
+
+**`[hidden]` est forcé à `display: none !important`** en tête de
+`css/style.css` (24/08/2026). Sans ça, masquer un élément dont une classe
+impose un `display` ne fait rien : une règle de classe (`.photo-grid {
+display: grid }`) l'emporte toujours sur le `display: none` que le
+navigateur donne par défaut à `[hidden]`. Constaté sur la page Expo 2026,
+où la grille des dossiers restait affichée sous celle des photos après un
+clic. Beaucoup de sections du site sont masquées ainsi en attendant leurs
+données JSON — vérifié après coup que l'accueil et la page Galerie
+s'affichent toujours normalement. Le site ne pilote jamais l'affichage par
+`element.style.display`, donc rien ne peut entrer en conflit avec ce
+`!important`.
+
+**Les sous-dossiers sont explorés** (24/08/2026) : chaque adhérent range
+souvent ses photos dans un sous-dossier (`Expo FOCAL 2026 / {Prénom} /
+1920 / …`), donc se limiter aux images posées directement dans son dossier
+ne remonterait rien pour lui. L'API Google ne sait pas répondre « et tout
+ce qu'il y a en dessous » : `collecter_images_drive()` descend niveau par
+niveau, en
 groupant les dossiers d'un même niveau dans un seul appel
 (`'a' in parents or 'b' in parents …`, par lots de `PARENTS_PAR_REQUETE`,
 8 dossiers). Le parcours est borné par `PROFONDEUR_MAX` (5) et
@@ -540,7 +605,11 @@ bas) : une requête groupée (`'a' in parents or 'b' in parents or …`) où
 le dossier « Logo Focal Club », resté sans partage individuel alors que
 les 16 autres sous-dossiers d'adhérents, eux, étaient bien accessibles :
 sans retraitement, cela aurait fait disparaître les photos de tous les
-adhérents à cause d'un seul dossier oublié. Quand un lot échoue et que ce
+adhérents à cause d'un seul dossier oublié. (Depuis le passage à la page
+Expo 2026, un dossier d'adhérent est de toute façon interrogé seul, donc
+son échec ne coûte que sa propre carte — mais la relance individuelle
+reste indispensable pour les sous-dossiers *à l'intérieur* du dossier d'un
+adhérent, interrogés eux en lot.) Quand un lot échoue et que ce
 n'est pas le tout premier appel, `collecter_images_drive()` relance donc
 chaque dossier du lot **individuellement** (`construire_requete_dossier()`
 avec un seul identifiant) : les dossiers accessibles remontent leurs
@@ -563,14 +632,15 @@ disponible (`CURLOPT_TIMEOUT`/`CURLOPT_CONNECTTIMEOUT`, bien plus fiables
 sur ce point), avec repli sur `file_get_contents` sinon.
 
 **Piège rencontré le 24/08/2026** : après la première configuration par
-l'utilisateur, la section restait vide. Diagnostic via un point d'accès
+l'utilisateur, la page (alors une section de `galerie.html`) restait vide.
+Diagnostic via un point d'accès
 temporaire (`?diag=...`, retiré une fois la cause trouvée — le domaine du
 site étant bloqué depuis ce sandbox, un appel direct à l'API Google
 `files.get` sur l'identifiant du dossier configuré a montré une erreur
 « File not found », alors que la clé API et l'identifiant de dossier
 étaient corrects. Le dossier n'était en réalité **pas encore partagé
-publiquement** malgré l'étape 5 suivie : à vérifier en premier lieu en cas
-de section vide — rouvrir le dossier sur drive.google.com, bouton de
+publiquement** malgré l'étape 5 suivie : à vérifier en premier lieu si la
+page Expo 2026 reste vide — rouvrir le dossier sur drive.google.com, bouton de
 partage, « Accès général » doit afficher « Tous les utilisateurs disposant
 du lien » (pas « Restreint »). Si le dossier est bien partagé mais que des
 fichiers individuels à l'intérieur avaient été mis en ligne *avant* ce

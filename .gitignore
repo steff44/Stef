@@ -18,5 +18,5 @@ public_html/espace/test.sqlite
 public_html/espace/inc/.schema-a-jour
 
 # Cache de la liste des photos Google Drive, écrit par le serveur (voir
-# infos-galerie-drive.php) — se régénère tout seul, rien à versionner.
-public_html/espace/inc/.cache-galerie-drive.json
+# infos-expo-2026.php) — se régénère tout seul, rien à versionner.
+public_html/espace/inc/.cache-expo-2026.json
