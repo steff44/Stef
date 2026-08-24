@@ -273,12 +273,17 @@
      pages publiques et celui des galeries de l'espace adhérents). */
   function poserPhotoAgrandie(frame, photo) {
     frame.innerHTML = "";
-    if (photo.image) {
+    // imageGrande : version 1920px, servie par infos-expo-2026.php pour
+    // l'agrandissement seulement (la grille se contente de 1000px). Les
+    // photos hébergées sur le serveur du club — Galerie du Club, galeries
+    // de l'espace adhérents — n'ont qu'une seule taille, d'où le repli.
+    const source = photo.imageGrande || photo.image;
+    if (source) {
       frame.classList.remove("lightbox-frame--degrade");
       frame.style.background = "";
       const img = document.createElement("img");
       img.className = "lightbox-image";
-      img.src = photo.image;
+      img.src = source;
       img.alt = photo.titre || "";
       frame.appendChild(img);
       return;
@@ -448,7 +453,12 @@
       // Mêmes champs que les autres appelants de buildPhotoCard : le nom de
       // l'adhérent tient lieu de « membre », il n'y a pas de thème ici.
       const photos = adherent.photos.map(function (p) {
-        return { titre: p.titre, theme: "", membreNom: adherent.nom, image: p.image, hue: 0, index: 0 };
+        return {
+          titre: p.titre, theme: "", membreNom: adherent.nom,
+          image: p.image,               // 1000px, pour la vignette
+          imageGrande: p.image_grande,  // 1920px, pour l'agrandissement
+          hue: 0, index: 0,
+        };
       });
       photos.forEach(function (photo) {
         grillePhotos.appendChild(buildPhotoCard(photo, 0, adherent.nom, 0, photos));
