@@ -48,6 +48,11 @@ function repondre_depuis_le_cache(): never
     exit;
 }
 
+// Diagnostic temporaire (à retirer une fois la section confirmée
+// fonctionnelle) : ?diag=fctdiag2026&etape=dossier vérifie si le dossier
+// est désormais visible par la clé API, sans jamais exposer la clé.
+$diag = ($_GET['diag'] ?? '') === 'fctdiag2026';
+
 $chemin_config = __DIR__ . '/espace/inc/config.local.php';
 if (!is_file($chemin_config)) {
     repondre_depuis_le_cache();
@@ -64,8 +69,18 @@ if ($cle_api === '' || $dossier === '') {
     exit;
 }
 
-// Cache encore valable : on ne rappelle pas l'API à chaque visite.
-if (is_file(CACHE_CHEMIN) && (time() - (int) @filemtime(CACHE_CHEMIN)) < CACHE_DUREE_SECONDES) {
+if ($diag && ($_GET['etape'] ?? '') === 'dossier') {
+    $requete_dossier = 'https://www.googleapis.com/drive/v3/files/' . rawurlencode($dossier)
+        . '?' . http_build_query(['fields' => 'id,name,mimeType', 'supportsAllDrives' => 'true', 'key' => $cle_api]);
+    $contexte_dossier = stream_context_create(['http' => ['timeout' => 6, 'ignore_errors' => true]]);
+    $brut_dossier = @file_get_contents($requete_dossier, false, $contexte_dossier);
+    echo $brut_dossier !== false ? $brut_dossier : json_encode(['erreur' => 'appel échoué']);
+    exit;
+}
+
+// Cache encore valable : on ne rappelle pas l'API à chaque visite (sauf en
+// diagnostic explicite, qui doit toujours refaire l'appel réel).
+if (!$diag && is_file(CACHE_CHEMIN) && (time() - (int) @filemtime(CACHE_CHEMIN)) < CACHE_DUREE_SECONDES) {
     repondre_depuis_le_cache();
 }
 
@@ -93,7 +108,16 @@ if (!is_array($reponse) || !isset($reponse['files']) || !is_array($reponse['file
         ? $reponse['error']['message']
         : ($brut === false ? 'file_get_contents a échoué (allow_url_fopen désactivé ?)' : 'réponse invalide');
     error_log('infos-galerie-drive.php — appel Google Drive échoué : ' . $motif);
+    if ($diag) {
+        echo json_encode(['erreur' => $motif, 'reponse_brute' => $reponse], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
     repondre_depuis_le_cache();
+}
+
+if ($diag) {
+    echo json_encode(['nombre_fichiers_trouves' => count($reponse['files'])], JSON_UNESCAPED_UNICODE);
+    exit;
 }
 
 $photos = [];
