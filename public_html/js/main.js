@@ -393,7 +393,7 @@
     });
   }
 
-  function buildPhotoCard(photo, hue, membreNom, index, photosForLightbox) {
+  function buildPhotoCard(photo, hue, membreNom, index, photosForLightbox, masquerTitreVignette) {
     const card = document.createElement("button");
     card.type = "button";
     card.className = "photo-card";
@@ -403,7 +403,7 @@
       photoBackground(photo) +
       '"></span>' +
       '<span class="photo-caption">' +
-      '<span class="title">' + echapperHtml(photo.titre) + "</span>" +
+      (masquerTitreVignette ? "" : '<span class="title">' + echapperHtml(photo.titre) + "</span>") +
       '<span class="meta">' + echapperHtml([membreNom, photo.theme].filter(Boolean).join(" · ")) + "</span>" +
       "</span>";
     card.addEventListener("click", function () {
@@ -465,8 +465,13 @@
           masquerNomAgrandi: true,
         };
       });
+      // Le titre de chaque photo reprend le nom de son fichier tel
+      // qu'envoyé par l'adhérent (ex. « mgl_1_1_62x33 ») : illisible sur
+      // une vignette, donc masqué ici — seul le nom du dossier (déjà
+      // affiché via membreNom) reste visible. Le titre garde son rôle
+      // ailleurs (Galerie du Club, accueil), où il est saisi à la main.
       photos.forEach(function (photo) {
-        grillePhotos.appendChild(buildPhotoCard(photo, 0, adherent.nom, 0, photos));
+        grillePhotos.appendChild(buildPhotoCard(photo, 0, adherent.nom, 0, photos, true));
       });
 
       grilleDossiers.hidden = true;

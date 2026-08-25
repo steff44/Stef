@@ -621,6 +621,24 @@ vignette via `buildPhotoCard()`, et pour retrouver la bonne photo dans le
 tableau au clic). Les autres galeries ne posent jamais ce champ, donc leur
 légende agrandie continue d'afficher l'auteur comme avant.
 
+**Le titre de chaque photo (nom du fichier envoyé par l'adhérent, ex.
+« mgl_1_1_62x33 ») ne s'affiche plus sur sa vignette, dans la vue « photos
+d'un dossier »** (choix explicite de l'utilisateur, 25/08/2026, revient
+sur une confusion avec le point précédent : le premier réglage portait sur
+la photo agrandie, celui-ci sur la vignette elle-même). Contrairement aux
+autres galeries, où le titre est saisi à la main et sert de légende utile
+(Galerie du Club, galerie privée), celui d'Expo 2026 n'est que le nom de
+fichier brut envoyé par l'adhérent — illisible en vignette. `buildPhotoCard()`
+prend un 6ᵉ paramètre facultatif, `masquerTitreVignette` : à `true`, le
+`<span class="title">` n'est simplement pas ajouté au HTML de la carte (le
+`<span class="meta">`, qui affiche le nom du dossier, reste inchangé).
+Seul l'appel de `ouvrirDossier()` (page Expo 2026) le passe à `true` ; les
+deux autres appelants (`buildPhotoCard`, accueil et `galerie.html`) ne le
+passent pas, donc leur titre reste affiché comme avant. Le titre continue
+d'apparaître dans la lightbox au clic (`.lightbox-title`, via
+`renderLightbox()`) — non concerné par ce changement, seule la vignette
+l'est.
+
 La fonction est partagée par les **deux**
 systèmes d'agrandissement du site — celui des pages publiques
 (`renderLightbox()`) et celui des galeries de l'espace adhérents
