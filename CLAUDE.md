@@ -607,6 +607,20 @@ grille, et servir 1000 partout rendrait la photo agrandie floue une fois
 le repli couvre les photos hébergées sur le serveur du club (Galerie du
 Club, galeries de l'espace adhérents), qui n'ont qu'une seule taille.
 
+**Le nom du dossier (adhérent) n'apparaît pas dans la légende de la photo
+agrandie**, seulement sur la vignette (choix explicite de l'utilisateur,
+25/08/2026) : `renderLightbox()` affiche `photo.membreNom` en légende
+(`.lightbox-meta`) sur toutes les galeries — pertinent ailleurs, où il
+porte le nom de l'auteur de la photo (Galerie du Club, accueil), mais pas
+sur Expo 2026, où ce même champ porte simplement le nom du dossier déjà
+répété sur chaque photo qu'il contient. Les objets photo construits par
+`ouvrirDossier()` portent donc un champ dédié, `masquerNomAgrandi: true`,
+lu uniquement par `renderLightbox()` pour omettre `membreNom` de la
+légende — `membreNom` lui-même reste inchangé (toujours utilisé pour la
+vignette via `buildPhotoCard()`, et pour retrouver la bonne photo dans le
+tableau au clic). Les autres galeries ne posent jamais ce champ, donc leur
+légende agrandie continue d'afficher l'auteur comme avant.
+
 La fonction est partagée par les **deux**
 systèmes d'agrandissement du site — celui des pages publiques
 (`renderLightbox()`) et celui des galeries de l'espace adhérents

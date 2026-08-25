@@ -352,7 +352,7 @@
     poserPhotoAgrandie(lightbox.querySelector(".lightbox-frame"), photo);
     lightbox.querySelector(".lightbox-title").textContent = photo.titre;
     lightbox.querySelector(".lightbox-meta").textContent =
-      [photo.membreNom, photo.theme].filter(Boolean).join(" — ");
+      [photo.masquerNomAgrandi ? null : photo.membreNom, photo.theme].filter(Boolean).join(" — ");
     const descriptionEl = lightbox.querySelector(".lightbox-description");
     if (descriptionEl) {
       descriptionEl.textContent = photo.description || "";
@@ -452,12 +452,17 @@
 
       // Mêmes champs que les autres appelants de buildPhotoCard : le nom de
       // l'adhérent tient lieu de « membre », il n'y a pas de thème ici.
+      // masquerNomAgrandi : le nom du dossier reste sur la vignette (via
+      // buildPhotoCard, indépendant de ce champ) mais ne doit pas
+      // réapparaître dans la légende de la photo agrandie (choix explicite
+      // de l'utilisateur, 25/08/2026) — seul renderLightbox() le lit.
       const photos = adherent.photos.map(function (p) {
         return {
           titre: p.titre, theme: "", membreNom: adherent.nom,
           image: p.image,               // 1000px, pour la vignette
           imageGrande: p.image_grande,  // 1920px, pour l'agrandissement
           hue: 0, index: 0,
+          masquerNomAgrandi: true,
         };
       });
       photos.forEach(function (photo) {
