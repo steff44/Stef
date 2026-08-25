@@ -125,7 +125,7 @@ titre_page($article['titre'], "", true);
       </p>
 
       <?php if ($article['image']): ?>
-        <img class="blog-image-article" src="telecharger.php?type=blog&amp;id=<?= (int) $article['id'] ?>" alt="">
+        <img class="blog-image-article" src="telecharger.php?type=blog&amp;id=<?= (int) $article['id'] ?><?= e(version_fichier(__DIR__ . '/photos_blog/' . $article['image'])) ?>" alt="">
       <?php endif; ?>
 
       <div class="blog-contenu"><?= texte_riche_html($article['contenu']) ?></div>

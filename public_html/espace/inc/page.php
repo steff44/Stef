@@ -229,6 +229,21 @@ function mois_court(string $date_sql): string
     return $t === false ? '' : $mois[(int) date('n', $t)];
 }
 
+/*
+ * Suffixe `&v=NNN` à coller à une URL telecharger.php?type=...&id=...,
+ * pour les types dont le fichier peut être remplacé sans que l'identifiant
+ * change (photo de sortie, photo de couverture du blog) — sans lui,
+ * l'URL reste identique après un remplacement et le navigateur continue
+ * d'afficher l'ancienne image jusqu'à expiration du cache (10 minutes,
+ * voir telecharger.php), piège signalé par l'utilisateur le 25/08/2026 sur
+ * le blog. Même principe que lien_css()/lien_js() : la version change dès
+ * que le fichier change, jamais sinon.
+ */
+function version_fichier(string $chemin): string
+{
+    return '&v=' . ((int) (@filemtime($chemin) ?: 0));
+}
+
 /* Taille de fichier lisible (Ko, Mo). */
 function taille_lisible(int $octets): string
 {
