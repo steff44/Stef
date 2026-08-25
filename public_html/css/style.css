@@ -1587,17 +1587,19 @@ button.lien-retour {
 .reglages-grid .reglage-rubriques {
   margin: 0;
 }
-/* « Catégories du blog » passe sous « Catégories des galeries », dans la
-   même colonne de droite, plutôt que de suivre l'ordre naturel de la
-   grille (qui l'aurait placée sous « Rubriques des documents », à gauche).
-   880px = seuil exact où .reglages-grid bascule sur deux colonnes
-   (2 × 400px + 1 × 32px de gap = 832px, dans un .container qui perd 48px
-   de padding) : en dessous, tout reste empilé sur une seule colonne dans
-   l'ordre du HTML, donc ce placement explicite ne doit pas s'appliquer. */
-@media (min-width: 880px) {
-  .reglage-blog {
-    grid-column: 2;
-  }
+/* « Catégories du blog » doit rester juste sous « Catégories des
+   galeries » (choix explicite de l'utilisateur), pas à une hauteur
+   dictée par « Rubriques des documents » (le plus grand des trois pavés)
+   comme le ferait le placement en grille par défaut. Les deux pavés sont
+   donc regroupés dans une colonne indépendante (.reglages-col-droite,
+   empilée en flex avec le même espacement que la grille), que
+   .reglages-grid traite comme un seul bloc — pas besoin de media query
+   dédiée, ce bloc suit la même bascule 1/2 colonnes que Rubriques des
+   documents et reste toujours dans le bon ordre en dessous de 880px. */
+.reglages-col-droite {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
 }
 
 /* Gestion des rubriques de documents (Réglages du site). */

@@ -928,19 +928,26 @@ formulaire des coordonnées du club au-dessus (Lieu de réunion, Contact,
 Horaires, Présentation) reste un formulaire unique, non scindé en
 plusieurs pavés, donc hors de propos pour cette mise en colonnes.
 
-**« Catégories du blog » est placée explicitement sous « Catégories des
-galeries », dans la colonne de droite** (choix explicite de l'utilisateur,
-25/08/2026, revient sur le placement initial) : l'ordre naturel de la
-grille (remplissage ligne par ligne) l'aurait mise en dessous de
-« Rubriques des documents », à gauche, puisque c'est le troisième pavé du
-HTML. La classe `.reglage-blog` sur ce pavé force `grid-column: 2` à
-partir de 880px de large (`@media (min-width: 880px)`) — le seuil exact où
-`.reglages-grid` bascule sur deux colonnes (2 × 400px + 32px de marge =
-832px de grille, dans un `.container` qui perd 48px de padding). En
-dessous de ce seuil, tout redevient une seule colonne empilée dans l'ordre
-du HTML, donc ce placement explicite ne doit pas s'appliquer — sans la
-media query, `grid-column: 2` sur un écran à une seule colonne créerait
-une colonne fantôme vide à gauche du pavé.
+**« Catégories du blog » doit rester juste sous « Catégories des
+galeries », sans espace entre les deux** (choix explicite de l'utilisateur,
+25/08/2026, deux essais le même jour) : un premier essai a placé le pavé
+dans la bonne colonne via `grid-column: 2`, mais la hauteur de chaque
+« rangée » de `.reglages-grid` est dictée par son plus grand pavé — ici
+« Rubriques des documents », de loin le plus haut des trois — ce qui
+laissait un grand vide entre « Catégories des galeries » et « Catégories
+du blog » plutôt qu'un enchaînement direct ; l'utilisateur l'a signalé
+(« j'avais demandé en dessous, juste en dessous »). Les deux pavés sont
+donc regroupés dans un conteneur indépendant, `.reglages-col-droite`
+(`display: flex; flex-direction: column; gap: 32px`), que `.reglages-grid`
+traite comme un second bloc à côté de « Rubriques des documents » — sa
+propre hauteur ne dépend alors que du contenu des deux pavés qu'il
+contient, plus d'un calage sur la hauteur du bloc voisin. Cette
+construction n'a plus besoin de media query dédiée (contrairement au
+premier essai) : `.reglages-col-droite` suit la même bascule 1/2 colonnes
+que « Rubriques des documents » via `.reglages-grid`, et en dessous du
+seuil (~832px de grille, container `.container` moins 48px de padding),
+les deux pavés qu'il contient restent simplement empilés dans l'ordre du
+HTML, comme n'importe quel autre contenu en une seule colonne.
 
 Supprimer
 une rubrique qui contient encore des catégories, ou une catégorie qui
