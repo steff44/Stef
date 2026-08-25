@@ -928,6 +928,20 @@ formulaire des coordonnées du club au-dessus (Lieu de réunion, Contact,
 Horaires, Présentation) reste un formulaire unique, non scindé en
 plusieurs pavés, donc hors de propos pour cette mise en colonnes.
 
+**« Catégories du blog » est placée explicitement sous « Catégories des
+galeries », dans la colonne de droite** (choix explicite de l'utilisateur,
+25/08/2026, revient sur le placement initial) : l'ordre naturel de la
+grille (remplissage ligne par ligne) l'aurait mise en dessous de
+« Rubriques des documents », à gauche, puisque c'est le troisième pavé du
+HTML. La classe `.reglage-blog` sur ce pavé force `grid-column: 2` à
+partir de 880px de large (`@media (min-width: 880px)`) — le seuil exact où
+`.reglages-grid` bascule sur deux colonnes (2 × 400px + 32px de marge =
+832px de grille, dans un `.container` qui perd 48px de padding). En
+dessous de ce seuil, tout redevient une seule colonne empilée dans l'ordre
+du HTML, donc ce placement explicite ne doit pas s'appliquer — sans la
+media query, `grid-column: 2` sur un écran à une seule colonne créerait
+une colonne fantôme vide à gauche du pavé.
+
 Supprimer
 une rubrique qui contient encore des catégories, ou une catégorie qui
 contient encore des documents, est refusé avec un message explicite plutôt
