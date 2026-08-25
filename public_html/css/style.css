@@ -1594,10 +1594,15 @@ button.lien-retour {
   margin: 0 0 10px;
 }
 /* Réglages du site : les sections de gestion (rubriques/catégories) passent
-   sur deux colonnes dès que la largeur le permet, une seule sinon. */
+   sur deux colonnes dès que la largeur le permet, une seule sinon.
+   minmax(min(400px, 100%), 1fr) plutôt que minmax(400px, 1fr) : sur un
+   téléphone étroit (moins de 400px de large, une fois le padding du
+   conteneur retiré), le minimum de 400px forçait la grille à déborder de
+   l'écran (page défilable horizontalement, boutons "Renommer" coupés) —
+   min(400px, 100%) plafonne la piste à la largeur réellement disponible. */
 .reglages-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(400px, 100%), 1fr));
   align-items: start;
   gap: 32px;
   margin-top: 32px;
@@ -1640,6 +1645,31 @@ button.lien-retour {
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
+  /* .reglage-categories (parent) est en display:grid : un item de grille a
+     un min-width automatique basé sur le contenu de ses enfants, qui peut
+     dépasser la largeur de sa piste — sans ce 0, .reglage-ligne débordait
+     de la colonne de .reglage-categories dès que la largeur se resserrait. */
+  min-width: 0;
+}
+/* Sur petit téléphone, le bouton "Renommer" (largeur fixée par son texte,
+   ne rétrécit pas dans une ligne flex) débordait sur le lien "Supprimer"
+   juste à côté, les deux textes se chevauchant (constaté jusqu'à 480px de
+   large). Passer .reglage-ligne en colonne évite tout calcul de largeur :
+   chaque formulaire prend sa propre ligne, sans risque de collision. */
+@media (max-width: 520px) {
+  .reglage-ligne {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  /* .reglage-forme-nom est lui-même une ligne flex (champ + bouton) : en
+     colonne, align-items:stretch ne suffit pas à l'empêcher de déborder,
+     car son min-width:200px et le contenu de ses propres enfants
+     l'emportent sur la largeur "étirée". width:100% + min-width:0 le
+     forcent à respecter la largeur de .reglage-ligne quoi qu'il arrive. */
+  .reglage-forme-nom {
+    width: 100%;
+    min-width: 0;
+  }
 }
 .reglage-ligne--rubrique .reglage-forme-nom input {
   font-family: var(--font-heading);
@@ -1653,6 +1683,11 @@ button.lien-retour {
 }
 .reglage-forme-nom input[type="text"] {
   flex: 1;
+  /* Un champ texte dans une ligne flex a un min-width implicite = sa
+     taille de contenu, qui ignore flex:1 et refuse de rétrécir en dessous
+     — sur mobile, ça poussait le bouton "Renommer" hors de l'écran au
+     lieu de laisser le champ céder la place. */
+  min-width: 0;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -2466,6 +2501,16 @@ button.lien-retour {
   .retour-nav {
     right: 14px;
     bottom: 14px;
+  }
+  /* Les messages "aucun résultat" (centrés, presque toute la largeur du
+     conteneur) se retrouvaient sous les boutons flottants sur mobile,
+     quand ils tombent en bas de l'écran visible — .empty-state (Sorties
+     à venir, Galerie privée/du Club, Documents, Blog) et .gallery-empty
+     (Galerie publique, Expo 2026) réservent donc une marge à droite le
+     temps de rester sous ce seuil, où .retour-nav passe en bas-droite. */
+  .empty-state,
+  .gallery-empty {
+    padding-right: 64px;
   }
 }
 

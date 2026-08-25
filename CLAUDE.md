@@ -1390,6 +1390,61 @@ faut regarder.
   bouton, réutilisé tel quel sur toutes les pages statiques et sur
   `espace/inc/page.php` : corrigé partout d'un coup, vérifié par capture
   d'écran (fermé : trois barres ; ouvert : croix) sur `index.html`.
+- **Audit mobile complet du 25/08/2026** (demandé explicitement par
+  l'utilisateur : « vérifie que tout s'affiche bien sur mobile ») — deux
+  problèmes trouvés et corrigés par capture d'écran + mesure directe de
+  `document.documentElement.scrollWidth` à 390px de large (Playwright),
+  sur toutes les pages publiques et de l'espace adhérents :
+  1. **Message « Aucun(e) … pour le moment » chevauchant les boutons
+     flottants** (`.retour-nav`, bas-droite) sur mobile — visible sur
+     `galerie.html`, `expo-2026.html` et le même motif `.empty-state` dans
+     `espace/` (Sorties à venir, Galerie privée/du Club, Documents, Blog) :
+     le texte centré, presque aussi large que le conteneur, passait sous la
+     colonne de boutons quand il tombait en bas d'écran. Corrigé par
+     `padding-right: 64px` sur `.empty-state, .gallery-empty`, dans le
+     `@media (max-width: 640px)` existant (où `.retour-nav` bascule en
+     bas-droite).
+  2. **`espace/parametres.php` débordait horizontalement sur téléphone
+     étroit** (page rendue défilable de force, bouton « Renommer »
+     chevauchant le lien « Supprimer » d'à côté), dans les trois pavés de
+     gestion (Rubriques des documents, Catégories des galeries, Catégories
+     du blog) : quatre causes empilées, trouvées une à une par mesure des
+     tailles réelles (pas seulement par capture d'écran, insuffisant pour
+     distinguer un vrai débordement d'un chevauchement de boîtes) :
+     - `.reglages-grid` imposait `minmax(400px, 1fr)` à chaque colonne —
+       sur un écran de moins de 400px de large (une fois le padding du
+       conteneur retiré), ce minimum dépassait la largeur disponible.
+       Corrigé en `minmax(min(400px, 100%), 1fr)` : la piste ne dépasse
+       jamais la largeur réellement disponible.
+     - `.reglage-forme-nom input[type="text"]` n'avait pas `min-width: 0` —
+       dans une ligne flex, un champ texte a par défaut un `min-width`
+       implicite égal à la taille de son contenu, qui ignore `flex: 1` et
+       l'empêche de rétrécir sous cette taille.
+     - En dessous de 520px, le bouton « Renommer » (largeur fixée par son
+       texte, incompressible) chevauchait visuellement « Supprimer » juste
+       à côté : `@media (max-width: 520px) { .reglage-ligne { flex-direction:
+       column } }` fait passer chaque ligne en colonne, un formulaire par
+       ligne, sans plus aucun calcul de largeur à faire cohabiter deux
+       éléments côte à côte.
+     - Une fois empilé, `.reglage-forme-nom` (lui-même une ligne flex
+       champ+bouton) débordait quand même de sa colonne : `align-items:
+       stretch` du parent ne suffit pas à contraindre un enfant qui est
+       lui-même un conteneur flex avec son propre minimum de contenu — il
+       lui faut son propre `width: 100%; min-width: 0;` (ajouté dans le
+       même `@media (max-width: 520px)`).
+     - Même symptôme ensuite sur les catégories (`<li class="reglage-ligne">`
+       dans `<ul class="reglage-categories">`, en grille) : l'équivalent
+       CSS Grid du même piège — un item de grille garde `justify-self:
+       stretch` sauf que sa taille minimale automatique (basée sur son
+       contenu) l'emporte quand même. `min-width: 0` posé sur la règle de
+       base `.reglage-ligne` (hors media query, donc valable à toute
+       largeur) referme définitivement ce chapitre.
+  Vérifié : `document.documentElement.scrollWidth === window.innerWidth`
+  à 390px sur les 15 pages publiques/de l'espace testées (plus de
+  débordement nulle part), capture d'écran de `parametres.php` en entier
+  (les trois pavés s'empilent proprement), menu mobile toujours
+  fonctionnel, et suite de 39 tests du blog rejouée sans régression sur un
+  jeu de données neuf.
 
 ## Conventions
 
