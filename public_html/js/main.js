@@ -717,19 +717,22 @@
     }
   }
 
-  /* ---------- Boutons « page précédente » / « section précédente » / « retour en haut » ----------
+  /* ---------- Boutons « page précédente » / « section précédente » /
+     « retour en haut » / « aller en bas » ----------
      Génériques : posés sur toute page ayant au moins une <section>, qu'elle
      soit publique ou dans l'espace adhérents (page.php partage ce même
      script) — jamais besoin de les ajouter à la main sur une page neuve.
      « Page précédente » (choix explicite de l'utilisateur, 23/08/2026,
      history.back() — comme .lien-retour sur connexion.php/inscription.php,
-     mais générique et flottant) et « retour en haut » apparaissent dès
-     qu'il y a une section ; « section précédente » n'a de sens qu'à partir
-     de deux sections, comme sur `espace/documents.php`, une seule longue
-     section mais qui a besoin de pouvoir remonter en haut. Toujours visibles
-     dès le chargement de la page (choix explicite de l'utilisateur,
-     23/08/2026 — auparavant masqués tant qu'on n'avait pas défilé 60% de
-     l'écran, ce qui les rendait difficiles à trouver). */
+     mais générique et flottant), « retour en haut » et « aller en bas »
+     (25/08/2026, choix explicite de l'utilisateur — pendant de « retour en
+     haut ») apparaissent dès qu'il y a une section ; « section précédente »
+     n'a de sens qu'à partir de deux sections, comme sur
+     `espace/documents.php`, une seule longue section mais qui a besoin de
+     pouvoir remonter en haut. Toujours visibles dès le chargement de la
+     page (choix explicite de l'utilisateur, 23/08/2026 — auparavant
+     masqués tant qu'on n'avait pas défilé 60% de l'écran, ce qui les
+     rendait difficiles à trouver). */
   (function () {
     const sections = Array.from(document.querySelectorAll("main section"));
     if (!sections.length) return;
@@ -747,6 +750,9 @@
         : "") +
       '<button type="button" class="retour-bouton retour-haut" aria-label="Retour en haut de la page">' +
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="18 11 12 5 6 11"></polyline><polyline points="18 18 12 12 6 18"></polyline></svg>' +
+      "</button>" +
+      '<button type="button" class="retour-bouton retour-bas" aria-label="Aller tout en bas de la page">' +
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 13 12 19 18 13"></polyline><polyline points="6 6 12 12 18 6"></polyline></svg>' +
       "</button>";
     document.body.appendChild(nav);
 
@@ -779,6 +785,10 @@
 
     nav.querySelector(".retour-haut").addEventListener("click", function () {
       window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+
+    nav.querySelector(".retour-bas").addEventListener("click", function () {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
     });
   })();
 
