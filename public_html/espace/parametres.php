@@ -284,7 +284,8 @@ titre_page(
     <p class="form-note">Les visiteurs déjà sur le site verront le changement à leur prochaine visite, ou après quelques minutes si leur page reste ouverte.</p>
   </form>
 
-  <div class="form-card reglage-rubriques" style="max-width:640px;margin-top:32px;">
+  <div class="reglages-grid">
+  <div class="form-card reglage-rubriques">
     <h2 style="font-family:var(--font-heading);font-size:1.2rem;margin:0 0 6px;">Rubriques des documents</h2>
     <p class="form-note" style="margin-top:0;margin-bottom:20px;">
       Ces rubriques et catégories organisent la page « Documents du club ». Une rubrique ou
@@ -348,7 +349,7 @@ titre_page(
     </form>
   </div>
 
-  <div class="form-card reglage-rubriques" style="max-width:640px;margin-top:32px;">
+  <div class="form-card reglage-rubriques">
     <h2 style="font-family:var(--font-heading);font-size:1.2rem;margin:0 0 6px;">Catégories des galeries</h2>
     <p class="form-note" style="margin-top:0;margin-bottom:20px;">
       Ces catégories organisent aussi bien la Galerie du Club que la Galerie privée,
@@ -385,7 +386,7 @@ titre_page(
     </ul>
   </div>
 
-  <div class="form-card reglage-rubriques" style="max-width:640px;margin-top:32px;">
+  <div class="form-card reglage-rubriques">
     <h2 style="font-family:var(--font-heading);font-size:1.2rem;margin:0 0 6px;">Catégories du blog</h2>
     <p class="form-note" style="margin-top:0;margin-bottom:20px;">
       Ces catégories organisent la page « Blog du Club ». Une catégorie contenant encore
@@ -419,6 +420,7 @@ titre_page(
         </form>
       </li>
     </ul>
+  </div>
   </div>
 </div></section>
 <?php

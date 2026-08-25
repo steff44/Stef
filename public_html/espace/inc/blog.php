@@ -31,7 +31,8 @@ function categories_blog(PDO $pdo): array
  * Convertit le texte brut saisi dans le formulaire (voir blog.php) en HTML :
  * échappé d'abord (protège contre un titre ou un contenu contenant `<`/`>`),
  * puis **texte** devient du gras — même convention minimale que les e-mails
- * de notification (corps_html() dans inc/mail.php) — et une ligne vide
+ * de notification (corps_html() dans inc/mail.php) — une adresse
+ * http(s):// devient un lien cliquable (nouvel onglet), et une ligne vide
  * sépare deux paragraphes. Pas d'éditeur riche : cohérent avec un site sans
  * build ni dépendance JavaScript externe.
  */
@@ -39,8 +40,16 @@ function texte_riche_html(string $texte): string
 {
     $echappe = htmlspecialchars($texte, ENT_QUOTES, 'UTF-8');
     $gras    = preg_replace('/\*\*(.+?)\*\*/s', '<strong>$1</strong>', $echappe);
+    $lien    = preg_replace_callback(
+        '/https?:\/\/[^\s<]+/i',
+        static function (array $correspondance): string {
+            $url = rtrim($correspondance[0], '.,;:!?');
+            return '<a href="' . $url . '" target="_blank" rel="noopener noreferrer">' . $url . '</a>';
+        },
+        $gras
+    );
 
-    $paragraphes = preg_split('/\n{2,}/', trim((string) $gras));
+    $paragraphes = preg_split('/\n{2,}/', trim((string) $lien));
     $html        = '';
     foreach ($paragraphes as $paragraphe) {
         $paragraphe = trim($paragraphe);

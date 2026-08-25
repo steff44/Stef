@@ -799,16 +799,28 @@ Stage, Travail d'auteur.
 **Pas d'éditeur de texte riche** (cohérent avec un site sans build ni
 dépendance JavaScript externe) : le contenu se saisit en texte brut dans le
 formulaire, et `texte_riche_html()` (`inc/blog.php`) le transforme à
-l'affichage — échappé d'abord, puis `**texte**` devient `<strong>`, puis une
-ligne vide sépare deux paragraphes (`<p>`). Même principe minimal que
-`corps_html()` dans `inc/mail.php` pour les e-mails de notification, réécrit
-séparément ici (paragraphes en plus, pas seulement `nl2br`) plutôt que
-partagé, les deux usages étant assez différents (e-mail vs longue page
-HTML). Le champ « Résumé » (extrait) reste du texte brut affiché sans mise
-en forme (`e()` simple, pas de gras) — laissé vide, il est calculé
+l'affichage — échappé d'abord, puis `**texte**` devient `<strong>`, une
+adresse `http(s)://` collée dans le texte devient un lien cliquable
+(nouvel onglet, `rel="noopener noreferrer"`), puis une ligne vide sépare
+deux paragraphes (`<p>`). Même principe minimal que `corps_html()` dans
+`inc/mail.php` pour les e-mails de notification, réécrit séparément ici
+(paragraphes en plus, pas seulement `nl2br`) plutôt que partagé, les deux
+usages étant assez différents (e-mail vs longue page HTML). Le champ
+« Résumé » (extrait) reste du texte brut affiché sans mise en forme (`e()`
+simple, pas de gras ni de lien) — laissé vide, il est calculé
 automatiquement par `extrait_auto()` : premier paragraphe du contenu,
 `**` retirées (elles n'ont sinon aucun sens hors mise en forme), coupé à
 220 caractères au dernier espace pour ne jamais trancher un mot.
+
+**Le lien détecté restait invisible** (piège signalé par l'utilisateur le
+25/08/2026, corrigé le jour même) : la règle CSS générale du site
+(`a { color: inherit; text-decoration: none; }`) fait qu'un lien inséré
+dans le corps d'un article se fondait dans le texte environnant — présent
+dans le HTML (`<a href="...">`, donc bien cliquable), mais rien ne le
+distinguait visuellement, ce qui le faisait paraître non cliquable.
+`.blog-contenu a` (couleur `--accent-3`, soulignée, `--accent` au survol —
+même palette que `.blog-meta a`/`.blog-lire`) rend maintenant ce lien
+reconnaissable, en plus d'être fonctionnel.
 
 La photo de couverture suit le même principe que la Galerie du Club :
 aucun recadrage serveur, stockée dans `espace/photos_blog/` (fermé par
@@ -895,7 +907,28 @@ cache pour la durée de la page) et `categorie_document($pdo, $id)` (rubrique
 et libellés d'une catégorie, pour valider un `categorie_id` posté). La
 gestion (renommer/ajouter/supprimer une rubrique ou une catégorie) vit dans
 `parametres.php`, sous le grand formulaire des coordonnées du club — un
-formulaire par action, sur le même principe que `adherents.php`. Supprimer
+formulaire par action, sur le même principe que `adherents.php`.
+
+**Ces sections de gestion passent sur deux colonnes dès que la largeur
+le permet** (choix explicite de l'utilisateur, 25/08/2026) : les trois
+pavés « Rubriques des documents », « Catégories des galeries » et
+« Catégories du blog » (chacun un `.form-card.reglage-rubriques`) sont
+englobés dans un `.reglages-grid` (`display: grid;
+grid-template-columns: repeat(auto-fit, minmax(400px, 1fr))`) plutôt que
+chacun forcé à `max-width:640px` et empilé verticalement — deux colonnes
+sur un écran d'ordinateur (le conteneur fait 1180px), une seule en
+dessous de ~832px de large (l'auto-fit repasse alors chaque pavé en
+pleine largeur, sans media query dédiée). Les pavés ne sont pas de même
+hauteur (« Rubriques des documents » est le plus grand des trois) :
+`align-items: start` les laisse chacun à sa propre hauteur plutôt que de
+les étirer, au prix d'un peu d'espace vide sous le pavé le plus court de
+chaque ligne — accepté comme un compromis simple plutôt qu'une mise en
+page façon « masonry ». Seul `parametres.php` est concerné ; le grand
+formulaire des coordonnées du club au-dessus (Lieu de réunion, Contact,
+Horaires, Présentation) reste un formulaire unique, non scindé en
+plusieurs pavés, donc hors de propos pour cette mise en colonnes.
+
+Supprimer
 une rubrique qui contient encore des catégories, ou une catégorie qui
 contient encore des documents, est refusé avec un message explicite plutôt
 que de les orpheliner ou de les faire disparaître silencieusement ; renommer

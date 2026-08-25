@@ -1564,6 +1564,19 @@ button.lien-retour {
   color: var(--text-muted);
   margin: 0 0 10px;
 }
+/* Réglages du site : les sections de gestion (rubriques/catégories) passent
+   sur deux colonnes dès que la largeur le permet, une seule sinon. */
+.reglages-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  align-items: start;
+  gap: 32px;
+  margin-top: 32px;
+}
+.reglages-grid .reglage-rubriques {
+  margin: 0;
+}
+
 /* Gestion des rubriques de documents (Réglages du site). */
 .rubrique-reglage {
   padding: 18px 0;
@@ -2579,6 +2592,13 @@ button.lien-retour {
 }
 .blog-contenu p:last-child {
   margin-bottom: 0;
+}
+.blog-contenu a {
+  color: var(--accent-3);
+  text-decoration: underline;
+}
+.blog-contenu a:hover {
+  color: var(--accent);
 }
 .blog-actions-gestion {
   display: flex;
