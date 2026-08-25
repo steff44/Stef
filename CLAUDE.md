@@ -1265,6 +1265,23 @@ faut regarder.
     redevenir unique.
   Constaté le 16/08/2026 : le quadrillage du tableau des adhérents était bien
   déployé, mais invisible côté navigateur pour cette raison.
+- **Le bouton du menu mobile (`.nav-toggle`) n'affichait qu'une seule barre
+  au lieu de trois** (signalé par l'utilisateur le 25/08/2026 — « deux
+  points et un trait », pas franchement un hamburger). Cause : les trois
+  barres (`span`, `span::before`, `span::after`) partageaient la même règle
+  `left: 10px; right: 10px;`, pensée comme relative au bouton (42px de
+  large). Mais `span` porte lui-même `position: absolute`, ce qui en fait le
+  bloc de référence de ses **propres** pseudo-éléments — pas le bouton.
+  `span::before`/`::after` se retrouvaient donc positionnés par rapport à un
+  bloc large d'environ 20px (la largeur du `span`), où `10px` de chaque côté
+  ne laisse plus aucune largeur : deux barres bien présentes dans le DOM,
+  mais réduites à 0px, invisibles — seule la barre du milieu (le `span`
+  lui-même, positionné par rapport au bouton) restait visible. Corrigé en
+  donnant à `span::before`/`::after` un `left: 0; right: 0;` (relatifs au
+  `span`, donc pleine largeur de celui-ci) au lieu de `10px`/`10px`. Un seul
+  bouton, réutilisé tel quel sur toutes les pages statiques et sur
+  `espace/inc/page.php` : corrigé partout d'un coup, vérifié par capture
+  d'écran (fermé : trois barres ; ouvert : croix) sur `index.html`.
 
 ## Conventions
 

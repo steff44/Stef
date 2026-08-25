@@ -307,19 +307,30 @@ a {
   position: relative;
 }
 
-.nav-toggle span,
-.nav-toggle span::before,
-.nav-toggle span::after {
-  content: "";
+.nav-toggle span {
   position: absolute;
   left: 10px;
   right: 10px;
+  top: 20px;
   height: 2px;
   background: var(--text);
   transition: transform 0.2s ease, opacity 0.2s ease;
 }
-.nav-toggle span {
-  top: 20px;
+/* left/right ici valent 0, pas 10px comme la barre du milieu : elles sont
+   relatives au span lui-même (position:absolute en fait le bloc de
+   référence de ses propres pseudo-éléments), pas au bouton. Avec 10px des
+   deux côtés d'un span large d'environ 20px, la largeur calculée tombait à
+   0 — les deux barres restaient posées mais invisibles, ne laissant voir
+   que la barre du milieu (bug relevé par l'utilisateur, 25/08/2026). */
+.nav-toggle span::before,
+.nav-toggle span::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--text);
+  transition: transform 0.2s ease, opacity 0.2s ease;
 }
 .nav-toggle span::before {
   top: -7px;
