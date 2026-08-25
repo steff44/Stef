@@ -350,7 +350,7 @@
   function renderLightbox() {
     const photo = activePhotos[activeIndex];
     poserPhotoAgrandie(lightbox.querySelector(".lightbox-frame"), photo);
-    lightbox.querySelector(".lightbox-title").textContent = photo.titre;
+    lightbox.querySelector(".lightbox-title").textContent = photo.masquerTitreAgrandi ? "" : photo.titre;
     lightbox.querySelector(".lightbox-meta").textContent =
       [photo.masquerNomAgrandi ? null : photo.membreNom, photo.theme].filter(Boolean).join(" — ");
     const descriptionEl = lightbox.querySelector(".lightbox-description");
@@ -456,6 +456,9 @@
       // buildPhotoCard, indépendant de ce champ) mais ne doit pas
       // réapparaître dans la légende de la photo agrandie (choix explicite
       // de l'utilisateur, 25/08/2026) — seul renderLightbox() le lit.
+      // masquerTitreAgrandi : même principe pour le titre (nom de fichier
+      // brut, ex. « BRT-01_34X50_ »), également illisible une fois agrandi
+      // (choix explicite de l'utilisateur, 25/08/2026).
       const photos = adherent.photos.map(function (p) {
         return {
           titre: p.titre, theme: "", membreNom: adherent.nom,
@@ -463,6 +466,7 @@
           imageGrande: p.image_grande,  // 1920px, pour l'agrandissement
           hue: 0, index: 0,
           masquerNomAgrandi: true,
+          masquerTitreAgrandi: true,
         };
       });
       // Le titre de chaque photo reprend le nom de son fichier tel
