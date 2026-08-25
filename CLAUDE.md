@@ -634,10 +634,18 @@ prend un 6ᵉ paramètre facultatif, `masquerTitreVignette` : à `true`, le
 `<span class="meta">`, qui affiche le nom du dossier, reste inchangé).
 Seul l'appel de `ouvrirDossier()` (page Expo 2026) le passe à `true` ; les
 deux autres appelants (`buildPhotoCard`, accueil et `galerie.html`) ne le
-passent pas, donc leur titre reste affiché comme avant. Le titre continue
-d'apparaître dans la lightbox au clic (`.lightbox-title`, via
-`renderLightbox()`) — non concerné par ce changement, seule la vignette
-l'est.
+passent pas, donc leur titre reste affiché comme avant.
+
+**Le même titre est aussi masqué dans la photo agrandie** (choix explicite
+de l'utilisateur, 25/08/2026, même jour — revient sur la dernière phrase du
+paragraphe précédent, qui excluait la lightbox à tort). `renderLightbox()`
+lit un second champ dédié, `masquerTitreAgrandi`, posé lui aussi sur les
+objets photo d'Expo 2026 dans `ouvrirDossier()` (à côté de
+`masquerNomAgrandi`) : à `true`, `.lightbox-title` reste vide plutôt que
+d'afficher le nom de fichier brut. Sur Expo 2026, la photo agrandie n'a
+donc plus aucune légende (titre et nom de dossier tous deux masqués) —
+seule l'image compte. Les autres galeries ne posent jamais ce champ, donc
+leur titre continue d'apparaître normalement dans la lightbox.
 
 La fonction est partagée par les **deux**
 systèmes d'agrandissement du site — celui des pages publiques
