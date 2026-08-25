@@ -842,6 +842,17 @@ ne s'applique qu'à la liste principale : la colonne « Articles récents »
 reste volontairement globale (comme sur le blog de référence), donc un
 article y reste visible même en dehors de la catégorie affichée.
 
+**Le widget « Catégories » commence toujours par « Tous les articles »**
+(choix explicite de l'utilisateur, 25/08/2026), lien statique vers
+`blog.php` sans filtre, marqué `aria-current="page"` quand aucune
+catégorie n'est active. Ce n'est **pas** une ligne de `categories_blog` —
+l'utilisateur a demandé « une nouvelle catégorie » mais une vraie catégorie
+aurait exigé de reclasser chaque article dedans, ce qui contredit
+justement l'idée de « voir tout les articles » ; c'est donc un simple lien
+de navigation ajouté en tête de liste (dans `blog.php` **et**
+`blog-article.php`, qui partagent la même sidebar), pas une entrée
+gérable depuis `parametres.php`.
+
 **Carte « Blog » sur le tableau de bord** (`espace/index.php`) : ajoutée
 juste après « Galerie du Club », avant les cartes réservées aux
 gestionnaires (Adhérents, Réglages du site) — un contenu public comme les
