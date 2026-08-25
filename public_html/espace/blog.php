@@ -108,7 +108,7 @@ $recents = $pdo->query(
 )->fetchAll();
 
 debut_page("Blog du Club", 'blog');
-titre_page("Le blog du Club", "Actualités, concours, expositions et vie du club.", true);
+titre_page("Le blog du Club", "Actualités, concours, expositions et vie du club.", true, true);
 ?>
 <section class="section"><div class="container container-large">
   <?php afficher_message(); ?>

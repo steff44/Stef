@@ -213,14 +213,24 @@ public_html/          ← racine du site, déployée telle quelle
   les liens rétréciraient à la largeur de leur texte au lieu de rester
   cliquables sur toute la largeur).
 - **Bandeaux de titre réduits** (choix explicite de l'utilisateur,
-  23/08/2026) : celui de `galerie.html` (`.gallery-hero`, propre à cette
-  page) est réduit d'un tiers (64px/40px → 43px/27px). Celui d'Agenda des
-  sorties et du Club (`titre_page()` dans `espace/inc/page.php`, partagé par
-  toutes les pages de l'espace adhérents) est réduit de moitié sur ces deux
-  pages seulement, via un 4ᵉ paramètre `$reduit` qui ajoute
-  `.gallery-header--reduit` — les autres pages de l'espace (Documents,
-  Galerie privée, Annuaire, Réglages du site…) gardent le bandeau standard,
-  n'ayant pas été citées par l'utilisateur.
+  23/08/2026, `.gallery-hero` réduit une seconde fois le 25/08/2026) :
+  celui de `galerie.html` (`.gallery-hero`, propre à cette page — titre,
+  sous-titre et les pastilles de filtre par thème, qu'elle regroupe sous le
+  même bandeau) est réduit d'un tiers une première fois le 23/08/2026
+  (64px/40px → 43px/27px) puis une seconde fois le 25/08/2026
+  (43px/27px → 29px/18px, `margin-top` des pastilles 32px → 21px pour
+  suivre la même proportion). Celui d'Agenda des sorties, du Club et
+  désormais du Blog du Club (`titre_page()` dans `espace/inc/page.php`,
+  partagé par toutes les pages de l'espace adhérents) est réduit de moitié
+  sur ces trois pages, via un 4ᵉ paramètre `$reduit` qui ajoute
+  `.gallery-header--reduit` (`espace/blog.php` le passe à `true` depuis le
+  25/08/2026 ; `blog-article.php`, non cité par l'utilisateur, garde le
+  bandeau standard) — les autres pages de l'espace (Documents, Galerie
+  privée, Annuaire, Réglages du site…) gardent aussi le bandeau standard.
+  Sur l'accueil, `.cta-section` (« Prêt à capturer l'ordinaire ? ») porte
+  désormais la même classe `.cta-section--reduit` déjà utilisée sur
+  `contact.html` (choix explicite de l'utilisateur, 25/08/2026) — moitié
+  moins haute (88px → 44px de padding), sans nouvelle règle CSS.
 - **`js/main.js` et `js/data.js` sont versionnés comme `style.css`** (voir
   plus bas « Hostinger sert... ») : `?v=AAAAMMJJHHmm` en dur sur les pages
   statiques, `lien_js()` (calqué sur `lien_css()`) sur les pages PHP. Sans
@@ -237,26 +247,45 @@ public_html/          ← racine du site, déployée telle quelle
   enveloppe le champ dans `.champ-mot-de-passe` et y ajoute un bouton
   `.bouton-oeil` qui bascule `type="password"`/`type="text"`.
 - **Boutons flottants « page précédente » / « section précédente » / « retour
-  en haut »** (choix explicite de l'utilisateur, 20/08/2026, complété le
-  23/08/2026) : posés automatiquement par `js/main.js` (`.retour-nav`,
-  bas-droite de l'écran) sur toute page comptant au moins une `<section>` —
-  générique, s'applique donc à toute page publique ou de l'espace
-  adhérents (y compris les pages réservées aux responsables) sans rien
-  ajouter à la main, y compris pour une page future. « Page précédente »
-  (`history.back()`, même principe que `.lien-retour` sur
-  `connexion.php`/`inscription.php` mais flottant et générique à toute
-  page) et « retour en haut » s'affichent dès qu'il y a au moins une
-  section ; « section précédente » ne s'affiche qu'à partir de deux
-  `<section>` (rien à survoler avec une seule) — seuil qui, avant le
+  en haut » / « aller en bas »** (choix explicite de l'utilisateur,
+  20/08/2026, complété le 23/08/2026 puis le 25/08/2026) : posés
+  automatiquement par `js/main.js` (`.retour-nav`, bas-droite de l'écran)
+  sur toute page comptant au moins une `<section>` — générique, s'applique
+  donc à toute page publique ou de l'espace adhérents (y compris les pages
+  réservées aux responsables) sans rien ajouter à la main, y compris pour
+  une page future. « Page précédente » (`history.back()`, même principe que
+  `.lien-retour` sur `connexion.php`/`inscription.php` mais flottant et
+  générique à toute page), « retour en haut » et « aller en bas »
+  (`window.scrollTo({ top: document.body.scrollHeight })`, ajouté le
+  25/08/2026 comme pendant de « retour en haut ») s'affichent dès qu'il y a
+  au moins une section ; « section précédente » ne s'affiche qu'à partir de
+  deux `<section>` (rien à survoler avec une seule) — seuil qui, avant le
   23/08/2026, empêchait aussi « retour en haut » d'apparaître sur une page
   à une seule section mais longue, comme `espace/documents.php`. Le bouton
   « section précédente » remonte au début de la `<section>` précédente
-  (pas seulement en haut de la section actuelle) ; « retour en haut » va
-  toujours en haut de la page. **Les trois sont toujours visibles dès le
+  (pas seulement en haut de la section actuelle) ; « retour en haut »/
+  « aller en bas » vont toujours tout en haut/tout en bas de la page,
+  quelle que soit la section affichée. **Tous sont toujours visibles dès le
   chargement de la page** (choix explicite de l'utilisateur, 23/08/2026,
   second changement de la journée à leur sujet — ils n'apparaissaient
   auparavant qu'après un défilement d'au moins 60 % de la hauteur de
-  l'écran, ce qui les rendait difficiles à trouver).
+  l'écran, ce qui les rendait difficiles à trouver). Ordre dans le HTML —
+  page précédente, section précédente (si présente), retour en haut, aller
+  en bas — donc, visuellement (`.retour-nav` en colonne flex), le bouton
+  « aller en bas » est le dernier posé, le plus proche du coin de l'écran,
+  juste sous « retour en haut ».
+- **Pied de page réduit de moitié, « Liens rapides » sur deux colonnes**
+  (choix explicite de l'utilisateur, 25/08/2026, sur toutes les pages) :
+  `.site-footer` (padding 48px/32px → 24px/16px) et `.footer-bottom`
+  (`margin-top`/`padding-top` 40px/24px → 20px/12px) vivent dans le CSS
+  partagé, donc ce changement s'applique d'un coup à toutes les pages —
+  rien à modifier dans chaque HTML de pied de page, dupliqué mais identique
+  d'une page à l'autre. La liste « Liens rapides » (8 liens, empilée en une
+  seule colonne, nettement plus haute que les colonnes Contact/logo à côté)
+  passe en deux colonnes via `columns: 2` sur le `<ul>` (pas une grille à
+  nombre de lignes fixé en dur) — se répartit automatiquement même si un
+  lien s'ajoute plus tard ; `break-inside: avoid` sur chaque `<li>`
+  l'empêche de se couper au milieu entre les deux colonnes.
 
 ## Modifier le contenu
 
