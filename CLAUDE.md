@@ -231,6 +231,21 @@ public_html/          ← racine du site, déployée telle quelle
   désormais la même classe `.cta-section--reduit` déjà utilisée sur
   `contact.html` (choix explicite de l'utilisateur, 25/08/2026) — moitié
   moins haute (88px → 44px de padding), sans nouvelle règle CSS.
+- **Le rectangle de « Une communauté de passionnés » (`.about-visual`,
+  accueil) affiche une vraie photo** depuis le 25/08/2026 (choix explicite
+  de l'utilisateur) — auparavant un dégradé de repli décoratif, faute de
+  photo fournie. Même principe que `.hero-full` : un `background: url(...)
+  center / cover no-repeat` posé sur le bloc en CSS, pas un `<img>` — rien
+  à changer dans le HTML (`<div class="about-visual" aria-hidden="true">`
+  reste vide). Fichier `images/communaute.jpg` : l'utilisateur a d'abord
+  tenté de coller la photo directement dans la conversation, ce qui ne
+  dépose rien d'exploitable dans ce sandbox (même piège que pour le logo,
+  23/08/2026 — voir plus bas) ; elle l'a donc déposée sur GitHub
+  (`github.com/<repo>/upload/main/public_html/images`), qui a conservé le
+  nom de fichier d'origine de l'appareil photo (avec espaces) — renommé en
+  `communaute.jpg` par un `git mv` avant intégration, plus propre et
+  cohérent avec les autres noms d'images du site (`logo.png`,
+  `accueil-pleine-largeur.jpg`…).
 - **`js/main.js` et `js/data.js` sont versionnés comme `style.css`** (voir
   plus bas « Hostinger sert... ») : `?v=AAAAMMJJHHmm` en dur sur les pages
   statiques, `lien_js()` (calqué sur `lien_css()`) sur les pages PHP. Sans
