@@ -349,6 +349,7 @@ titre_page(
     </form>
   </div>
 
+  <div class="reglages-col-droite">
   <div class="form-card reglage-rubriques">
     <h2 style="font-family:var(--font-heading);font-size:1.2rem;margin:0 0 6px;">Catégories des galeries</h2>
     <p class="form-note" style="margin-top:0;margin-bottom:20px;">
@@ -386,7 +387,7 @@ titre_page(
     </ul>
   </div>
 
-  <div class="form-card reglage-rubriques reglage-blog">
+  <div class="form-card reglage-rubriques">
     <h2 style="font-family:var(--font-heading);font-size:1.2rem;margin:0 0 6px;">Catégories du blog</h2>
     <p class="form-note" style="margin-top:0;margin-bottom:20px;">
       Ces catégories organisent la page « Blog du Club ». Une catégorie contenant encore
@@ -420,6 +421,7 @@ titre_page(
         </form>
       </li>
     </ul>
+  </div>
   </div>
   </div>
 </div></section>
