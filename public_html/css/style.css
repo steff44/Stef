@@ -615,10 +615,13 @@ a {
   background: var(--accent);
   flex-shrink: 0;
 }
+/* Photo fournie par l'utilisateur (choix explicite, 25/08/2026), à la
+   place du dégradé de repli — même principe que .hero-full : un
+   background CSS sur le bloc, pas un <img>, rien à changer dans le HTML. */
 .about-visual {
   aspect-ratio: 4 / 5;
   border-radius: var(--radius);
-  background: linear-gradient(155deg, hsl(320 70% 45%), hsl(265 55% 30%) 55%, hsl(225 45% 14%));
+  background: url("../images/communaute.jpg") center / cover no-repeat;
   box-shadow: var(--shadow);
   border: 1px solid var(--border);
 }
