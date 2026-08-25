@@ -34,7 +34,7 @@ $compteurs = [
 ];
 
 debut_page("Tableau de bord", 'index');
-titre_page("Bonjour " . $adherent['nom'], "Bienvenue dans l'espace réservé aux adhérents du club.");
+titre_page("Bonjour " . $adherent['nom'], "Bienvenue dans l'espace réservé aux adhérents du club.", false, true);
 ?>
 <section class="section"><div class="container">
   <?php afficher_message(); ?>

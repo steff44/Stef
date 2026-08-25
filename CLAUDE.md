@@ -213,24 +213,27 @@ public_html/          ← racine du site, déployée telle quelle
   les liens rétréciraient à la largeur de leur texte au lieu de rester
   cliquables sur toute la largeur).
 - **Bandeaux de titre réduits** (choix explicite de l'utilisateur,
-  23/08/2026, `.gallery-hero` réduit une seconde fois le 25/08/2026) :
-  celui de `galerie.html` (`.gallery-hero`, propre à cette page — titre,
-  sous-titre et les pastilles de filtre par thème, qu'elle regroupe sous le
-  même bandeau) est réduit d'un tiers une première fois le 23/08/2026
-  (64px/40px → 43px/27px) puis une seconde fois le 25/08/2026
-  (43px/27px → 29px/18px, `margin-top` des pastilles 32px → 21px pour
-  suivre la même proportion). Celui d'Agenda des sorties, du Club et
-  désormais du Blog du Club (`titre_page()` dans `espace/inc/page.php`,
-  partagé par toutes les pages de l'espace adhérents) est réduit de moitié
-  sur ces trois pages, via un 4ᵉ paramètre `$reduit` qui ajoute
-  `.gallery-header--reduit` (`espace/blog.php` le passe à `true` depuis le
-  25/08/2026 ; `blog-article.php`, non cité par l'utilisateur, garde le
-  bandeau standard) — les autres pages de l'espace (Documents, Galerie
-  privée, Annuaire, Réglages du site…) gardent aussi le bandeau standard.
-  Sur l'accueil, `.cta-section` (« Prêt à capturer l'ordinaire ? ») porte
-  désormais la même classe `.cta-section--reduit` déjà utilisée sur
-  `contact.html` (choix explicite de l'utilisateur, 25/08/2026) — moitié
-  moins haute (88px → 44px de padding), sans nouvelle règle CSS.
+  23/08/2026, `.gallery-hero` réduite trois fois au total, la dernière le
+  25/08/2026) : celui de `galerie.html` (`.gallery-hero`, propre à cette
+  page — titre, sous-titre et les pastilles de filtre par thème, qu'elle
+  regroupe sous le même bandeau) part de 64px/40px, réduit d'un tiers le
+  23/08/2026 (→ 43px/27px), d'un tiers à nouveau le 25/08/2026
+  (→ 29px/18px), puis de moitié le même jour, dans un second passage
+  (→ 15px/9px, `margin-top` des pastilles 32px → 21px → 10px pour suivre
+  la même proportion à chaque étape). Celui d'Agenda des sorties, du Club,
+  du Blog du Club, de Sorties à venir et du tableau de bord (`titre_page()`
+  dans `espace/inc/page.php`, partagé par toutes les pages de l'espace
+  adhérents) est réduit de moitié sur ces cinq pages, via un 4ᵉ paramètre
+  `$reduit` qui ajoute `.gallery-header--reduit` (`espace/blog.php`,
+  `sorties-a-venir.php` et `index.php` le passent à `true` depuis le
+  25/08/2026 ; `blog-article.php` et `agenda.php`, non cités par
+  l'utilisateur, gardent le bandeau standard) — les autres pages de
+  l'espace (Documents, Galerie privée, Annuaire, Réglages du site…)
+  gardent aussi le bandeau standard. Sur l'accueil, `.cta-section`
+  (« Prêt à capturer l'ordinaire ? ») porte désormais la même classe
+  `.cta-section--reduit` déjà utilisée sur `contact.html` (choix explicite
+  de l'utilisateur, 25/08/2026) — moitié moins haute (88px → 44px de
+  padding), sans nouvelle règle CSS.
 - **Le rectangle de « Une communauté de passionnés » (`.about-visual`,
   accueil) affiche une vraie photo** depuis le 25/08/2026 (choix explicite
   de l'utilisateur) — auparavant un dégradé de repli décoratif, faute de
