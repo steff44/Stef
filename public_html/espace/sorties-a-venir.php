@@ -259,7 +259,7 @@ titre_page("Sorties à venir", "Les prochaines sorties du club, et qui y partici
             <span class="sortie-mois"><?= e(mois_court($sortie['debut'])) ?></span>
           </div>
           <?php if ($sortie['photo']): ?>
-            <img class="sortie-photo" src="telecharger.php?type=sortie&amp;id=<?= (int) $sortie['id'] ?>"
+            <img class="sortie-photo" src="telecharger.php?type=sortie&amp;id=<?= (int) $sortie['id'] ?><?= e(version_fichier(__DIR__ . '/photos/' . $sortie['photo'])) ?>"
                  alt="" loading="lazy">
           <?php endif; ?>
           <div class="sortie-corps">

@@ -179,7 +179,7 @@ titre_page("Le blog du Club", "Actualités, concours, expositions et vie du club
             <div class="blog-article-corps">
               <p class="blog-extrait"><?= e((string) $article['extrait']) ?></p>
               <?php if ($article['image']): ?>
-                <img class="blog-vignette" src="telecharger.php?type=blog&amp;id=<?= (int) $article['id'] ?>"
+                <img class="blog-vignette" src="telecharger.php?type=blog&amp;id=<?= (int) $article['id'] ?><?= e(version_fichier(__DIR__ . '/photos_blog/' . $article['image'])) ?>"
                      alt="" loading="lazy">
               <?php endif; ?>
             </div>

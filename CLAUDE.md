@@ -819,6 +819,22 @@ article, la photo n'est remplacée que si un nouveau fichier est envoyé
 (même logique que la photo de sortie dans `sorties-a-venir.php`) ; à la
 suppression, le fichier est retiré du disque.
 
+**Remplacer une photo de couverture restait invisible côté navigateur**
+(piège signalé par l'utilisateur le 25/08/2026, corrigé le jour même) :
+`telecharger.php` renvoie `Cache-Control: private, max-age=600` pour tout
+type de fichier, y compris `blog`/`sortie` — et l'URL
+(`telecharger.php?type=blog&id={id}`) ne change jamais quand la photo est
+remplacée, puisqu'elle est bâtie sur l'identifiant de l'article, pas sur le
+fichier. Le navigateur continuait donc d'afficher l'ancienne image jusqu'à
+expiration du cache. `version_fichier()` (`inc/page.php`, même principe que
+`lien_css()`/`lien_js()`) ajoute un suffixe `&v={filemtime}` à cette URL
+partout où elle est rendue (`blog.php`, `blog-article.php`,
+`sorties-a-venir.php` — seuls endroits où un fichier peut être remplacé
+sans changer d'identifiant) : la version change dès que le fichier change,
+donc le navigateur redemande l'image. Vérifié avec le même banc d'essai
+PHP+SQLite que le reste du blog : publier une photo, la remplacer, l'URL
+change bien et sert la nouvelle image octet pour octet.
+
 Pagination (8 articles par page, `BLOG_ARTICLES_PAR_PAGE`) et filtre par
 catégorie (`?categorie=ID`) en paramètres d'URL classiques, sans
 JavaScript — même philosophie que le calendrier d'`agenda.php`. Le filtre
