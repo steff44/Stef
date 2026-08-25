@@ -188,7 +188,7 @@ $a_venir    = array_filter($sorties, static fn($s) => strtotime($s['debut']) >= 
 $passees    = array_reverse(array_filter($sorties, static fn($s) => strtotime($s['debut']) < $maintenant));
 
 debut_page("Sorties à venir", 'sorties');
-titre_page("Sorties à venir", "Les prochaines sorties du club, et qui y participe.");
+titre_page("Sorties à venir", "Les prochaines sorties du club, et qui y participe.", false, true);
 ?>
 <section class="section"><div class="container">
   <?php afficher_message(); ?>
