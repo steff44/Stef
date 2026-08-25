@@ -2412,3 +2412,180 @@ button.lien-retour {
     bottom: 14px;
   }
 }
+
+/* ===========================================================================
+   BLOG DU CLUB (espace/blog.php, espace/blog-article.php) — mise en page
+   calquée sur la maquette fournie par l'utilisateur (24/08/2026) : liste
+   d'articles à gauche (titre, méta, extrait + vignette), colonne latérale
+   « Articles récents » / « Catégories » à droite. ========================= */
+
+.blog-layout {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 40px;
+  align-items: start;
+  margin-top: 8px;
+}
+@media (max-width: 900px) {
+  .blog-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.blog-filtre-actif {
+  color: var(--text-muted);
+  margin: 0 0 20px;
+}
+.blog-filtre-actif a {
+  color: var(--accent-3);
+}
+
+.blog-article-ligne {
+  padding: 24px 0;
+  border-bottom: 1px solid var(--border);
+}
+.blog-article-ligne:first-child {
+  padding-top: 0;
+}
+.blog-article-ligne h2 {
+  margin: 0 0 6px;
+  font-size: 1.25rem;
+}
+.blog-article-ligne h2 a {
+  color: var(--text);
+}
+.blog-article-ligne h2 a:hover {
+  color: var(--accent-3);
+}
+.blog-meta {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin: 0 0 14px;
+}
+.blog-meta a {
+  color: var(--accent-3);
+}
+
+/* Extrait et vignette côte à côte, comme sur la page de référence — la
+   vignette garde une taille fixe (object-fit: cover), l'extrait occupe le
+   reste de la largeur. */
+.blog-article-corps {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+.blog-extrait {
+  flex: 1;
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+.blog-vignette {
+  width: 140px;
+  height: 105px;
+  object-fit: cover;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+@media (max-width: 560px) {
+  .blog-article-corps {
+    flex-direction: column-reverse;
+  }
+  .blog-vignette {
+    width: 100%;
+    height: 180px;
+  }
+}
+.blog-lire {
+  display: inline-block;
+  margin-top: 12px;
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--accent-3);
+}
+.blog-lire:hover {
+  color: var(--accent);
+}
+
+.blog-pagination {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 28px;
+}
+.blog-pagination a {
+  color: var(--accent-3);
+  font-weight: 600;
+}
+.blog-pagination a:hover {
+  color: var(--accent);
+}
+
+/* Colonne latérale : deux pavés, même habillage que .form-card mais plus
+   compacts (pas de formulaire à l'intérieur). */
+.blog-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.blog-widget {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+}
+.blog-widget h2 {
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  margin: 0 0 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.blog-widget ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.blog-widget li a {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+.blog-widget li a:hover,
+.blog-widget li a[aria-current="page"] {
+  color: var(--accent-3);
+}
+
+/* Article complet (blog-article.php) */
+.blog-article-complet .blog-meta {
+  margin-bottom: 20px;
+}
+.blog-image-article {
+  width: 100%;
+  max-height: 420px;
+  object-fit: cover;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+.blog-contenu {
+  color: var(--text);
+  line-height: 1.7;
+}
+.blog-contenu p {
+  margin: 0 0 18px;
+}
+.blog-contenu p:last-child {
+  margin-bottom: 0;
+}
+.blog-actions-gestion {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}

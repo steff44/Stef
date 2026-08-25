@@ -53,16 +53,19 @@ public_html/          ← racine du site, déployée telle quelle
   `@media (max-width: 760px) { :root { ... } }` en haut de `style.css` —
   tout le reste du CSS lit déjà ces variables, rien d'autre à toucher.
 - Ordre du menu (imposé par l'utilisateur, à ne pas réordonner) :
-  Accueil, Galerie, **Expo 2026**, Agenda, Le Club, Nous Contacter, Espace
-  Adhérent. « Expo 2026 » (`expo-2026.html`, les photos Google Drive
-  groupées par adhérent — voir plus bas) a été ajouté le 24/08/2026 à cette
-  place précise, entre Galerie et Agenda, à la demande explicite de
-  l'utilisateur : c'est le seul changement de cet ordre depuis le début du
-  projet.
+  Accueil, Galerie, **Expo 2026**, **Blog**, Agenda, Le Club, Nous Contacter,
+  Espace Adhérent. « Expo 2026 » (`expo-2026.html`, les photos Google Drive
+  groupées par adhérent — voir plus bas) a été ajouté le 24/08/2026 entre
+  Galerie et Agenda ; « Blog » (`espace/blog.php`, voir plus bas) a été
+  ajouté le 25/08/2026, **entre Expo 2026 et Agenda** — l'utilisateur avait
+  demandé « entre Galerie et Agenda », mais Expo 2026 occupait déjà cette
+  place depuis la veille : question posée explicitement à l'utilisateur, qui
+  a choisi cette position plutôt que juste après Galerie. Ce sont les deux
+  seuls changements de cet ordre depuis le début du projet.
   **Agenda et Espace Adhérent sont tous deux des menus déroulants**
-  (`.nav-dropdown`, voir juste en dessous) ; Galerie, Expo 2026, Le Club et
-  Nous Contacter sont des liens simples. Le menu est écrit en dur dans
-  chaque page statique (`index.html`, `galerie.html`, `expo-2026.html`,
+  (`.nav-dropdown`, voir juste en dessous) ; Galerie, Expo 2026, Blog, Le
+  Club et Nous Contacter sont des liens simples. Le menu est écrit en dur
+  dans chaque page statique (`index.html`, `galerie.html`, `expo-2026.html`,
   `contact.html`) **et** dans `espace/inc/page.php` (`debut_page()`, avec un
   préfixe `../`) : y ajouter une entrée demande donc **cinq** modifications
   identiques, plus la liste « Liens rapides » du pied de page des pages
@@ -84,6 +87,8 @@ public_html/          ← racine du site, déployée telle quelle
     (l'action `modifier`, dans `sorties-a-venir.php`, relit la photo actuelle
     avant d'écraser la ligne). Uniquement sur les sorties à venir, pas sur
     les sorties passées (qui n'ont aucune action).
+  - Blog → `espace/blog.php` (voir « Blog du Club » plus bas), ajouté le
+    25/08/2026.
   - Le Club → `espace/le-club.php` (voir « Le Club » plus bas) : **réservé
     aux adhérents connectés depuis le 18/08/2026** — ce n'est plus la liste
     publique des adhérents. `membres.html` est désormais une redirection
@@ -769,6 +774,83 @@ Tout texte inséré via `innerHTML` dans une carte de photo (titre, nom
 affiché, catégorie) passe par `echapperHtml()` — un titre ou un nom contenant
 `&`, `<` ou `"` (saisi par un adhérent) casserait sinon le HTML généré.
 
+**Blog du Club (`espace/blog.php`, `espace/blog-article.php`)**, ajouté le
+25/08/2026 à la demande explicite de l'utilisateur, qui a fourni une capture
+d'écran du blog d'un club voisin (imageinperigny.fr) comme référence de
+présentation : liste d'articles (titre, méta date/auteur/catégorie, extrait
++ vignette) à gauche, colonne latérale « Articles récents » (5 derniers
+titres) et « Catégories » à droite. **Page publique comme l'agenda**,
+malgré son emplacement dans `espace/` : `exige_connexion()` n'est jamais
+appelée pour lire, seule la rédaction (formulaire « Ajouter un article »,
+Modifier, Supprimer) exige `exige_gestionnaire()` — l'utilisateur en sera
+la seule rédactrice, mais le rôle éditeur en profite aussi, par cohérence
+avec le reste du site (documents, agenda, galerie du club).
+
+Deux tables : `categories_blog` (liste à plat, comme `categories_galerie`,
+gérée par un responsable depuis `parametres.php` — ajouter/renommer/
+supprimer, refusé si des articles restent classés dedans) et
+`articles_blog` (`titre`, `extrait`, `contenu`, `image` — photo de
+couverture facultative —, `categorie_id`, `auteur_nom`, `depose_par`,
+`cree_le`). Neuf catégories semées par défaut (`CATEGORIES_BLOG_PAR_DEFAUT`,
+`inc/migration.php`), reprises du blog de référence : À la une, Club photo,
+Concours, Culture photographique, Exposition, Festival photo, Livre photo,
+Stage, Travail d'auteur.
+
+**Pas d'éditeur de texte riche** (cohérent avec un site sans build ni
+dépendance JavaScript externe) : le contenu se saisit en texte brut dans le
+formulaire, et `texte_riche_html()` (`inc/blog.php`) le transforme à
+l'affichage — échappé d'abord, puis `**texte**` devient `<strong>`, puis une
+ligne vide sépare deux paragraphes (`<p>`). Même principe minimal que
+`corps_html()` dans `inc/mail.php` pour les e-mails de notification, réécrit
+séparément ici (paragraphes en plus, pas seulement `nl2br`) plutôt que
+partagé, les deux usages étant assez différents (e-mail vs longue page
+HTML). Le champ « Résumé » (extrait) reste du texte brut affiché sans mise
+en forme (`e()` simple, pas de gras) — laissé vide, il est calculé
+automatiquement par `extrait_auto()` : premier paragraphe du contenu,
+`**` retirées (elles n'ont sinon aucun sens hors mise en forme), coupé à
+220 caractères au dernier espace pour ne jamais trancher un mot.
+
+La photo de couverture suit le même principe que la Galerie du Club :
+aucun recadrage serveur, stockée dans `espace/photos_blog/` (fermé par
+`.htaccess`, comme `photos_club/`), servie par `telecharger.php?type=blog`
+— **public**, comme `type=sortie`/`type=galerie_club`, contrairement à
+`type=photo`/`document` qui exigent une connexion. À la modification d'un
+article, la photo n'est remplacée que si un nouveau fichier est envoyé
+(même logique que la photo de sortie dans `sorties-a-venir.php`) ; à la
+suppression, le fichier est retiré du disque.
+
+Pagination (8 articles par page, `BLOG_ARTICLES_PAR_PAGE`) et filtre par
+catégorie (`?categorie=ID`) en paramètres d'URL classiques, sans
+JavaScript — même philosophie que le calendrier d'`agenda.php`. Le filtre
+ne s'applique qu'à la liste principale : la colonne « Articles récents »
+reste volontairement globale (comme sur le blog de référence), donc un
+article y reste visible même en dehors de la catégorie affichée.
+
+**Carte « Blog » sur le tableau de bord** (`espace/index.php`) : ajoutée
+juste après « Galerie du Club », avant les cartes réservées aux
+gestionnaires (Adhérents, Réglages du site) — un contenu public comme les
+autres cartes de cette première rangée, donc pas conditionné par
+`est_gestionnaire()`.
+
+Testé de bout en bout (25/08/2026) avec un vrai serveur PHP intégré
+(`php -S`) branché sur SQLite plutôt que MySQL — même principe que le banc
+d'essai déjà utilisé pour l'authentification, complété ici par deux détails
+propres à ce test : les instructions SQL embarquées dans `migration.php`/
+`schema.sql` (`ENGINE=InnoDB…`, `INT AUTO_INCREMENT PRIMARY KEY`,
+`UNIQUE KEY nom (...)`, `INSERT IGNORE`) sont converties à la volée en leur
+équivalent SQLite pour cette copie de test seulement, jamais dans le dépôt ;
+et `NOW()`/`UNIX_TIMESTAMP()`, utilisées par `auth.php` mais absentes de
+SQLite, sont ajoutées via `PDO::sqliteCreateFunction()` — piège rencontré
+au passage : `UNIX_TIMESTAMP(NULL)` doit renvoyer `NULL` (comme MySQL), pas
+l'instant présent, sans quoi `signaler_presence()` déconnecte
+immédiatement toute session fraîchement ouverte (un `deconnecte_le` NULL en
+base est alors lu comme une coupure à l'instant même). Une fois ce piège de
+test corrigé, connexion, publication (avec photo), affichage (gras,
+paragraphes), modification, filtre par catégorie, pagination, CSRF, accès
+réservé aux gestionnaires, suppression (fichier compris) et gestion des
+catégories (ajout, renommage, suppression refusée si utilisée) passent
+tous ; vérifié aussi au rendu Chromium, connecté et anonyme.
+
 **`documents.php` range les documents par rubrique et catégorie, éditables
 par un responsable** (choix explicite de l'utilisateur, 20/08/2026 — la
 liste de départ était Débuter la photo, Ateliers techniques du club,
@@ -955,16 +1037,17 @@ nom/identifiant/contact).
 espace/
   connexion.php  deconnexion.php  inscription.php  index.php    ← tableau de bord
   galerie.php    galerie-club.php documents.php     agenda.php   annuaire.php
+  blog.php       blog-article.php ← Blog du Club, page publique (voir plus haut)
   adherents.php      ← gestion des comptes, responsables et éditeurs
   parametres.php     ← coordonnées du club affichées sur le site public, responsables uniquement
   installation.php   ← à jouer UNE fois, se verrouille ensuite tout seul
-  telecharger.php    ← seule porte d'accès aux fichiers privés (+ types publics : sortie, galerie_club)
+  telecharger.php    ← seule porte d'accès aux fichiers privés (+ types publics : sortie, galerie_club, blog)
   statut-connexion.php ← état de connexion en JSON, pour js/main.js sur les pages statiques
   inc/               ← code interne, fermé par .htaccess
     config.local.php ← À CRÉER À LA MAIN SUR LE SERVEUR, jamais dans Git
     config.example.php  db.php  auth.php  page.php  televersement.php
-    mail.php  schema.sql
-  photos/  photos_club/  fichiers/  ← dépôts, fermés par .htaccess
+    mail.php  blog.php  schema.sql
+  photos/  photos_club/  photos_blog/  fichiers/  ← dépôts, fermés par .htaccess
 ```
 
 Points à ne pas casser :

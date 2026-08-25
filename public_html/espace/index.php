@@ -30,6 +30,7 @@ $compteurs = [
     'photos_club'  => (int) $pdo->query('SELECT COUNT(*) FROM photos_club')->fetchColumn(),
     'documents'    => (int) $pdo->query('SELECT COUNT(*) FROM documents')->fetchColumn(),
     'sorties'      => (int) $pdo->query('SELECT COUNT(*) FROM sorties WHERE debut >= NOW()')->fetchColumn(),
+    'articles'     => (int) $pdo->query('SELECT COUNT(*) FROM articles_blog')->fetchColumn(),
 ];
 
 debut_page("Tableau de bord", 'index');
@@ -77,6 +78,12 @@ titre_page("Bonjour " . $adherent['nom'], "Bienvenue dans l'espace réservé aux
       <h3>Galerie du Club</h3>
       <p><?= $compteurs['photos_club'] ?> photo<?= $compteurs['photos_club'] > 1 ? 's' : '' ?> partagée<?= $compteurs['photos_club'] > 1 ? 's' : '' ?>, visibles de tous.</p>
       <a class="btn btn-ghost" href="galerie-club.php">Ouvrir</a>
+    </article>
+    <article class="feature-card">
+      <div class="feature-icon" aria-hidden="true">📰</div>
+      <h3>Blog</h3>
+      <p><?= $compteurs['articles'] ?> article<?= $compteurs['articles'] > 1 ? 's' : '' ?> publié<?= $compteurs['articles'] > 1 ? 's' : '' ?>.</p>
+      <a class="btn btn-ghost" href="blog.php">Ouvrir</a>
     </article>
     <?php if (est_gestionnaire()): ?>
       <article class="feature-card">

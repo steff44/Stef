@@ -124,6 +124,23 @@ const CATEGORIES_GALERIE_PAR_DEFAUT = [
     'Créatif',
 ];
 
+// Catégories par défaut du blog du club (espace/blog.php), semées une seule
+// fois — la première fois que `categories_blog` est créée — par
+// appliquer_migrations() ci-dessous. Reprend la classification du blog cité
+// en référence par l'utilisateur (24/08/2026) ; un responsable la modifie
+// ensuite depuis parametres.php.
+const CATEGORIES_BLOG_PAR_DEFAUT = [
+    'À la une',
+    'Club photo',
+    'Concours',
+    'Culture photographique',
+    'Exposition',
+    'Festival photo',
+    'Livre photo',
+    'Stage',
+    "Travail d'auteur",
+];
+
 // Réunion hebdomadaire du club, semée une seule fois dans `sorties` — choix
 // explicite de l'utilisateur, 22/08/2026 : tous les jeudis de 20h30 à
 // 23h00, sauf pendant les vacances scolaires (VACANCES_SCOLAIRES,
@@ -347,6 +364,44 @@ function appliquer_migrations(PDO $pdo): void
     }
 
     try {
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS categories_blog (
+                id    INT AUTO_INCREMENT PRIMARY KEY,
+                nom   VARCHAR(120) NOT NULL,
+                ordre INT          NOT NULL DEFAULT 0
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS articles_blog (
+                id           INT AUTO_INCREMENT PRIMARY KEY,
+                titre        VARCHAR(190) NOT NULL,
+                extrait      TEXT         DEFAULT NULL,
+                contenu      TEXT         NOT NULL,
+                image        VARCHAR(190) DEFAULT NULL,
+                categorie_id INT          DEFAULT NULL,
+                auteur_nom   VARCHAR(120) DEFAULT NULL,
+                depose_par   INT          DEFAULT NULL,
+                cree_le      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT fk_article_categorie FOREIGN KEY (categorie_id) REFERENCES categories_blog(id) ON DELETE SET NULL,
+                CONSTRAINT fk_article_adherent  FOREIGN KEY (depose_par)   REFERENCES adherents(id)       ON DELETE SET NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+
+        // Même principe que categories_galerie plus haut : semé une seule
+        // fois, jamais réintroduit si un responsable a depuis tout supprimé.
+        if ((int) $pdo->query('SELECT COUNT(*) FROM categories_blog')->fetchColumn() === 0) {
+            $inserer = $pdo->prepare('INSERT INTO categories_blog (nom, ordre) VALUES (?, ?)');
+            $ordre   = 0;
+            foreach (CATEGORIES_BLOG_PAR_DEFAUT as $nom_categorie) {
+                $inserer->execute([$nom_categorie, $ordre++]);
+            }
+        }
+    } catch (PDOException $e) {
+        error_log('Espace adhérents — migration categories_blog : ' . $e->getMessage());
+        $reussi = false;
+    }
+
+    try {
         // Semé une seule fois : si aucune réunion de ce titre n'existe déjà
         // (première migration après l'ajout de ce semis, ou responsable qui
         // a tout supprimé), on ne réintroduit jamais la série.
@@ -395,7 +450,9 @@ function signature_schema(): string
         implode('|', array_keys(PARAMETRES_PAR_DEFAUT)) . '||' .
         'rubriques_documents_v1' . '||' .
         'categories_galerie_v2' . '||' .
-        'reunion_hebdomadaire_v1'
+        'reunion_hebdomadaire_v1' . '||' .
+        'categories_blog_v1' . '||' .
+        'articles_blog_v1'
     );
 }
 

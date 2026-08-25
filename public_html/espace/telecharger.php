@@ -1,13 +1,14 @@
 <?php
 /*
  * Sert un fichier privé (photo ou document) après avoir vérifié que la
- * personne est bien connectée — sauf les photos de sortie (type=sortie) et
- * celles de la Galerie du Club (type=galerie_club), publiques comme
- * l'agenda et la page Galerie qui les affichent.
+ * personne est bien connectée — sauf les photos de sortie (type=sortie),
+ * celles de la Galerie du Club (type=galerie_club) et les photos de
+ * couverture du blog (type=blog), publiques comme l'agenda et la page
+ * Galerie qui les affichent.
  *
- * Les dossiers espace/photos/, espace/photos_club/ et espace/fichiers/ sont
- * fermés par .htaccess : ce script est la seule porte d'entrée. Le nom du
- * fichier n'est jamais pris dans l'URL — on passe par un identifiant en
+ * Les dossiers espace/photos/, espace/photos_club/, espace/photos_blog/ et
+ * espace/fichiers/ sont fermés par .htaccess : ce script est la seule porte
+ * d'entrée. Le nom du fichier n'est jamais pris dans l'URL — on passe par un identifiant en
  * base, puis on relit le nom enregistré. Impossible, donc, de réclamer
  * « ../inc/config.local.php ».
  */
@@ -19,9 +20,9 @@ require_once __DIR__ . '/inc/auth.php';
 $type = (string) ($_GET['type'] ?? '');
 $id   = (int) ($_GET['id'] ?? 0);
 
-const TYPES_PUBLICS = ['sortie', 'galerie_club'];
+const TYPES_PUBLICS = ['sortie', 'galerie_club', 'blog'];
 
-if ($id <= 0 || !in_array($type, ['photo', 'document', 'sortie', 'galerie_club'], true)) {
+if ($id <= 0 || !in_array($type, ['photo', 'document', 'sortie', 'galerie_club', 'blog'], true)) {
     http_response_code(404);
     exit('Fichier introuvable.');
 }
@@ -44,6 +45,9 @@ if ($type === 'photo') {
 } elseif ($type === 'galerie_club') {
     $requete = base_de_donnees()->prepare('SELECT fichier, titre FROM photos_club WHERE id = ?');
     $dossier = __DIR__ . '/photos_club/';
+} elseif ($type === 'blog') {
+    $requete = base_de_donnees()->prepare('SELECT image AS fichier, titre FROM articles_blog WHERE id = ?');
+    $dossier = __DIR__ . '/photos_blog/';
 } else {
     $requete = base_de_donnees()->prepare('SELECT photo AS fichier, titre FROM sorties WHERE id = ?');
     $dossier = __DIR__ . '/photos/';

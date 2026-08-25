@@ -143,6 +143,41 @@ CREATE TABLE IF NOT EXISTS inscriptions (
   CONSTRAINT fk_inscription_adherent FOREIGN KEY (adherent_id) REFERENCES adherents(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Catégories du blog du club (espace/blog.php), modifiables par un
+-- responsable depuis parametres.php — voir inc/blog.php et
+-- CATEGORIES_BLOG_PAR_DEFAUT (inc/migration.php) pour le semis initial.
+-- Une liste à plat, comme categories_galerie : pas de rubriques.
+CREATE TABLE IF NOT EXISTS categories_blog (
+  id    INT AUTO_INCREMENT PRIMARY KEY,
+  nom   VARCHAR(120) NOT NULL,
+  ordre INT          NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Articles du blog du club — page PUBLIQUE (espace/blog.php,
+-- espace/blog-article.php), comme l'agenda, mais rédigés uniquement par un
+-- responsable ou un éditeur (voir exige_gestionnaire() dans inc/auth.php).
+-- `auteur_nom` signe l'article (préempli avec le nom de l'adhérent connecté
+-- à la rédaction, modifiable) ; `image` est la photo de couverture,
+-- facultative, dans espace/photos_blog/, servie par telecharger.php
+-- (type=blog, public comme les photos de sortie et de la Galerie du Club).
+-- `contenu` passe par texte_riche_html() (inc/blog.php) à l'affichage :
+-- paragraphes séparés par une ligne vide, **texte** pour le gras — même
+-- convention minimale que les e-mails de notification (inc/mail.php), pas
+-- d'éditeur riche.
+CREATE TABLE IF NOT EXISTS articles_blog (
+  id           INT AUTO_INCREMENT PRIMARY KEY,
+  titre        VARCHAR(190) NOT NULL,
+  extrait      TEXT         DEFAULT NULL,
+  contenu      TEXT         NOT NULL,
+  image        VARCHAR(190) DEFAULT NULL,
+  categorie_id INT          DEFAULT NULL,
+  auteur_nom   VARCHAR(120) DEFAULT NULL,
+  depose_par   INT          DEFAULT NULL,
+  cree_le      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_article_categorie FOREIGN KEY (categorie_id) REFERENCES categories_blog(id) ON DELETE SET NULL,
+  CONSTRAINT fk_article_adherent  FOREIGN KEY (depose_par)   REFERENCES adherents(id)       ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Coordonnées du club (adresse, téléphone, e-mail, présentation), modifiables
 -- par un responsable dans parametres.php et affichées sur les pages publiques
 -- statiques via infos-club.php. Les valeurs par défaut sont posées par
