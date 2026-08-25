@@ -386,7 +386,7 @@ titre_page(
     </ul>
   </div>
 
-  <div class="form-card reglage-rubriques">
+  <div class="form-card reglage-rubriques reglage-blog">
     <h2 style="font-family:var(--font-heading);font-size:1.2rem;margin:0 0 6px;">Catégories du blog</h2>
     <p class="form-note" style="margin-top:0;margin-bottom:20px;">
       Ces catégories organisent la page « Blog du Club ». Une catégorie contenant encore
