@@ -215,15 +215,12 @@ titre_page("Le blog du Club", "Actualités, concours, expositions et vie du club
       </div>
       <div class="blog-widget">
         <h2>Catégories</h2>
-        <?php if (!$categories): ?>
-          <p class="form-note" style="margin:0;">Aucune catégorie pour le moment.</p>
-        <?php else: ?>
-          <ul>
-            <?php foreach ($categories as $id_categorie => $nom_categorie): ?>
-              <li><a href="blog.php?categorie=<?= $id_categorie ?>"<?= $id_categorie === $categorie_filtre ? ' aria-current="page"' : '' ?>><?= e($nom_categorie) ?></a></li>
-            <?php endforeach; ?>
-          </ul>
-        <?php endif; ?>
+        <ul>
+          <li><a href="blog.php"<?= $categorie_filtre === 0 ? ' aria-current="page"' : '' ?>>Tous les articles</a></li>
+          <?php foreach ($categories as $id_categorie => $nom_categorie): ?>
+            <li><a href="blog.php?categorie=<?= $id_categorie ?>"<?= $id_categorie === $categorie_filtre ? ' aria-current="page"' : '' ?>><?= e($nom_categorie) ?></a></li>
+          <?php endforeach; ?>
+        </ul>
       </div>
     </aside>
   </div>

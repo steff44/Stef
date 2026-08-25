@@ -190,6 +190,7 @@ titre_page($article['titre'], "", true);
       <div class="blog-widget">
         <h2>Catégories</h2>
         <ul>
+          <li><a href="blog.php">Tous les articles</a></li>
           <?php foreach ($categories as $id_categorie => $nom_categorie): ?>
             <li><a href="blog.php?categorie=<?= $id_categorie ?>"><?= e($nom_categorie) ?></a></li>
           <?php endforeach; ?>
