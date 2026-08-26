@@ -891,6 +891,47 @@ mémorisé en cas d'échec (mauvais format de fichier, catégorie invalide) :
 seul un dépôt réussi met à jour la session, pour ne jamais réafficher un
 titre qui aurait échoué à la place d'un titre valide précédent.
 
+**Le bouton Diaporama de la lightbox est passé d'une simple flèche ronde
+en haut à droite (à côté de Fermer) à un vrai bouton centré juste
+au-dessus de la photo, avec le texte « Diaporama »** (choix explicite de
+l'utilisateur, 26/08/2026, capture d'écran à l'appui). `.lightbox-diaporama`
+porte désormais aussi la classe `.diaporama-trigger` (même icône, même
+style que le bouton hors de la lightbox) et vit dans le HTML comme premier
+enfant de `.lightbox-content`, avant `.lightbox-frame` — son
+`text-align: center` centre le bouton sans CSS supplémentaire. Il n'est
+plus `position: absolute` : un simple `margin: 0 0 16px` le sépare de la
+photo. `reglerBoutonDiaporama()` (`js/main.js`) ne remplace plus le
+contenu du bouton par un simple caractère (`▶`/`⏸`, perdu à chaque
+diaporama puisque l'icône+texte harmonisés avec `.diaporama-trigger`
+auraient disparu au premier `textContent =`) : il bascule maintenant
+`innerHTML` entre deux constantes, une icône « lecture » + « Diaporama »
+et une icône « pause » + « Pause », tout en gardant la classe
+`.is-playing` (fond en dégradé) pour l'état actif. Générique, comme avant :
+présent dans le HTML de la lightbox d'`index.html`, `galerie.html`,
+`expo-2026.html` et `espace/galerie-club.php`.
+
+**Dépôt de plusieurs photos à la fois, par sélection multiple ou
+glissé-déposé, dans la Galerie privée et la Galerie du Club** (choix
+explicite de l'utilisateur, 26/08/2026 — « comme dans Documents du club »).
+Même principe que `documents.php` : le champ fichier devient
+`<input type="file" name="photos[]" multiple>`, qui accepte nativement le
+glissé-déposé de plusieurs fichiers sans une ligne de JavaScript — aucune
+zone de dépôt à construire, c'est un comportement natif du navigateur sur
+tout `<input type="file" multiple>`. `fichiers_multiples()`
+(`inc/televersement.php`, déjà utilisée par `documents.php`) éclate
+`$_FILES['photos']` en une liste, un appel à `enregistrer_fichier_envoye()`
+par photo ; contrairement aux documents (dont le titre reprend le nom de
+fichier), le titre reste un champ saisi à la main, **partagé par toutes les
+photos du dépôt** — de même pour la catégorie, le nom affiché et la note,
+chacun choisi une seule fois pour tout le lot (labels du formulaire
+complétés en conséquence : « s'applique à toutes les photos déposées
+ici »). Un fichier refusé (mauvais format, plus de 600 Ko) n'empêche pas
+les autres d'être déposés — le message résume les deux, sur le même
+principe que `documents.php` (« 2 photos ajoutées… » suivi de l'erreur du
+fichier refusé, avec accord au singulier/pluriel selon le nombre de photos
+réussies). Le titre gardé en session (voir plus haut) l'est aussi après un
+dépôt multiple.
+
 **L'accueil affiche un bandeau dépliant « Prochaine sortie / réunion »**
 (choix explicite de l'utilisateur, 23/08/2026), posé **sur la photo du grand
 hero**, tout en haut (premier élément à l'intérieur de `.hero-full .container`,

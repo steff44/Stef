@@ -300,16 +300,24 @@
   let activeIndex = 0;
   let diaporamaTimer = null;
 
-  /* Reflète l'état marche/arrêt sur le bouton de la lightbox (◻, si présent
-     sur la page) : centralisé ici plutôt que dupliqué à chaque appelant, que
-     le diaporama soit arrêté par ce bouton, par les flèches précédent/
-     suivant, ou par la fermeture de la lightbox. */
+  const ICONE_DIAPORAMA_JOUER =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>Diaporama';
+  const ICONE_DIAPORAMA_PAUSE =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="10" y1="8" x2="10" y2="16"></line><line x1="14" y1="8" x2="14" y2="16"></line></svg>Pause';
+
+  /* Reflète l'état marche/arrêt sur le bouton de la lightbox (si présent sur
+     la page) : centralisé ici plutôt que dupliqué à chaque appelant, que le
+     diaporama soit arrêté par ce bouton, par les flèches précédent/suivant,
+     ou par la fermeture de la lightbox. Icône + texte plutôt qu'un simple
+     caractère ▶/⏸ (26/08/2026, choix explicite de l'utilisateur) : le
+     bouton reprend maintenant l'apparence de .diaporama-trigger (voir la
+     règle CSS .lightbox-diaporama). */
   function reglerBoutonDiaporama(actif) {
     if (!lightbox) return;
     const bouton = lightbox.querySelector(".lightbox-diaporama");
     if (!bouton) return;
     bouton.classList.toggle("is-playing", actif);
-    bouton.textContent = actif ? "⏸" : "▶";
+    bouton.innerHTML = actif ? ICONE_DIAPORAMA_PAUSE : ICONE_DIAPORAMA_JOUER;
     bouton.setAttribute("aria-label", actif ? "Arrêter le diaporama" : "Lancer le diaporama");
   }
 
