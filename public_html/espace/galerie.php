@@ -12,6 +12,16 @@
  * Le titre reste inscrit d'une photo à l'autre (choix explicite de
  * l'utilisateur, 26/08/2026, $_SESSION['dernier_titre_galerie_privee']) —
  * pratique pour déposer une série sous le même titre sans le retaper.
+ *
+ * Dépôt de plusieurs photos à la fois, par sélection multiple ou
+ * glissé-déposé (choix explicite de l'utilisateur, 26/08/2026 — même
+ * principe que documents.php : <input type="file" multiple>, qui accepte
+ * nativement le glissé-déposé de plusieurs fichiers sans JavaScript).
+ * Toutes les photos d'un même dépôt partagent le titre, la catégorie, le
+ * nom affiché et la note saisis une seule fois — fichiers_multiples()
+ * (inc/televersement.php) éclate $_FILES['photos'] en une liste, un appel à
+ * enregistrer_fichier_envoye() par photo ; un fichier refusé (mauvais
+ * format, trop lourd) n'empêche pas les autres d'être déposés.
  */
 
 declare(strict_types=1);
@@ -43,40 +53,62 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $titre        = trim((string) ($_POST['titre'] ?? ''));
         $categorie_id = (int) ($_POST['categorie_id'] ?? 0);
         $categories   = categories_galerie($pdo);
+        $nom_affiche  = trim((string) ($_POST['nom_affiche'] ?? '')) ?: null;
+        $description  = trim((string) ($_POST['description'] ?? '')) ?: null;
+        $fichiers     = fichiers_multiples($_FILES['photos'] ?? ['name' => []]);
 
         if ($titre === '') {
             definir_message('erreur', "Donnez un titre à la photo.");
         } elseif (!isset($categories[$categorie_id])) {
             definir_message('erreur', "Choisissez une catégorie — créez-en une dans Réglages du site si aucune ne convient.");
+        } elseif (!$fichiers) {
+            definir_message('erreur', "Sélectionnez au moins une photo.");
         } else {
-            $resultat = enregistrer_fichier_envoye(
-                $_FILES['photo'] ?? null,
-                __DIR__ . '/photos',
-                'image',
-                TAILLE_MAX_PHOTO_ADHERENT,
-                "Photo trop lourde, ne pas dépasser 600 Ko. Merci."
-            );
+            $reussis = 0;
+            $erreurs = [];
 
-            if ($resultat['erreur'] !== null) {
-                definir_message('erreur', $resultat['erreur']);
-            } else {
+            foreach ($fichiers as $fichier) {
+                $resultat = enregistrer_fichier_envoye(
+                    $fichier,
+                    __DIR__ . '/photos',
+                    'image',
+                    TAILLE_MAX_PHOTO_ADHERENT,
+                    "Photo trop lourde, ne pas dépasser 600 Ko. Merci."
+                );
+
+                if ($resultat['erreur'] !== null) {
+                    $erreurs[] = "« " . basename((string) $fichier['name']) . " » : {$resultat['erreur']}";
+                    continue;
+                }
+
                 $pdo->prepare(
                     'INSERT INTO photos_privees (titre, description, nom_affiche, fichier, categorie_id, depose_par)
                      VALUES (?, ?, ?, ?, ?, ?)'
                 )->execute([
                     $titre,
-                    trim((string) ($_POST['description'] ?? '')) ?: null,
-                    trim((string) ($_POST['nom_affiche'] ?? '')) ?: null,
+                    $description,
+                    $nom_affiche,
                     $resultat['nom'],
                     $categorie_id,
                     $adherent['id'],
                 ]);
-                // Le titre reste inscrit pour la photo suivante (choix
+                $reussis++;
+            }
+
+            if ($reussis > 0) {
+                // Le titre reste inscrit pour le dépôt suivant (choix
                 // explicite de l'utilisateur, 26/08/2026) — pratique pour
                 // déposer une série sous le même titre sans le retaper.
                 $_SESSION['dernier_titre_galerie_privee'] = $titre;
-                definir_message('succes', "Photo ajoutée à la galerie privée, dans « {$categories[$categorie_id]} ».");
             }
+
+            $parts = [];
+            if ($reussis > 0) {
+                $parts[] = "{$reussis} photo" . ($reussis > 1 ? 's' : '') . " ajoutée" . ($reussis > 1 ? 's' : '')
+                    . " à la galerie privée, dans « {$categories[$categorie_id]} ».";
+            }
+            array_push($parts, ...$erreurs);
+            definir_message($erreurs ? 'erreur' : 'succes', implode(' ', $parts));
         }
     }
 
@@ -150,19 +182,23 @@ titre_page(
           </select>
         </div>
         <div class="field">
-          <label for="nom_affiche">Nom affiché (facultatif)</label>
+          <label for="nom_affiche">Nom affiché (facultatif, s'applique à toutes les photos déposées ici)</label>
           <input type="text" id="nom_affiche" name="nom_affiche" maxlength="120"
                  placeholder="<?= e($adherent['nom']) ?>">
         </div>
         <div class="field">
-          <label for="description">Note (facultatif)</label>
-          <textarea id="description" name="description" rows="2" placeholder="Un mot pour expliquer votre photo…"></textarea>
+          <label for="description">Note (facultatif, s'applique à toutes les photos déposées ici)</label>
+          <textarea id="description" name="description" rows="2" placeholder="Un mot pour expliquer vos photos…"></textarea>
         </div>
         <div class="field">
-          <label for="photo">Image (JPEG, PNG, WebP ou GIF — <?= taille_lisible(TAILLE_MAX_PHOTO_ADHERENT) ?> maximum)</label>
-          <input type="file" id="photo" name="photo" accept="image/*" required>
+          <label for="photo">Photos (JPEG, PNG, WebP ou GIF — <?= taille_lisible(TAILLE_MAX_PHOTO_ADHERENT) ?> maximum chacune)</label>
+          <input type="file" id="photo" name="photos[]" accept="image/*" multiple required>
+          <p class="form-note">
+            Plusieurs photos peuvent être sélectionnées ou glissées-déposées d'un coup :
+            elles partagent alors le même titre, la même catégorie et la même note.
+          </p>
         </div>
-        <button type="submit" class="btn btn-primary">Envoyer la photo</button>
+        <button type="submit" class="btn btn-primary">Envoyer les photos</button>
       </form>
     </details>
   <?php else: ?>

@@ -12,6 +12,16 @@
  * filtre par thème et bouton Diaporama juste au-dessus de la grille — voir
  * js/main.js (bloc « Agrandissement + diaporama ») pour le câblage
  * générique partagé avec la page publique et galerie.php.
+ *
+ * Dépôt de plusieurs photos à la fois, par sélection multiple ou
+ * glissé-déposé (choix explicite de l'utilisateur, 26/08/2026 — même
+ * principe que documents.php : <input type="file" multiple>, qui accepte
+ * nativement le glissé-déposé de plusieurs fichiers sans JavaScript).
+ * Toutes les photos d'un même dépôt partagent le titre, la catégorie, le
+ * nom affiché et la note saisis une seule fois — fichiers_multiples()
+ * (inc/televersement.php) éclate $_FILES['photos'] en une liste, un appel à
+ * enregistrer_fichier_envoye() par photo ; un fichier refusé (mauvais
+ * format, trop lourd) n'empêche pas les autres d'être déposés.
  */
 
 declare(strict_types=1);
@@ -43,40 +53,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $titre        = trim((string) ($_POST['titre'] ?? ''));
         $categorie_id = (int) ($_POST['categorie_id'] ?? 0);
         $categories   = categories_galerie($pdo);
+        $nom_affiche  = trim((string) ($_POST['nom_affiche'] ?? '')) ?: null;
+        $description  = trim((string) ($_POST['description'] ?? '')) ?: null;
+        $fichiers     = fichiers_multiples($_FILES['photos'] ?? ['name' => []]);
 
         if ($titre === '') {
             definir_message('erreur', "Donnez un titre à la photo.");
         } elseif (!isset($categories[$categorie_id])) {
             definir_message('erreur', "Choisissez une catégorie — créez-en une dans Réglages du site si aucune ne convient.");
+        } elseif (!$fichiers) {
+            definir_message('erreur', "Sélectionnez au moins une photo.");
         } else {
-            $resultat = enregistrer_fichier_envoye(
-                $_FILES['photo'] ?? null,
-                __DIR__ . '/photos_club',
-                'image',
-                TAILLE_MAX_PHOTO_ADHERENT,
-                "Photo trop lourde, ne pas dépasser 600 Ko. Merci."
-            );
+            $reussis = 0;
+            $erreurs = [];
 
-            if ($resultat['erreur'] !== null) {
-                definir_message('erreur', $resultat['erreur']);
-            } else {
+            foreach ($fichiers as $fichier) {
+                $resultat = enregistrer_fichier_envoye(
+                    $fichier,
+                    __DIR__ . '/photos_club',
+                    'image',
+                    TAILLE_MAX_PHOTO_ADHERENT,
+                    "Photo trop lourde, ne pas dépasser 600 Ko. Merci."
+                );
+
+                if ($resultat['erreur'] !== null) {
+                    $erreurs[] = "« " . basename((string) $fichier['name']) . " » : {$resultat['erreur']}";
+                    continue;
+                }
+
                 $pdo->prepare(
                     'INSERT INTO photos_club (titre, description, nom_affiche, fichier, categorie_id, depose_par)
                      VALUES (?, ?, ?, ?, ?, ?)'
                 )->execute([
                     $titre,
-                    trim((string) ($_POST['description'] ?? '')) ?: null,
-                    trim((string) ($_POST['nom_affiche'] ?? '')) ?: null,
+                    $description,
+                    $nom_affiche,
                     $resultat['nom'],
                     $categorie_id,
                     $adherent['id'],
                 ]);
-                // Le titre reste inscrit pour la photo suivante (choix
+                $reussis++;
+            }
+
+            if ($reussis > 0) {
+                // Le titre reste inscrit pour le dépôt suivant (choix
                 // explicite de l'utilisateur, 26/08/2026) — pratique pour
                 // déposer une série sous le même titre sans le retaper.
                 $_SESSION['dernier_titre_galerie_club'] = $titre;
-                definir_message('succes', "Photo ajoutée à la Galerie du Club, dans « {$categories[$categorie_id]} ». Elle apparaît aussi sur la page Galerie, ouverte à tous.");
             }
+
+            $parts = [];
+            if ($reussis > 0) {
+                $parts[] = "{$reussis} photo" . ($reussis > 1 ? 's' : '') . " ajoutée" . ($reussis > 1 ? 's' : '')
+                    . " à la Galerie du Club, dans « {$categories[$categorie_id]} ». Elle" . ($reussis > 1 ? 's' : '')
+                    . " apparai" . ($reussis > 1 ? 'ssent' : 't') . " aussi sur la page Galerie, ouverte à tous.";
+            }
+            array_push($parts, ...$erreurs);
+            definir_message($erreurs ? 'erreur' : 'succes', implode(' ', $parts));
         }
     }
 
@@ -147,19 +180,23 @@ debut_page("Galerie du Club", 'galerie-club');
           </select>
         </div>
         <div class="field">
-          <label for="nom_affiche">Nom affiché (facultatif)</label>
+          <label for="nom_affiche">Nom affiché (facultatif, s'applique à toutes les photos déposées ici)</label>
           <input type="text" id="nom_affiche" name="nom_affiche" maxlength="120"
                  placeholder="<?= e($adherent['nom']) ?>">
         </div>
         <div class="field">
-          <label for="description">Note (facultatif)</label>
-          <textarea id="description" name="description" rows="2" placeholder="Un mot pour expliquer votre photo…"></textarea>
+          <label for="description">Note (facultatif, s'applique à toutes les photos déposées ici)</label>
+          <textarea id="description" name="description" rows="2" placeholder="Un mot pour expliquer vos photos…"></textarea>
         </div>
         <div class="field">
-          <label for="photo">Image (JPEG, PNG, WebP ou GIF — <?= taille_lisible(TAILLE_MAX_PHOTO_ADHERENT) ?> maximum)</label>
-          <input type="file" id="photo" name="photo" accept="image/*" required>
+          <label for="photo">Photos (JPEG, PNG, WebP ou GIF — <?= taille_lisible(TAILLE_MAX_PHOTO_ADHERENT) ?> maximum chacune)</label>
+          <input type="file" id="photo" name="photos[]" accept="image/*" multiple required>
+          <p class="form-note">
+            Plusieurs photos peuvent être sélectionnées ou glissées-déposées d'un coup :
+            elles partagent alors le même titre, la même catégorie et la même note.
+          </p>
         </div>
-        <button type="submit" class="btn btn-primary">Envoyer la photo</button>
+        <button type="submit" class="btn btn-primary">Envoyer les photos</button>
       </form>
     </details>
   <?php else: ?>
@@ -212,10 +249,13 @@ debut_page("Galerie du Club", 'galerie-club');
 
 <div class="lightbox" data-lightbox role="dialog" aria-modal="true" aria-label="Photo en grand format">
   <button class="lightbox-close" aria-label="Fermer">✕</button>
-  <button class="lightbox-diaporama" aria-label="Lancer le diaporama">▶</button>
   <button class="lightbox-prev" aria-label="Photo précédente">‹</button>
   <button class="lightbox-next" aria-label="Photo suivante">›</button>
   <div class="lightbox-content">
+    <button type="button" class="diaporama-trigger lightbox-diaporama" aria-label="Lancer le diaporama">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
+      Diaporama
+    </button>
     <div class="lightbox-frame"></div>
     <div class="lightbox-caption">
       <strong class="lightbox-title"></strong>

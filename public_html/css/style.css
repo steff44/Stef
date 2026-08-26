@@ -1025,34 +1025,27 @@ a {
 /* Bouton de diaporama à l'intérieur de la lightbox (choix explicite de
    l'utilisateur, 24/08/2026 : lancer le diaporama depuis la photo déjà
    agrandie, pas seulement depuis un bouton en haut de la page Galerie).
-   Générique : présent sur toute page dont la lightbox porte ce bouton,
-   ignoré par js/main.js sur les pages qui ne l'ont pas. Posé à gauche du
-   bouton Fermer, même gabarit que les autres commandes de la lightbox. */
+   Repris du bouton .diaporama-trigger (même icône, même texte "Diaporama")
+   et centré juste au-dessus de la photo — choix explicite de l'utilisateur,
+   26/08/2026, capture d'écran à l'appui : une simple flèche ronde en haut à
+   droite, à côté de Fermer, ne rappelait pas assez le bouton "Diaporama" de
+   la page elle-même. `.lightbox-diaporama` est donc désormais un enfant de
+   `.lightbox-content` (avant `.lightbox-frame`, voir le HTML), pas de
+   `.lightbox` — `text-align:center` de `.lightbox-content` centre le
+   bouton, `inline-flex` (hérité de `.diaporama-trigger`) le laisse à sa
+   largeur naturelle. Générique : présent sur toute page dont la lightbox
+   porte ce bouton, ignoré par js/main.js sur les pages qui ne l'ont pas. */
 .lightbox-diaporama {
-  position: absolute;
-  top: 24px;
-  right: 80px;
-  background: rgba(28, 28, 36, 0.85);
-  border: 1px solid var(--border);
-  color: var(--text);
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  margin: 0 0 16px;
 }
-.lightbox-diaporama:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-/* Diaporama en cours : le bouton reste visible comme « actif ». */
+/* Diaporama en cours : même mise en valeur que les pastilles de filtre
+   actives (.theme-filter.is-active), pour rester cohérent. */
 .lightbox-diaporama.is-playing {
   background: var(--accent-gradient);
   border-color: transparent;
   color: #fff;
+  border-radius: var(--radius-btn);
+  padding: 9px 18px;
 }
 
 /* Page « Expo 2026 » : barre au-dessus des photos d'un adhérent, une fois
