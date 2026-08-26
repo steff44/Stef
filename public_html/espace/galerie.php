@@ -73,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     __DIR__ . '/photos',
                     'image',
                     TAILLE_MAX_PHOTO_ADHERENT,
-                    "Photo trop lourde, ne pas dépasser 600 Ko. Merci."
+                    "Photo trop lourde, ne pas dépasser 1000 Ko. Merci."
                 );
 
                 if ($resultat['erreur'] !== null) {
@@ -192,11 +192,14 @@ titre_page(
         </div>
         <div class="field">
           <label for="photo">Photos (JPEG, PNG, WebP ou GIF — <?= taille_lisible(TAILLE_MAX_PHOTO_ADHERENT) ?> maximum chacune)</label>
-          <input type="file" id="photo" name="photos[]" accept="image/*" multiple required>
+          <input type="file" id="photo" name="photos[]" accept="image/*" multiple required
+                 data-taille-max="<?= TAILLE_MAX_PHOTO_ADHERENT ?>"
+                 data-taille-max-lisible="<?= e(taille_lisible(TAILLE_MAX_PHOTO_ADHERENT)) ?>">
           <p class="form-note">
             Plusieurs photos peuvent être sélectionnées ou glissées-déposées d'un coup :
             elles partagent alors le même titre, la même catégorie et la même note.
           </p>
+          <p class="form-avertissement" data-avertissement-taille hidden></p>
         </div>
         <button type="submit" class="btn btn-primary">Envoyer les photos</button>
       </form>

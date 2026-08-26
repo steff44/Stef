@@ -484,11 +484,12 @@ classée puisque seul le nom change, jamais l'identifiant).
 catégories) porte la seule fonction `categories_galerie($pdo)`. Tout
 adhérent peut déposer (titre, catégorie, nom affiché facultatif — pour
 signer autrement que son identifiant de connexion —, note facultative) —
-les photos sont plafonnées à 600 Ko (`TAILLE_MAX_PHOTO_ADHERENT` dans
-`inc/televersement.php`, choix explicite de l'utilisateur, 21/08/2026 : plus
-strict que le plafond général de 8 Mo, qui reste appliqué aux documents et
-aux photos de sortie), message dédié — « Photo trop lourde, ne pas dépasser
-600 Ko. Merci. » — passé en 5ᵉ argument à `enregistrer_fichier_envoye()` ;
+les photos sont plafonnées à 1000 Ko (`TAILLE_MAX_PHOTO_ADHERENT` dans
+`inc/televersement.php`, choix explicite de l'utilisateur, 21/08/2026 —
+relevé de 600 Ko à 1000 Ko le 26/08/2026 : plus strict que le plafond
+général de 8 Mo, qui reste appliqué aux documents et aux photos de sortie),
+message dédié — « Photo trop lourde, ne pas dépasser 1000 Ko. Merci. » —
+passé en 5ᵉ argument à `enregistrer_fichier_envoye()` ;
 seul l'auteur ou un responsable peut supprimer sa photo — même règle,
 et même formulaire de dépôt, dans `galerie.php` (colonnes `categorie_id` et
 `nom_affiche` ajoutées à `photos_privees` le 21/08/2026, exactement comme
@@ -925,12 +926,44 @@ fichier), le titre reste un champ saisi à la main, **partagé par toutes les
 photos du dépôt** — de même pour la catégorie, le nom affiché et la note,
 chacun choisi une seule fois pour tout le lot (labels du formulaire
 complétés en conséquence : « s'applique à toutes les photos déposées
-ici »). Un fichier refusé (mauvais format, plus de 600 Ko) n'empêche pas
+ici »). Un fichier refusé (mauvais format, plus de 1000 Ko) n'empêche pas
 les autres d'être déposés — le message résume les deux, sur le même
 principe que `documents.php` (« 2 photos ajoutées… » suivi de l'erreur du
 fichier refusé, avec accord au singulier/pluriel selon le nombre de photos
 réussies). Le titre gardé en session (voir plus haut) l'est aussi après un
 dépôt multiple.
+
+**Le glissé-déposé ratait souvent sa cible, et rien ne prévenait avant
+l'envoi qu'une photo dépassait la taille maximale** (deux corrections,
+choix explicite de l'utilisateur, 26/08/2026, en plus du relevé de la
+limite à 1000 Ko ci-dessus) :
+- Un `<input type="file">` nu n'accepte un glissé-déposé que si le fichier
+  atterrit exactement sur son petit bouton natif « Choisir des fichiers » —
+  un dépôt n'importe où ailleurs dans le champ (le label, le texte d'aide,
+  le padding autour) était ignoré, ce qui donnait l'impression que le
+  glissé-déposé ne fonctionnait pas du tout. `js/main.js` (bloc « Dépôt de
+  fichiers ») élargit désormais la zone de dépôt effective au `.field`
+  entier qui contient l'input, pour tout `<input type="file">` de la
+  page (générique, comme l'œil du mot de passe) : les fichiers lâchés y
+  sont réaffectés à `champ.files` via `DataTransfer`, puis un évènement
+  « change » est déclenché pour que le reste du script (avertissement de
+  taille ci-dessous) réagisse comme à une sélection normale. Repère visuel
+  pendant le survol (`.field--survole`, contour en tirets). Un écouteur
+  global `dragover`/`drop` — armé seulement quand le glissé transporte
+  effectivement des fichiers (`dataTransfer.types` contient `"Files"`, pour
+  ne jamais gêner un glissé de texte ordinaire ailleurs sur la page) —
+  empêche aussi le navigateur de remplacer toute la page par l'image si le
+  dépôt rate malgré tout la zone.
+- Avertissement immédiat, avant tout envoi au serveur, si une photo choisie
+  ou glissée dépasse la taille maximale : `<input data-taille-max="…"
+  data-taille-max-lisible="…">` (posé par `galerie.php` et
+  `galerie-club.php`, valeurs lues depuis `TAILLE_MAX_PHOTO_ADHERENT` côté
+  PHP pour rester synchronisées) et un `<p data-avertissement-taille
+  hidden>` juste après, que `js/main.js` remplit et affiche au moment de la
+  sélection (`change`, déclenché aussi bien par un choix au clic que par un
+  glissé-déposé) — nomme la ou les photos en cause. Confort seulement : la
+  vérification qui fait foi reste côté serveur (`enregistrer_fichier_envoye()`),
+  inchangée.
 
 **L'accueil affiche un bandeau dépliant « Prochaine sortie / réunion »**
 (choix explicite de l'utilisateur, 23/08/2026), posé **sur la photo du grand

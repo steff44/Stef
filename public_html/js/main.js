@@ -59,6 +59,95 @@
     });
   })();
 
+  /* ---------- Dépôt de fichiers : glissé-déposé fiable + avertissement de
+     taille ----------
+     Générique : s'applique à tout input[type="file"] présent sur la page.
+     Deux correctifs, choix explicite de l'utilisateur, 26/08/2026 :
+
+     1. Un <input type="file"> nu n'accepte un glissé-déposé que si le
+        fichier atterrit exactement sur son petit bouton natif "Choisir des
+        fichiers" — un dépôt n'importe où ailleurs dans le champ (le label,
+        le texte d'aide, le padding autour) était ignoré, ce qui donnait
+        l'impression que le glissé-déposé ne fonctionnait pas du tout. La
+        zone de dépôt effective est donc élargie au .field entier qui
+        contient l'input : les fichiers lâchés y sont réaffectés à
+        champ.files via DataTransfer, puis un évènement "change" est
+        déclenché pour que le reste du script (avertissement de taille)
+        réagisse comme à une sélection normale. Un écouteur global
+        dragover/drop — armé seulement quand le glissé transporte
+        effectivement des fichiers (dataTransfer.types contient "Files"),
+        pour ne jamais gêner un glissé de texte ordinaire ailleurs sur la
+        page — empêche aussi le navigateur de quitter la page pour afficher
+        le fichier si le dépôt rate malgré tout la zone.
+     2. Avertissement immédiat si un fichier dépasse la taille maximale
+        (input[data-taille-max], posé par galerie.php et galerie-club.php) :
+        vérifié dès la sélection ou le dépôt, avant tout envoi au serveur —
+        qui reste la vérification qui fait foi, ce n'est qu'un confort. */
+  (function () {
+    function estDepotDeFichiers(e) {
+      return !!(e.dataTransfer && Array.from(e.dataTransfer.types || []).indexOf("Files") !== -1);
+    }
+    document.addEventListener("dragover", function (e) {
+      if (estDepotDeFichiers(e)) e.preventDefault();
+    });
+    document.addEventListener("drop", function (e) {
+      if (estDepotDeFichiers(e)) e.preventDefault();
+    });
+
+    document.querySelectorAll('input[type="file"]').forEach(function (champ) {
+      const zone = champ.closest(".field") || champ;
+
+      zone.addEventListener("dragover", function (e) {
+        if (!estDepotDeFichiers(e)) return;
+        e.preventDefault();
+        zone.classList.add("field--survole");
+      });
+      zone.addEventListener("dragleave", function () {
+        zone.classList.remove("field--survole");
+      });
+      zone.addEventListener("drop", function (e) {
+        if (!estDepotDeFichiers(e)) return;
+        e.preventDefault();
+        zone.classList.remove("field--survole");
+        if (!e.dataTransfer.files.length) return;
+
+        if (!champ.multiple && e.dataTransfer.files.length > 1) {
+          const dt = new DataTransfer();
+          dt.items.add(e.dataTransfer.files[0]);
+          champ.files = dt.files;
+        } else {
+          champ.files = e.dataTransfer.files;
+        }
+        champ.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+
+      const tailleMax = champ.dataset.tailleMax ? parseInt(champ.dataset.tailleMax, 10) : 0;
+      const avertissement = zone.querySelector("[data-avertissement-taille]");
+      if (!tailleMax || !avertissement) return;
+
+      champ.addEventListener("change", function () {
+        const tropLourds = Array.from(champ.files).filter(function (fichier) {
+          return fichier.size > tailleMax;
+        });
+        if (!tropLourds.length) {
+          avertissement.hidden = true;
+          avertissement.textContent = "";
+          return;
+        }
+        const pluriel = tropLourds.length > 1;
+        const noms = tropLourds
+          .map(function (fichier) { return "« " + fichier.name + " »"; })
+          .join(", ");
+        avertissement.textContent =
+          (pluriel ? "Ces photos dépassent " : "Cette photo dépasse ") +
+          (champ.dataset.tailleMaxLisible || "la taille maximale") +
+          (pluriel ? " et ne seront pas envoyées : " : " et ne sera pas envoyée : ") +
+          noms + ".";
+        avertissement.hidden = false;
+      });
+    });
+  })();
+
   /* ---------- Menu déroulant "Espace Adhérent" ---------- */
   const dropdowns = document.querySelectorAll(".nav-dropdown");
   function closeDropdown(dropdown) {
