@@ -792,82 +792,87 @@
     });
   })();
 
-  /* ---------- Agrandissement des photos (Galerie privée, Galerie du Club) ----------
+  /* ---------- Agrandissement + diaporama (Galerie privée, Galerie du Club) ----------
      Générique : toute page portant des cartes .photo-card[data-titre] (voir
      espace/inc/photo-carte.php) et le bloc [data-lightbox] correspondant
-     obtient l'agrandissement au clic, avec navigation précédente/suivante —
-     la page publique Galerie a son propre système plus riche (diaporama) et
-     n'est pas concernée, ses cartes ne portent pas ces attributs. Le texte
-     complet (description comprise) vient des attributs data-*, jamais
-     tronqué même si la vignette l'est visuellement en CSS. */
+     réutilise désormais le système partagé avec les pages publiques
+     (openLightbox/renderLightbox/startDiaporama, définis plus haut) plutôt
+     qu'une implémentation séparée — Galerie du Club (26/08/2026) gagne ainsi
+     le bouton Diaporama et les pastilles de filtre par thème sans dupliquer
+     cette logique ; galerie.php n'affiche ni l'un ni l'autre (pas de bouton
+     [data-start-diaporama] ni de [data-filtres-galerie] dans son HTML) mais
+     profite quand même du même agrandissement au clic. Seules les cartes
+     VISIBLES comptent (offsetParent non nul) : une pastille de filtre
+     masque des groupes entiers de cartes (.groupe-galerie[hidden]), qui ne
+     doivent alors compter ni dans la navigation précédente/suivante ni dans
+     le diaporama. Le texte complet (description comprise) vient des
+     attributs data-*, jamais tronqué même si la vignette l'est visuellement
+     en CSS. */
   (function () {
-    const cartes = Array.from(document.querySelectorAll(".photo-card[data-titre]"));
     const boite = document.querySelector("[data-lightbox]");
-    if (!cartes.length || !boite) return;
+    if (!boite || !document.querySelector(".photo-card[data-titre]")) return;
 
-    const photos = cartes.map(function (carte) {
+    // Pas de membreNom/theme séparés ici (voir photo-carte.php) : le texte
+    // affiché est déjà la légende complète prête à l'emploi — la caser dans
+    // membreNom seul suffit à renderLightbox() (theme resté vide n'ajoute
+    // rien à la jointure).
+    function carteVersPhoto(carte) {
       return {
         titre: carte.dataset.titre || "",
         description: carte.dataset.description || "",
-        meta: carte.dataset.meta || "",
+        membreNom: carte.dataset.meta || "",
+        theme: null,
         image: carte.dataset.image || "",
       };
-    });
-
-    let indexActif = 0;
-
-    function afficher() {
-      const photo = photos[indexActif];
-      poserPhotoAgrandie(boite.querySelector(".lightbox-frame"), photo);
-      boite.querySelector(".lightbox-title").textContent = photo.titre;
-      boite.querySelector(".lightbox-meta").textContent = photo.meta;
-      const descriptionEl = boite.querySelector(".lightbox-description");
-      if (descriptionEl) {
-        descriptionEl.textContent = photo.description;
-        descriptionEl.hidden = !photo.description;
-      }
     }
 
-    function ouvrir(index) {
-      indexActif = index;
-      afficher();
-      boite.classList.add("is-open");
-      document.body.style.overflow = "hidden";
-      boite.querySelector(".lightbox-close").focus();
+    function cartesVisibles() {
+      return Array.from(document.querySelectorAll(".photo-card[data-titre]")).filter(function (carte) {
+        return carte.offsetParent !== null;
+      });
     }
 
-    function fermer() {
-      boite.classList.remove("is-open");
-      document.body.style.overflow = "";
-    }
-
-    cartes.forEach(function (carte, index) {
+    document.querySelectorAll(".photo-card[data-titre]").forEach(function (carte) {
       carte.addEventListener("click", function (e) {
         // Un clic sur le formulaire Supprimer (en incrustation sur la carte)
         // ne doit jamais ouvrir l'agrandissement.
         if (e.target.closest("form")) return;
-        ouvrir(index);
+        const visibles = cartesVisibles();
+        const index = visibles.indexOf(carte);
+        if (index === -1) return;
+        openLightbox(visibles.map(carteVersPhoto), index);
       });
     });
 
-    boite.querySelector(".lightbox-close").addEventListener("click", fermer);
-    boite.querySelector(".lightbox-prev").addEventListener("click", function () {
-      indexActif = (indexActif - 1 + photos.length) % photos.length;
-      afficher();
-    });
-    boite.querySelector(".lightbox-next").addEventListener("click", function () {
-      indexActif = (indexActif + 1) % photos.length;
-      afficher();
-    });
-    boite.addEventListener("click", function (e) {
-      if (e.target === boite) fermer();
-    });
-    document.addEventListener("keydown", function (e) {
-      if (!boite.classList.contains("is-open")) return;
-      if (e.key === "Escape") fermer();
-      if (e.key === "ArrowLeft") boite.querySelector(".lightbox-prev").click();
-      if (e.key === "ArrowRight") boite.querySelector(".lightbox-next").click();
-    });
+    const diaporamaBtn = document.querySelector("[data-start-diaporama]");
+    if (diaporamaBtn) {
+      diaporamaBtn.addEventListener("click", function () {
+        const visibles = cartesVisibles();
+        if (!visibles.length) return;
+        openLightbox(visibles.map(carteVersPhoto), 0);
+        startDiaporama();
+      });
+    }
+
+    // Filtre par thème (Galerie du Club) : les photos sont déjà toutes
+    // rendues côté serveur, groupées par catégorie — une pastille ne fait
+    // qu'afficher/masquer les groupes déjà présents dans le DOM, sans
+    // nouvel appel réseau (contrairement au filtre de la page publique).
+    const zoneFiltres = document.querySelector("[data-filtres-galerie]");
+    if (zoneFiltres) {
+      const groupes   = Array.from(document.querySelectorAll(".groupe-galerie[data-categorie-id]"));
+      const pastilles = Array.from(zoneFiltres.querySelectorAll(".theme-filter"));
+      pastilles.forEach(function (pastille) {
+        pastille.addEventListener("click", function () {
+          pastilles.forEach(function (p) { p.classList.remove("is-active"); });
+          pastille.classList.add("is-active");
+          const cible = pastille.dataset.categorie || "";
+          groupes.forEach(function (groupe) {
+            groupe.hidden = cible !== "" && groupe.dataset.categorieId !== cible;
+          });
+        });
+      });
+    }
   })();
 
 })();

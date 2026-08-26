@@ -8,6 +8,10 @@
  * catégories et mêmes champs que la Galerie du Club (voir galerie-club.php
  * et inc/galerie_categories.php). telecharger.php applique la même
  * restriction sur le fichier lui-même, pas seulement sur cette liste.
+ *
+ * Le titre reste inscrit d'une photo à l'autre (choix explicite de
+ * l'utilisateur, 26/08/2026, $_SESSION['dernier_titre_galerie_privee']) —
+ * pratique pour déposer une série sous le même titre sans le retaper.
  */
 
 declare(strict_types=1);
@@ -67,6 +71,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $categorie_id,
                     $adherent['id'],
                 ]);
+                // Le titre reste inscrit pour la photo suivante (choix
+                // explicite de l'utilisateur, 26/08/2026) — pratique pour
+                // déposer une série sous le même titre sans le retaper.
+                $_SESSION['dernier_titre_galerie_privee'] = $titre;
                 definir_message('succes', "Photo ajoutée à la galerie privée, dans « {$categories[$categorie_id]} ».");
             }
         }
@@ -130,7 +138,8 @@ titre_page(
         <?= champ_csrf() ?>
         <div class="field">
           <label for="titre">Titre</label>
-          <input type="text" id="titre" name="titre" required maxlength="190">
+          <input type="text" id="titre" name="titre" required maxlength="190"
+                 value="<?= e($_SESSION['dernier_titre_galerie_privee'] ?? '') ?>">
         </div>
         <div class="field">
           <label for="categorie_id">Catégorie</label>

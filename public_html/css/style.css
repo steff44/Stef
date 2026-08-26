@@ -887,6 +887,18 @@ a {
 .diaporama-trigger:hover {
   color: var(--accent-3);
 }
+/* Bandeau du bouton Diaporama, posé juste au-dessus de la grille de photos
+   (choix explicite de l'utilisateur, 26/08/2026 — auparavant le bouton
+   vivait dans .gallery-hero, loin au-dessus de la grille). .diaporama-bar
+   remet à zéro le margin-top pensé pour cet ancien emplacement, sous les
+   pastilles de filtre du bandeau. */
+.diaporama-bar {
+  text-align: center;
+  margin: 0 0 24px;
+}
+.diaporama-bar .diaporama-trigger {
+  margin-top: 0;
+}
 
 .gallery-empty {
   color: var(--text-muted);
