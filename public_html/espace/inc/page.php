@@ -135,7 +135,11 @@ function fin_page(): void
 
 <footer class="site-footer">
   <div class="container">
-    <p class="footer-bottom">© <?= date('Y') ?> Focal Club Turballais. Espace réservé aux adhérents.</p>
+    <p class="footer-bottom">
+      © <?= date('Y') ?> Focal Club Turballais. Espace réservé aux adhérents.
+      — <a href="../mentions-legales.html" style="color: var(--accent-3); text-decoration: underline;">Mentions légales</a>
+      · <a href="../confidentialite.html" style="color: var(--accent-3); text-decoration: underline;">Confidentialité</a>
+    </p>
   </div>
 </footer>
 
