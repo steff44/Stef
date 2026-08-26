@@ -118,7 +118,7 @@ const CATEGORIES_GALERIE_PAR_DEFAUT = [
     'Paysage',
     'Macro / Proxi',
     'Nature',
-    'Street',
+    'Photo de rue',
     'Architecture',
     'Noir & Blanc',
     'Créatif',
@@ -358,6 +358,16 @@ function appliquer_migrations(PDO $pdo): void
         // depuis renommé ou supprimé cette catégorie lui-même (la clause
         // WHERE ne trouve alors plus rien).
         $pdo->exec("UPDATE categories_galerie SET nom = 'Macro / Proxi' WHERE nom = 'Macro'");
+
+        // Correction ponctuelle (26/08/2026, signalée par l'utilisateur par
+        // capture d'écran) : la catégorie semée « Street » était le seul mot
+        // anglais du site, et ne correspondait à aucun des thèmes affichés
+        // sur la page Galerie publique (js/data.js, resynchronisé le même
+        // jour) — d'où deux listes de pastilles visiblement différentes
+        // entre la Galerie du Club et la page publique. Même principe que
+        // la correction « Macro » ci-dessus : renommer plutôt que
+        // supprimer, les photos déjà classées gardent leur categorie_id.
+        $pdo->exec("UPDATE categories_galerie SET nom = 'Photo de rue' WHERE nom = 'Street'");
     } catch (PDOException $e) {
         error_log('Espace adhérents — migration categories_galerie : ' . $e->getMessage());
         $reussi = false;
@@ -449,7 +459,7 @@ function signature_schema(): string
         implode('|', array_keys(COLONNES_PHOTOS_PRIVEES_ATTENDUES)) . '||' .
         implode('|', array_keys(PARAMETRES_PAR_DEFAUT)) . '||' .
         'rubriques_documents_v1' . '||' .
-        'categories_galerie_v2' . '||' .
+        'categories_galerie_v3' . '||' .
         'reunion_hebdomadaire_v1' . '||' .
         'categories_blog_v1' . '||' .
         'articles_blog_v1'

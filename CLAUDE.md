@@ -479,6 +479,33 @@ libellés faisaient double emploi sur la page Galerie publique jusqu'au
 21/08/2026, corrigé par un renommage ponctuel — `UPDATE ... WHERE nom =
 'Macro'` — dans `appliquer_migrations()`, qui ne perd aucune photo déjà
 classée puisque seul le nom change, jamais l'identifiant).
+
+**Les pastilles de filtre de la page publique et celles de la Galerie du
+Club affichaient deux listes de catégories différentes** (signalé par
+l'utilisateur le 26/08/2026, capture d'écran à l'appui : « Marais salants »,
+« Sport » ou « Voyage / Reportage » n'apparaissaient que sur la page
+publique, et « Street » — le seul mot anglais du site — n'apparaissait que
+sur la Galerie du Club). Cause : deux listes de thèmes maintenues à la
+main, jamais resynchronisées depuis l'introduction de la table
+`categories_galerie` — `CLUB_DATA.themes` (`js/data.js`), une liste figée
+datant d'avant cette table, contre `CATEGORIES_GALERIE_PAR_DEFAUT`
+(`inc/migration.php`), la vraie liste qui organise les photos et qu'un
+responsable édite depuis `parametres.php`. `CLUB_DATA.themes` reprend
+maintenant exactement `CATEGORIES_GALERIE_PAR_DEFAUT` (huit thèmes) —
+c'est la table `categories_galerie`, éditable, qui fait foi ; les thèmes
+qui n'existaient que dans l'ancienne liste (Marais salants, Sport, Voyage /
+Reportage, la variante « Abstrait / Créatif ») ont disparu des pastilles
+par défaut, mais un responsable peut les recréer à tout moment depuis
+Réglages du site s'il les veut de retour — ils réapparaîtraient alors
+identiques sur les deux pages. « Street » est renommé « Photo de rue »,
+comme dans l'ancienne liste : à la fois dans `CATEGORIES_GALERIE_PAR_DEFAUT`
+(pour une prochaine installation) et via un renommage ponctuel dans
+`appliquer_migrations()` — même principe que le correctif « Macro » juste
+au-dessus — pour la base déjà en ligne, qui contient déjà une catégorie
+« Street ». Le témoin `categories_galerie_v2` de `signature_schema()` est
+passé à `v3` : sans ce changement, une base déjà migrée aurait ignoré ce
+correctif, le considérant à tort déjà à jour.
+
 `inc/galerie_categories.php` (renommé le 21/08/2026, s'appelait
 `inc/galerie_club.php` avant que `galerie.php` ne partage aussi ses
 catégories) porte la seule fonction `categories_galerie($pdo)`. Tout
