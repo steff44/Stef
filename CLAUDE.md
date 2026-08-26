@@ -992,6 +992,51 @@ limite à 1000 Ko ci-dessus) :
   vérification qui fait foi reste côté serveur (`enregistrer_fichier_envoye()`),
   inchangée.
 
+**Cet avertissement s'affiche en surimpression, directement sur l'endroit où
+le dépôt a été tenté, et couvre désormais tout point de dépôt du site, pas
+seulement les deux galeries** (choix explicite de l'utilisateur, 26/08/2026
+— « je veux qu'un avertissement arrive en surimpression sur le même endroit
+que celui où j'ai tenté de charger la photo ou le fichier »). `.form-avertissement`
+(`css/style.css`) est passé d'un simple texte rouge sous le champ à un vrai
+calque : `position: absolute; inset: 0;` par-dessus tout le `.field` (label,
+champ et texte d'aide compris), fond rouge sombre semi-opaque, texte centré,
+`pointer-events: none` — pour qu'un clic ou un glissé-déposé continue de
+traverser le calque et d'atteindre le vrai `<input>` en dessous, permettant de
+réessayer immédiatement sans d'abord faire disparaître l'avertissement. `.field`
+porte maintenant `position: relative` (base commune à tous les champs, sans
+effet sur ceux qui n'ont pas ce calque) pour servir de repère à `inset: 0`.
+Piège rencontré en le construisant : `<p>` porte par défaut une marge
+navigateur (`margin-block: 1em`, ~13,6px à cette taille de police) que
+`inset: 0` ne neutralise pas — le calque se réduisait donc vers l'intérieur
+et ne couvrait que la ligne du champ, laissant le label et le texte d'aide
+dépasser dessous. Corrigé par un simple `margin: 0` sur `.form-avertissement`,
+vérifié par comparaison de `getBoundingClientRect()` entre le calque et
+`.field` (désormais identiques) puis par capture d'écran.
+
+Le même trio d'attributs (`data-taille-max`, `data-taille-max-lisible`,
+`<p class="form-avertissement" data-avertissement-taille hidden>`), déjà
+posé sur `galerie.php`/`galerie-club.php`, a été étendu aux cinq points de
+dépôt qui en étaient encore dépourvus — `js/main.js` n'a nécessité aucun
+changement, son bloc « Dépôt de fichiers » étant déjà générique à tout
+`input[type="file"]` portant ces attributs :
+- `espace/documents.php` (`#documents`, plusieurs fichiers à la fois,
+  `TAILLE_MAX_OCTETS`, 8 Mo) ;
+- `espace/blog.php` (`#image`, photo de couverture à l'ajout d'un article,
+  `TAILLE_MAX_OCTETS`) ;
+- `espace/blog-article.php` (`#image`, même champ à la modification) ;
+- `espace/sorties-a-venir.php`, sur les **deux** formulaires photo : celui
+  d'ajout d'une sortie (`#photo`) et celui de modification, répété une fois
+  par sortie affichée (`#photo-{id}`, dans `<details class="sortie-modifier">`).
+
+Vérifié hors ligne (PHP+SQLite intégré, Playwright) sur les sept points de
+dépôt : avertissement masqué avant sélection, affiché et couvrant exactement
+le `.field` après un fichier trop lourd, `pointer-events: none` confirmé,
+retrait de l'avertissement après un nouveau choix valide, et un glissé-déposé
+simulé (`elementFromPoint` sur le centre du calque résout bien sur l'`<input>`
+en dessous) qui aboutit normalement malgré l'avertissement affiché par-dessus.
+Suite de 39 tests du blog rejouée sans régression sur une base neuve ; aucun
+débordement horizontal à 390px sur les quatre pages modifiées.
+
 **L'accueil affiche un bandeau dépliant « Prochaine sortie / réunion »**
 (choix explicite de l'utilisateur, 23/08/2026), posé **sur la photo du grand
 hero**, tout en haut (premier élément à l'intérieur de `.hero-full .container`,

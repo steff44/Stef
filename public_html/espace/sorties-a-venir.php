@@ -234,8 +234,11 @@ titre_page("Sorties à venir", "Les prochaines sorties du club, et qui y partici
           <textarea id="description" name="description" rows="3"></textarea>
         </div>
         <div class="field">
-          <label for="photo">Photo (facultatif — JPEG, PNG, WebP ou GIF, recadrée automatiquement en carré <?= TAILLE_PHOTO_SORTIE ?>×<?= TAILLE_PHOTO_SORTIE ?>)</label>
-          <input type="file" id="photo" name="photo" accept="image/*">
+          <label for="photo">Photo (facultatif — JPEG, PNG, WebP ou GIF, recadrée automatiquement en carré <?= TAILLE_PHOTO_SORTIE ?>×<?= TAILLE_PHOTO_SORTIE ?>, <?= taille_lisible(TAILLE_MAX_OCTETS) ?> maximum)</label>
+          <input type="file" id="photo" name="photo" accept="image/*"
+                 data-taille-max="<?= TAILLE_MAX_OCTETS ?>"
+                 data-taille-max-lisible="<?= e(taille_lisible(TAILLE_MAX_OCTETS)) ?>">
+          <p class="form-avertissement" data-avertissement-taille hidden></p>
         </div>
         <label class="case-a-cocher">
           <input type="checkbox" name="covoiturage" value="1">
@@ -340,8 +343,11 @@ titre_page("Sorties à venir", "Les prochaines sorties du club, et qui y partici
                       <textarea id="description-<?= (int) $sortie['id'] ?>" name="description" rows="3"><?= e((string) $sortie['description']) ?></textarea>
                     </div>
                     <div class="field">
-                      <label for="photo-<?= (int) $sortie['id'] ?>">Photo (facultatif — <?= $sortie['photo'] ? 'laissez vide pour garder la photo actuelle, ou remplacez-la' : 'recadrée automatiquement en carré ' . TAILLE_PHOTO_SORTIE . '×' . TAILLE_PHOTO_SORTIE ?>)</label>
-                      <input type="file" id="photo-<?= (int) $sortie['id'] ?>" name="photo" accept="image/*">
+                      <label for="photo-<?= (int) $sortie['id'] ?>">Photo (facultatif — <?= $sortie['photo'] ? 'laissez vide pour garder la photo actuelle, ou remplacez-la' : 'recadrée automatiquement en carré ' . TAILLE_PHOTO_SORTIE . '×' . TAILLE_PHOTO_SORTIE ?>, <?= taille_lisible(TAILLE_MAX_OCTETS) ?> maximum)</label>
+                      <input type="file" id="photo-<?= (int) $sortie['id'] ?>" name="photo" accept="image/*"
+                             data-taille-max="<?= TAILLE_MAX_OCTETS ?>"
+                             data-taille-max-lisible="<?= e(taille_lisible(TAILLE_MAX_OCTETS)) ?>">
+                      <p class="form-avertissement" data-avertissement-taille hidden></p>
                     </div>
                     <label class="case-a-cocher">
                       <input type="checkbox" name="covoiturage" value="1" <?= $sortie['covoiturage'] ? 'checked' : '' ?>>

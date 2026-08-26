@@ -1101,6 +1101,9 @@ button.lien-retour {
 }
 .field {
   margin-bottom: 20px;
+  /* Support l'avertissement de taille en surimpression (.form-avertissement,
+     voir plus bas) — sans effet sur les champs qui n'en ont pas. */
+  position: relative;
 }
 .field label {
   display: block;
@@ -1141,11 +1144,35 @@ button.lien-retour {
   border-radius: var(--radius-btn);
 }
 /* Avertissement immédiat si un fichier dépasse la taille maximale (choix
-   explicite de l'utilisateur, 26/08/2026), avant même l'envoi au serveur. */
+   explicite de l'utilisateur, 26/08/2026), avant même l'envoi au serveur.
+   En surimpression sur le champ entier — pas un simple texte en dessous
+   (choix explicite de l'utilisateur, second changement le même jour) :
+   position:absolute couvre tout .field (label et input compris), là où
+   l'adhérent a tenté de charger le fichier. pointer-events:none laisse les
+   clics et le glissé-déposé passer à travers jusqu'au champ en dessous,
+   pour réessayer aussitôt avec un autre fichier sans avoir à faire
+   disparaître l'avertissement au préalable. */
 .form-avertissement {
-  font-size: 0.85rem;
+  position: absolute;
+  inset: 0;
+  /* Sans ce reset, la marge par défaut du navigateur sur <p> (~1em, en
+     haut et en bas) réduit la boîte vers l'intérieur malgré inset:0,
+     laissant l'étiquette et le texte d'aide visibles sous les bords du
+     champ au lieu d'être couverts. */
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 10px 14px;
+  background: rgba(127, 29, 29, 0.94);
   color: #fecaca;
-  margin-top: 10px;
+  border-radius: var(--radius-btn);
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.4;
+  pointer-events: none;
+  z-index: 5;
 }
 
 /* Œil pour afficher/masquer un mot de passe (posé par js/main.js sur

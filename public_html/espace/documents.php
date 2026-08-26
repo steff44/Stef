@@ -168,11 +168,14 @@ titre_page("Documents du club", "Comptes rendus, statuts, bulletins et ressource
         </div>
         <div class="field">
           <label for="documents">Fichiers (PDF, Word, Excel, OpenDocument, texte ou image — <?= taille_lisible(TAILLE_MAX_OCTETS) ?> maximum chacun)</label>
-          <input type="file" id="documents" name="documents[]" multiple required>
+          <input type="file" id="documents" name="documents[]" multiple required
+                 data-taille-max="<?= TAILLE_MAX_OCTETS ?>"
+                 data-taille-max-lisible="<?= e(taille_lisible(TAILLE_MAX_OCTETS)) ?>">
           <p class="form-note">
             Plusieurs fichiers peuvent être sélectionnés d'un coup : le titre de chaque
             document reprend alors le nom de son fichier, sans l'extension.
           </p>
+          <p class="form-avertissement" data-avertissement-taille hidden></p>
         </div>
         <button type="submit" class="btn btn-primary">Déposer</button>
       </form>
