@@ -163,8 +163,11 @@ titre_page($article['titre'], "", true);
                 <p class="form-note">Laissez une ligne vide entre deux paragraphes. Entourez un mot de ** pour le mettre en gras.</p>
               </div>
               <div class="field">
-                <label for="image">Photo de couverture (facultatif — <?= $article['image'] ? 'laissez vide pour garder la photo actuelle, ou remplacez-la' : 'JPEG, PNG, WebP ou GIF' ?>)</label>
-                <input type="file" id="image" name="image" accept="image/*">
+                <label for="image">Photo de couverture (facultatif — <?= $article['image'] ? 'laissez vide pour garder la photo actuelle, ou remplacez-la' : 'JPEG, PNG, WebP ou GIF' ?>, <?= taille_lisible(TAILLE_MAX_OCTETS) ?> maximum)</label>
+                <input type="file" id="image" name="image" accept="image/*"
+                       data-taille-max="<?= TAILLE_MAX_OCTETS ?>"
+                       data-taille-max-lisible="<?= e(taille_lisible(TAILLE_MAX_OCTETS)) ?>">
+                <p class="form-avertissement" data-avertissement-taille hidden></p>
               </div>
               <button type="submit" class="btn btn-primary" style="margin-top:16px;">Enregistrer les modifications</button>
             </form>
