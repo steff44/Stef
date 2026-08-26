@@ -6,6 +6,12 @@
  * PUBLIQUES une fois en ligne — reprises sur la page publique galerie.html
  * (choix explicite de l'utilisateur, 20/08/2026). Tout adhérent peut
  * déposer ; seul l'auteur ou un responsable peut supprimer.
+ *
+ * Présentation calquée sur la page publique galerie.html (choix explicite
+ * de l'utilisateur, 26/08/2026) : bandeau .gallery-hero, pastilles de
+ * filtre par thème et bouton Diaporama juste au-dessus de la grille — voir
+ * js/main.js (bloc « Agrandissement + diaporama ») pour le câblage
+ * générique partagé avec la page publique et galerie.php.
  */
 
 declare(strict_types=1);
@@ -65,6 +71,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $categorie_id,
                     $adherent['id'],
                 ]);
+                // Le titre reste inscrit pour la photo suivante (choix
+                // explicite de l'utilisateur, 26/08/2026) — pratique pour
+                // déposer une série sous le même titre sans le retaper.
+                $_SESSION['dernier_titre_galerie_club'] = $titre;
                 definir_message('succes', "Photo ajoutée à la Galerie du Club, dans « {$categories[$categorie_id]} ». Elle apparaît aussi sur la page Galerie, ouverte à tous.");
             }
         }
@@ -99,8 +109,22 @@ foreach ($photos as $photo) {
 }
 
 debut_page("Galerie du Club", 'galerie-club');
-titre_page("Galerie du Club", "Déposez vos photos et classez-les par catégorie — elles apparaissent aussi sur la page Galerie, ouverte à tous.");
 ?>
+<section class="gallery-hero">
+  <div class="container">
+    <h1>Galerie du Club</h1>
+    <p>Déposez vos photos et classez-les par catégorie — elles apparaissent aussi sur la page Galerie, ouverte à tous.</p>
+
+    <?php if ($categories): ?>
+      <div class="theme-filters" data-filtres-galerie aria-label="Filtrer par thème">
+        <button type="button" class="theme-filter is-active" data-categorie="">Toutes</button>
+        <?php foreach ($categories as $id_filtre => $nom_filtre): ?>
+          <button type="button" class="theme-filter" data-categorie="<?= $id_filtre ?>"><?= e($nom_filtre) ?></button>
+        <?php endforeach; ?>
+      </div>
+    <?php endif; ?>
+  </div>
+</section>
 <section class="section"><div class="container">
   <?php afficher_message(); ?>
 
@@ -111,7 +135,8 @@ titre_page("Galerie du Club", "Déposez vos photos et classez-les par catégorie
         <?= champ_csrf() ?>
         <div class="field">
           <label for="titre">Titre</label>
-          <input type="text" id="titre" name="titre" required maxlength="190">
+          <input type="text" id="titre" name="titre" required maxlength="190"
+                 value="<?= e($_SESSION['dernier_titre_galerie_club'] ?? '') ?>">
         </div>
         <div class="field">
           <label for="categorie_id">Catégorie</label>
@@ -148,6 +173,13 @@ titre_page("Galerie du Club", "Déposez vos photos et classez-les par catégorie
     </div>
   <?php endif; ?>
 
+  <div class="diaporama-bar">
+    <button type="button" class="diaporama-trigger" data-start-diaporama>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
+      Diaporama
+    </button>
+  </div>
+
   <?php if (!$photos): ?>
     <div class="empty-state" style="margin-top:28px;">
       <p>Aucune photo pour l'instant. Soyez le premier à en déposer une !</p>
@@ -155,7 +187,7 @@ titre_page("Galerie du Club", "Déposez vos photos et classez-les par catégorie
   <?php else: ?>
     <?php foreach ($categories as $categorie_id => $nom_categorie): ?>
       <?php if (empty($groupes[$categorie_id])) continue; ?>
-      <div class="groupe-galerie">
+      <div class="groupe-galerie" data-categorie-id="<?= $categorie_id ?>">
         <h2><?= e($nom_categorie) ?></h2>
         <div class="photo-grid">
           <?php foreach ($groupes[$categorie_id] as $photo): ?>
@@ -166,7 +198,7 @@ titre_page("Galerie du Club", "Déposez vos photos et classez-les par catégorie
     <?php endforeach; ?>
 
     <?php if ($sans_categorie): ?>
-      <div class="groupe-galerie">
+      <div class="groupe-galerie" data-categorie-id="">
         <h2>Sans catégorie</h2>
         <div class="photo-grid">
           <?php foreach ($sans_categorie as $photo): ?>
@@ -180,6 +212,7 @@ titre_page("Galerie du Club", "Déposez vos photos et classez-les par catégorie
 
 <div class="lightbox" data-lightbox role="dialog" aria-modal="true" aria-label="Photo en grand format">
   <button class="lightbox-close" aria-label="Fermer">✕</button>
+  <button class="lightbox-diaporama" aria-label="Lancer le diaporama">▶</button>
   <button class="lightbox-prev" aria-label="Photo précédente">‹</button>
   <button class="lightbox-next" aria-label="Photo suivante">›</button>
   <div class="lightbox-content">

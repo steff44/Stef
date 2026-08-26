@@ -611,10 +611,10 @@ fonctions reflètent maintenant l'état sur le bouton
 (`reglerBoutonDiaporama()`), donc le diaporama s'affiche bien comme
 arrêté quand on clique sur une flèche ou qu'on ferme la lightbox.
 Générique : présent dans le HTML de la lightbox d'`index.html`,
-`galerie.html` et `expo-2026.html` ; `js/main.js` ne câble rien si le
-bouton est absent, ce qui laisse `espace/galerie.php` et
-`espace/galerie-club.php` inchangées (elles ont leur propre
-implémentation d'agrandissement, séparée).
+`galerie.html`, `expo-2026.html` et (depuis le 26/08/2026, voir plus bas)
+`espace/galerie-club.php` ; `js/main.js` ne câble rien si le bouton est
+absent, ce qui laisse `espace/galerie.php` sans ce bouton (pas de
+diaporama sur la Galerie privée, hors scope de ce changement).
 
 **La photo agrandie s'affiche ENTIÈRE, jamais recadrée** (24/08/2026,
 signalé par l'utilisateur : les photos verticales — celles d'Annie sur
@@ -826,6 +826,70 @@ Pour activer cette section, un responsable doit (une seule fois, sur
    `CET_IDENTIFIANT` : c'est `google_drive_dossier_id`.
 7. Sur le serveur (hPanel → Gestionnaire de fichiers), ouvrir
    `public_html/espace/inc/config.local.php` et y coller les deux valeurs.
+
+**La Galerie du Club (`espace/galerie-club.php`) reprend la présentation de
+la page publique `galerie.html`** (choix explicite de l'utilisateur,
+26/08/2026 — clarifié par deux questions, l'utilisateur ayant d'abord
+demandé « identique à la page galerie » sans préciser laquelle : la
+Galerie privée, déjà quasi identique en présentation, ou la page publique,
+plus riche). `titre_page()` (le bandeau simple partagé par le reste de
+l'espace) est remplacé par un vrai `<section class="gallery-hero">`
+(titre, sous-titre, pastilles de filtre par thème) — même classes CSS que
+`galerie.html`, aucune nouvelle règle nécessaire. Contrairement à la page
+publique (qui charge ses photos par `fetch` depuis `infos-galerie-club.php`
+et reconstruit ses cartes en JavaScript), les photos ici sont déjà rendues
+côté serveur, groupées par catégorie dans des `<div class="groupe-galerie
+data-categorie-id="…">` : une pastille de filtre ne fait donc qu'afficher/
+masquer ces blocs déjà présents dans le DOM (`[hidden]`, voir plus bas),
+sans nouvel appel réseau. Un bouton **Diaporama** (même icône et bouton
+`.diaporama-trigger`/`.lightbox-diaporama` que la page publique) est posé
+juste au-dessus de la grille de photos. La Galerie privée (`galerie.php`)
+n'a reçu aucun de ces trois éléments (bandeau, filtres, diaporama) — elle
+garde son bandeau `titre_page()` simple, hors du périmètre demandé.
+
+Pour porter le diaporama sur une page dont les cartes sont rendues côté
+serveur, le bloc générique de `js/main.js` qui gérait jusque-là
+l'agrandissement au clic sur `espace/galerie.php` et `galerie-club.php`
+(fonctions `afficher()`/`ouvrir()`/`fermer()` propres, séparées du système
+des pages publiques) a été réécrit pour réutiliser directement
+`openLightbox()`/`renderLightbox()`/`startDiaporama()`, déjà en place pour
+`index.html`/`galerie.html`/`expo-2026.html` — une carte de l'espace
+(`espace/inc/photo-carte.php`) porte déjà `data-titre`/`data-description`/
+`data-meta`/`data-image` ; ces attributs sont recomposés en objet `photo`
+compatible (`meta` devient `membreNom`, `theme` reste vide) plutôt que de
+dupliquer la logique d'ouverture/fermeture/navigation. Bénéfice
+secondaire : ce partage a aussi corrigé un double-câblage invisible
+jusque-là (les deux systèmes posaient chacun leurs propres écouteurs sur
+les mêmes boutons Fermer/Précédent/Suivant de la lightbox, l'un d'eux
+levant une exception JS silencieuse à chaque clic, sans conséquence
+visible puisque l'autre système gérait correctement l'affichage). Seules
+les cartes **visibles** (`carte.offsetParent !== null`) comptent pour la
+navigation et le diaporama : un groupe masqué par le filtre de thème ne
+doit apparaître ni dans le diaporama ni dans les flèches précédent/
+suivant.
+
+**Le bouton Diaporama de `galerie.html` est passé de « Lancer le
+diaporama » à « Diaporama », et déplacé juste au-dessus de la grille de
+photos** (choix explicite de l'utilisateur, 26/08/2026 — il vivait jusque-là
+dans `.gallery-hero`, loin au-dessus, sous les pastilles de filtre). Un
+nouveau conteneur `.diaporama-bar` (centré, `margin-bottom: 24px`) enveloppe
+le bouton dans le `<section class="section">` qui contient `.photo-grid`,
+juste avant elle — même bouton `.diaporama-trigger`/`data-start-diaporama`,
+seul son emplacement et son texte changent. `espace/galerie-club.php`
+reprend ce même `.diaporama-bar` (voir plus haut).
+
+**Le titre reste inscrit d'une photo à l'autre, dans la Galerie privée et
+la Galerie du Club** (choix explicite de l'utilisateur, 26/08/2026 —
+pratique pour déposer une série de photos sous le même titre sans le
+retaper à chaque fois). Le dernier titre envoyé avec succès est gardé en
+session (`$_SESSION['dernier_titre_galerie_privee']` /
+`$_SESSION['dernier_titre_galerie_club']`, deux clés séparées puisque ce
+sont deux formulaires distincts) et pré-rempli dans le champ `value=` à
+l'affichage suivant du formulaire. Seul le titre est concerné — catégorie,
+nom affiché et note repartent à vide à chaque fois, comme avant. Rien n'est
+mémorisé en cas d'échec (mauvais format de fichier, catégorie invalide) :
+seul un dépôt réussi met à jour la session, pour ne jamais réafficher un
+titre qui aurait échoué à la place d'un titre valide précédent.
 
 **L'accueil affiche un bandeau dépliant « Prochaine sortie / réunion »**
 (choix explicite de l'utilisateur, 23/08/2026), posé **sur la photo du grand
