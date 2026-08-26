@@ -1131,6 +1131,22 @@ button.lien-retour {
   color: var(--text-muted);
   margin-top: 14px;
 }
+/* Repère visuel pendant un glissé-déposé de fichier (choix explicite de
+   l'utilisateur, 26/08/2026) : la zone de dépôt couvre tout le .field, pas
+   seulement le petit bouton natif "Choisir des fichiers" — voir js/main.js,
+   bloc "Dépôt de fichiers". */
+.field--survole {
+  outline: 2px dashed var(--accent-3);
+  outline-offset: 4px;
+  border-radius: var(--radius-btn);
+}
+/* Avertissement immédiat si un fichier dépasse la taille maximale (choix
+   explicite de l'utilisateur, 26/08/2026), avant même l'envoi au serveur. */
+.form-avertissement {
+  font-size: 0.85rem;
+  color: #fecaca;
+  margin-top: 10px;
+}
 
 /* Œil pour afficher/masquer un mot de passe (posé par js/main.js sur
    chaque input[type="password"], quel que soit le formulaire). */

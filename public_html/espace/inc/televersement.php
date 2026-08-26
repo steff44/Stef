@@ -22,8 +22,9 @@ const TAILLE_MAX_OCTETS = 8388608; // 8 Mo
 // Plafond plus strict pour les photos déposées par les adhérents (Galerie
 // privée, Galerie du Club) — choix explicite de l'utilisateur, 21/08/2026 :
 // contrairement aux documents et aux photos de sortie, qui gardent le
-// plafond général ci-dessus.
-const TAILLE_MAX_PHOTO_ADHERENT = 614400; // 600 Ko
+// plafond général ci-dessus. Relevé de 600 Ko à 1000 Ko le 26/08/2026, à la
+// demande explicite de l'utilisateur.
+const TAILLE_MAX_PHOTO_ADHERENT = 1024000; // 1000 Ko
 
 /* Types acceptés, et l'extension qu'on leur donne. */
 const IMAGES_ACCEPTEES = [
