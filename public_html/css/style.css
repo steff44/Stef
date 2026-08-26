@@ -1174,6 +1174,32 @@ button.lien-retour {
   pointer-events: none;
   z-index: 5;
 }
+/* Croix de fermeture (choix explicite de l'utilisateur, 26/08/2026) : seul
+   élément de l'avertissement à reprendre pointer-events:auto, pour rester
+   cliquable malgré le pointer-events:none du calque parent — le clic ferme
+   l'avertissement (avertissement.hidden = true, dans js/main.js) sans
+   déclencher le champ de fichier en dessous. */
+.form-avertissement-fermer {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fecaca;
+  font-size: 1.05rem;
+  line-height: 1;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.form-avertissement-fermer:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
 
 /* Œil pour afficher/masquer un mot de passe (posé par js/main.js sur
    chaque input[type="password"], quel que soit le formulaire). */
