@@ -27,6 +27,8 @@ public_html/          ← racine du site, déployée telle quelle
   evenements.html     ← redirection vers espace/agenda.php (ne pas supprimer)
   membres.html        ← redirection vers espace/le-club.php (ne pas supprimer)
   contact.html
+  mentions-legales.html ← mentions légales (éditeur, hébergeur, droit d'auteur/droit à l'image)
+  confidentialite.html  ← politique de confidentialité (RGPD)
   connexion.html      ← redirection vers espace/connexion.php (ne pas supprimer)
   infos-club.php      ← API publique en lecture seule (coordonnées du club, voir plus bas)
   infos-galerie-club.php ← API publique en lecture seule (photos de la Galerie du Club, voir plus bas)
@@ -1675,6 +1677,59 @@ faut regarder.
   (les trois pavés s'empilent proprement), menu mobile toujours
   fonctionnel, et suite de 39 tests du blog rejouée sans régression sur un
   jeu de données neuf.
+
+## Mentions légales et politique de confidentialité
+
+**`mentions-legales.html` et `confidentialite.html`** (choix explicite de
+l'utilisateur, 26/08/2026) sont deux pages statiques indépendantes, sur le
+modèle de `contact.html` (même en-tête, même pied de page, bandeau
+`.cta-section cta-section--reduit` réduit, contenu en prose dans
+`.blog-contenu` réutilisé tel quel — aucune nouvelle règle CSS n'a été
+nécessaire). Coordonnées de l'association fournies par l'utilisateur :
+Focal Club Turballais, RNA W443010828, 10 rue de la Fontaine, 44420 La
+Turballe. L'e-mail et le téléphone de contact reprennent les mêmes
+`data-contenu="email"`/`data-contenu="telephone"` déjà utilisés ailleurs sur
+le site : ces deux pages restent donc à jour automatiquement si un
+responsable change les coordonnées du club depuis `parametres.php`, sans
+qu'il soit besoin d'y toucher.
+
+**Le directeur de la publication n'est pas nommé** : la page renvoie
+génériquement au « président en exercice » plutôt que d'inventer un nom —
+à compléter par l'utilisateur si elle souhaite y faire figurer un nom
+précis. **L'hébergeur (Hostinger International Ltd., 61 Lordou Vironos
+Street, 6023 Larnaca, Chypre)** est l'adresse habituellement publiée par
+Hostinger sur ce type de mentions légales, mais n'a pas été vérifiée en
+direct depuis ce dépôt (domaine externe, hors de la liste des domaines
+autorisés depuis ce sandbox) : à confirmer auprès des mentions légales
+officielles de Hostinger avant publication si l'utilisateur veut être
+certaine qu'elle n'a pas changé.
+
+`mentions-legales.html` couvre : éditeur du site, directeur de publication,
+hébergement, propriété intellectuelle, **droit d'auteur et droit à l'image
+des photographies** (spécifique à un club photo : chaque photo appartient à
+son auteur-adhérent qui en autorise la publication dans le cadre du club ;
+toute personne reconnaissable sur une photo peut en demander le retrait),
+liens hypertextes, droit applicable.
+
+`confidentialite.html` couvre les obligations RGPD : responsable du
+traitement, données collectées (formulaire de contact, inscription à
+l'espace adhérents, dépôts de photos/documents, cookie de session),
+finalités et base légale, destinataires, durée de conservation, sécurité
+(mots de passe hachés, HTTPS), cookies (session uniquement, dispensé de
+consentement), droits RGPD et adresse de la CNIL, renvoi vers la rubrique
+droit à l'image des mentions légales.
+
+Liens ajoutés dans la liste « Liens rapides » du pied de page des quatre
+pages statiques principales (`index.html`, `galerie.html`,
+`expo-2026.html`, `contact.html`) — même liste déjà documentée plus haut,
+donc pas de nouvelle CSS. Le pied de page minimal des pages de l'espace
+adhérents (`espace/inc/page.php`, volontairement réduit à la ligne de
+copyright — voir plus haut) reçoit en plus une courte ligne « Mentions
+légales · Confidentialité » avec une couleur de lien explicite
+(`--accent-3`, soulignée) : sans elle, ces liens se seraient fondus dans le
+texte gris de `.footer-bottom` (même piège que celui déjà rencontré et
+corrigé sur les liens du blog, voir plus haut) puisque `.footer-bottom`
+n'a pas de couleur de lien dédiée à la différence de `.footer-links`.
 
 ## Conventions
 
