@@ -80,9 +80,11 @@
         page — empêche aussi le navigateur de quitter la page pour afficher
         le fichier si le dépôt rate malgré tout la zone.
      2. Avertissement immédiat si un fichier dépasse la taille maximale
-        (input[data-taille-max], posé par galerie.php et galerie-club.php) :
+        (input[data-taille-max], posé sur tout point de dépôt du site) :
         vérifié dès la sélection ou le dépôt, avant tout envoi au serveur —
-        qui reste la vérification qui fait foi, ce n'est qu'un confort. */
+        qui reste la vérification qui fait foi, ce n'est qu'un confort. En
+        surimpression sur le champ entier, avec une croix pour le fermer
+        sans avoir à choisir un autre fichier. */
   (function () {
     function estDepotDeFichiers(e) {
       return !!(e.dataTransfer && Array.from(e.dataTransfer.types || []).indexOf("Files") !== -1);
@@ -125,20 +127,35 @@
       const avertissement = zone.querySelector("[data-avertissement-taille]");
       if (!tailleMax || !avertissement) return;
 
+      // Texte et croix de fermeture, construits une seule fois : la croix
+      // permet de fermer l'avertissement sans avoir à choisir un autre
+      // fichier (choix explicite de l'utilisateur, 26/08/2026).
+      const texte = document.createElement("span");
+      avertissement.appendChild(texte);
+      const fermer = document.createElement("button");
+      fermer.type = "button";
+      fermer.className = "form-avertissement-fermer";
+      fermer.setAttribute("aria-label", "Fermer l'avertissement");
+      fermer.textContent = "×";
+      fermer.addEventListener("click", function () {
+        avertissement.hidden = true;
+      });
+      avertissement.appendChild(fermer);
+
       champ.addEventListener("change", function () {
         const tropLourds = Array.from(champ.files).filter(function (fichier) {
           return fichier.size > tailleMax;
         });
         if (!tropLourds.length) {
           avertissement.hidden = true;
-          avertissement.textContent = "";
+          texte.textContent = "";
           return;
         }
         const pluriel = tropLourds.length > 1;
         const noms = tropLourds
           .map(function (fichier) { return "« " + fichier.name + " »"; })
           .join(", ");
-        avertissement.textContent =
+        texte.textContent =
           (pluriel ? "Ces photos dépassent " : "Cette photo dépasse ") +
           (champ.dataset.tailleMaxLisible || "la taille maximale") +
           (pluriel ? " et ne seront pas envoyées : " : " et ne sera pas envoyée : ") +

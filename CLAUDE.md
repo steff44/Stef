@@ -1037,6 +1037,26 @@ en dessous) qui aboutit normalement malgré l'avertissement affiché par-dessus.
 Suite de 39 tests du blog rejouée sans régression sur une base neuve ; aucun
 débordement horizontal à 390px sur les quatre pages modifiées.
 
+**Cet avertissement porte une croix pour le fermer** (choix explicite de
+l'utilisateur, 26/08/2026, même jour) : un bouton `.form-avertissement-fermer`
+(cercle semi-transparent, `×`) en haut à droite du calque. Contrairement au
+reste de l'avertissement (`pointer-events: none`, pour laisser passer clics et
+glissé-déposé jusqu'au champ en dessous), la croix reprend `pointer-events:
+auto` — c'est le seul élément cliquable du calque, et cliquer dessus se
+contente de masquer l'avertissement (`avertissement.hidden = true`) sans
+toucher au fichier déjà sélectionné dans le champ. `js/main.js` construit le
+texte et la croix une seule fois par champ (un `<span>` pour le texte, un
+`<button>` pour la croix, tous deux ajoutés au `<p class="form-avertissement">`
+vide posé par chaque page) : seul le texte du `<span>` est mis à jour à
+chaque sélection, la croix reste en place. Générique comme le reste du
+dispositif — aucune page n'a eu besoin d'être modifiée, seuls `js/main.js` et
+`css/style.css` ont changé. Vérifié hors ligne : la croix est cliquable
+malgré le calque parent en `pointer-events: none`, la fermeture ne vide pas
+le champ fichier, une nouvelle sélection trop lourde derrière rouvre bien
+l'avertissement avec une croix de nouveau fonctionnelle, aucun chevauchement
+avec le texte à 390px de large, suite de 39 tests du blog rejouée sans
+régression.
+
 **L'accueil affiche un bandeau dépliant « Prochaine sortie / réunion »**
 (choix explicite de l'utilisateur, 23/08/2026), posé **sur la photo du grand
 hero**, tout en haut (premier élément à l'intérieur de `.hero-full .container`,
