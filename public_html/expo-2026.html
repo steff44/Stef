@@ -3,144 +3,35 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Expo 2026 — Focal Club Turballais</title>
-<meta name="description" content="Les photos de l'exposition 2026 du Focal Club Turballais, dossier par dossier, adhérent par adhérent.">
+<title>Nos Sorties — Focal Club Turballais</title>
+<meta name="description" content="Les albums photo des sorties du Focal Club Turballais.">
+<!--
+  « Expo 2026 » n'est plus une page à elle seule : c'est devenu un album
+  parmi d'autres sur « Nos Sorties » (choix explicite de l'utilisateur,
+  27/08/2026), qui regroupe une sortie par album pour éviter une page
+  unique interminable. Cette page est conservée en redirection : elle reste
+  l'adresse connue des anciens liens et favoris, et le déploiement n'efface
+  jamais de fichier sur le serveur — la remplacer était donc plus sûr que la
+  supprimer. Voir aussi evenements.html, membres.html et connexion.html, qui
+  suivent le même principe.
+-->
+<meta http-equiv="refresh" content="0; url=nos-sorties.html">
+<link rel="canonical" href="nos-sorties.html">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%23a855f7%22/></svg>">
-<link rel="stylesheet" href="css/style.css?v=202608261030">
+<link rel="stylesheet" href="css/style.css?v=202608271230">
 </head>
 <body>
-<a class="skip-link" href="#main">Aller au contenu</a>
-
-<header class="site-header">
-  <nav class="nav" aria-label="Navigation principale">
-    <a class="logo" href="index.html"><img class="logo-mark" src="images/logo-icone.png" alt=""><span class="logo-text">Focal Club<br>Turballais</span></a>
-    <button class="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Ouvrir le menu">
-      <span></span>
-    </button>
-    <ul class="nav-links" id="nav-links">
-      <li><a href="index.html">Accueil</a></li>
-      <li><a href="galerie.html">Galerie</a></li>
-      <li><a href="expo-2026.html" aria-current="page">Expo 2026</a></li>
-      <li><a href="espace/blog.php">Blog</a></li>
-      <li class="nav-dropdown">
-        <button type="button" class="nav-dropdown-trigger" aria-expanded="false">
-          Agenda
-          <svg class="nav-dropdown-caret" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
-        </button>
-        <ul class="nav-dropdown-menu">
-          <li><a href="espace/agenda.php">Agenda des sorties</a></li>
-          <li><a href="espace/sorties-a-venir.php">Sorties à venir</a></li>
-        </ul>
-      </li>
-      <li><a href="espace/le-club.php">Le Club</a></li>
-      <li><a href="contact.html"><span class="nav-deux-lignes">Nous Contacter<br>S'inscrire</span></a></li>
-      <li class="nav-dropdown">
-        <button type="button" class="nav-dropdown-trigger" aria-expanded="false">
-          Espace Adhérent
-          <svg class="nav-dropdown-caret" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
-        </button>
-        <ul class="nav-dropdown-menu">
-          <li><a href="espace/connexion.php">Connexion</a></li>
-          <li><a href="espace/inscription.php">S'inscrire</a></li>
-        </ul>
-      </li>
-    </ul>
-  </nav>
-</header>
-
-<main id="main" data-expo-page>
-  <section class="gallery-hero">
-    <div class="container">
-      <h1>Expo 2026</h1>
-      <p>Les photos de nos adhérents, dossier par dossier. Cliquez sur un dossier pour découvrir ses photos.</p>
-    </div>
-  </section>
-
+<main id="main">
   <section class="section">
     <div class="container">
-      <p class="gallery-empty" data-expo-chargement>Chargement des dossiers…</p>
-      <p class="gallery-empty" data-expo-vide hidden>Aucune photo pour le moment.</p>
-
-      <div class="photo-grid" data-expo-dossiers></div>
-
-      <div data-expo-vue-photos hidden>
-        <div class="expo-barre">
-          <button type="button" class="lien-retour" data-expo-retour>← Retour aux dossiers</button>
-          <h2 class="expo-titre-adherent" data-expo-titre-adherent></h2>
-        </div>
-        <div class="photo-grid" data-expo-photos></div>
+      <div class="form-card" style="max-width:440px;margin:80px auto;text-align:center;">
+        <h1 style="font-family:var(--font-heading);font-size:1.4rem;margin:0 0 14px;">Nos Sorties</h1>
+        <p style="color:var(--text-muted);margin:0 0 24px;">Redirection vers les albums de nos sorties…</p>
+        <a class="btn btn-primary" href="nos-sorties.html">Continuer</a>
       </div>
     </div>
   </section>
 </main>
-
-<footer class="site-footer">
-  <div class="container">
-    <div class="footer-grid footer-grid-3">
-      <div>
-        <a class="logo" href="index.html"><img class="logo-mark" src="images/logo-icone.png" alt=""><span class="logo-text">Focal Club<br>Turballais</span></a>
-        <p data-contenu="presentation">Passionnés de photographie, nous partageons notre amour de l'image à travers des sorties, des expositions et des moments de convivialité.</p>
-        <div class="social-row" aria-label="Réseaux sociaux">
-          <a href="#" aria-label="Facebook" class="social-fb">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M22 12a10 10 0 1 0-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.5h-1.2c-1.2 0-1.6.8-1.6 1.6V12h2.8l-.4 2.9h-2.4v7A10 10 0 0 0 22 12Z"/></svg>
-          </a>
-          <a href="#" aria-label="Instagram" class="social-ig">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="white" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg>
-          </a>
-          <a href="#" aria-label="Twitter" class="social-tw">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M22 5.9c-.7.3-1.5.6-2.3.7.8-.5 1.5-1.3 1.8-2.3-.8.5-1.7.8-2.6 1a4.1 4.1 0 0 0-7 3.7A11.6 11.6 0 0 1 3.4 4.6a4.1 4.1 0 0 0 1.3 5.5c-.7 0-1.3-.2-1.9-.5v.1c0 2 1.4 3.6 3.3 4a4.1 4.1 0 0 1-1.9.1 4.1 4.1 0 0 0 3.8 2.9A8.3 8.3 0 0 1 2 18.4a11.6 11.6 0 0 0 6.3 1.9c7.5 0 11.7-6.3 11.7-11.7v-.5c.8-.6 1.5-1.3 2-2.2Z"/></svg>
-          </a>
-        </div>
-      </div>
-      <div class="footer-contact">
-        <h4>Contact</h4>
-        <ul class="footer-contact-list">
-          <li data-contenu="email">cooky44.sl@gmail.com</li>
-          <li data-contenu="telephone">06 17 11 77 65</li>
-          <li data-contenu="nom_lieu">Foyer des Vignes</li>
-        </ul>
-      </div>
-      <div class="footer-links">
-        <div>
-          <h4>Liens rapides</h4>
-          <ul>
-            <li><a href="index.html">Accueil</a></li>
-            <li><a href="galerie.html">Galerie</a></li>
-            <li><a href="expo-2026.html">Expo 2026</a></li>
-            <li><a href="espace/blog.php">Blog</a></li>
-            <li><a href="espace/agenda.php">Agenda</a></li>
-            <li><a href="espace/le-club.php">Le Club</a></li>
-            <li><a href="contact.html">Nous Contacter</a></li>
-            <li><a href="espace/connexion.php">Connexion</a></li>
-            <li><a href="mentions-legales.html">Mentions légales</a></li>
-            <li><a href="confidentialite.html">Confidentialité</a></li>
-          </ul>
-        </div>
-      </div>
-    </div>
-    <p class="footer-bottom">© 2026 Focal Club Turballais. Tous droits réservés.</p>
-  </div>
-</footer>
-
-<div class="lightbox" data-lightbox role="dialog" aria-modal="true" aria-label="Photo en grand format">
-  <button class="lightbox-close" aria-label="Fermer">✕</button>
-  <button class="lightbox-prev" aria-label="Photo précédente">‹</button>
-  <button class="lightbox-next" aria-label="Photo suivante">›</button>
-  <div class="lightbox-content">
-    <button type="button" class="diaporama-trigger lightbox-diaporama" aria-label="Lancer le diaporama">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
-      Diaporama
-    </button>
-    <div class="lightbox-frame"></div>
-    <div class="lightbox-caption">
-      <strong class="lightbox-title"></strong>
-      <span class="lightbox-meta"></span>
-      <p class="lightbox-description" hidden></p>
-    </div>
-  </div>
-</div>
-
-<script src="js/data.js?v=202608260935"></script>
-<script src="js/main.js?v=202608271230"></script>
+<script>location.replace("nos-sorties.html");</script>
 </body>
 </html>

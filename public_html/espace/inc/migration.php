@@ -412,6 +412,25 @@ function appliquer_migrations(PDO $pdo): void
     }
 
     try {
+        // Albums de « Nos Sorties » (choix explicite de l'utilisateur,
+        // 27/08/2026) : un album = une sortie du club = un dossier Google
+        // Drive. Volontairement NON semée : c'est à l'utilisatrice de créer
+        // ses albums (« Expo 2026 », « Croisière Penbron »…) depuis Réglages
+        // du site, avec l'identifiant de dossier Drive de chacun.
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS albums_sorties (
+                id            INT AUTO_INCREMENT PRIMARY KEY,
+                nom           VARCHAR(120) NOT NULL,
+                dossier_drive VARCHAR(190) NOT NULL,
+                ordre         INT          NOT NULL DEFAULT 0
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+    } catch (PDOException $e) {
+        error_log('Espace adhérents — migration albums_sorties : ' . $e->getMessage());
+        $reussi = false;
+    }
+
+    try {
         // Semé une seule fois : si aucune réunion de ce titre n'existe déjà
         // (première migration après l'ajout de ce semis, ou responsable qui
         // a tout supprimé), on ne réintroduit jamais la série.
@@ -462,7 +481,8 @@ function signature_schema(): string
         'categories_galerie_v3' . '||' .
         'reunion_hebdomadaire_v1' . '||' .
         'categories_blog_v1' . '||' .
-        'articles_blog_v1'
+        'articles_blog_v1' . '||' .
+        'albums_sorties_v1'
     );
 }
 

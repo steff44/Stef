@@ -20,6 +20,7 @@ public_html/espace/test.sqlite
 # Témoin de mise à niveau du schéma, écrit par le serveur.
 public_html/espace/inc/.schema-a-jour
 
-# Cache de la liste des photos Google Drive, écrit par le serveur (voir
-# infos-expo-2026.php) — se régénère tout seul, rien à versionner.
-public_html/espace/inc/.cache-expo-2026.json
+# Cache des albums et de leurs photos Google Drive, écrit par le serveur
+# (voir infos-albums.php) — un fichier par album, plus un pour la liste ;
+# se régénèrent tout seuls, rien à versionner.
+public_html/espace/inc/.cache-albums-*.json

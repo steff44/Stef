@@ -1778,6 +1778,64 @@ button.lien-retour {
   margin-top: 20px;
 }
 
+/* Albums de « Nos Sorties » (parametres.php, 27/08/2026) : contrairement aux
+   catégories qui n'ont qu'un nom, un album porte deux champs (nom + dossier
+   Google Drive). Une ligne flex champ+bouton comme .reglage-forme-nom serait
+   trop serrée : chaque album est donc un petit bloc empilé, avec ses deux
+   champs étiquetés puis ses boutons. */
+.reglage-album {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 16px 0;
+  border-top: 1px solid var(--border);
+}
+.reglage-album--nouveau {
+  border-top-style: dashed;
+}
+.reglage-album-champs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+.reglage-album-champs label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 200px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+.reglage-album-champs input[type="text"] {
+  min-width: 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 12px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+.reglage-album-champs input[type="text"]:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+@media (max-width: 520px) {
+  .reglage-album,
+  .reglage-album-champs {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .reglage-album-champs label {
+    min-width: 0;
+  }
+}
+
 .liste-documents {
   list-style: none;
   margin: 0;

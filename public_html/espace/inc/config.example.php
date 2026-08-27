@@ -24,11 +24,16 @@ return [
     'utilisateur'  => 'UTILISATEUR_DE_LA_BASE',
     'mot_de_passe' => 'MOT_DE_PASSE_DE_LA_BASE',
 
-    // Facultatif — voir infos-expo-2026.php : page « Expo 2026 », qui
-    // affiche les photos conservées sur Google Drive (un dossier par
-    // adhérent) sans les héberger sur ce serveur. Laisser tel quel
-    // (chaînes vides) désactive simplement cette page. Voir
-    // CLAUDE.md pour la procédure complète de création de la clé.
+    // Facultatif — voir infos-albums.php : page « Nos Sorties », qui affiche
+    // les photos conservées sur Google Drive (un album par sortie, un
+    // dossier par adhérent à l'intérieur) sans les héberger sur ce serveur.
+    // Laisser vide désactive simplement cette page. Voir CLAUDE.md pour la
+    // procédure complète de création de la clé.
+    //
+    // Seule la clé API vit ici : c'est un secret, il n'a rien à faire en
+    // base ni dans une interface web. Les dossiers Drive, eux, se règlent
+    // album par album depuis « Réglages du site » (depuis le 27/08/2026 —
+    // l'ancien réglage unique 'google_drive_dossier_id' a disparu avec la
+    // page « Expo 2026 », et n'est plus lu s'il traîne encore ici).
     'google_drive_cle_api'     => '',
-    'google_drive_dossier_id'  => '',
 ];
