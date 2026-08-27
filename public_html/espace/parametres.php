@@ -21,6 +21,7 @@ require_once __DIR__ . '/inc/page.php';
 require_once __DIR__ . '/inc/documents_categories.php';
 require_once __DIR__ . '/inc/galerie_categories.php';
 require_once __DIR__ . '/inc/blog.php';
+require_once __DIR__ . '/inc/albums.php';
 
 exige_administrateur();
 $pdo = base_de_donnees();
@@ -150,6 +151,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $pdo->prepare('DELETE FROM categories_blog WHERE id = ?')->execute([$id]);
                 definir_message('succes', "Catégorie supprimée.");
             }
+
+        // Albums de « Nos Sorties » : deux champs (nom + dossier Drive),
+        // contrairement aux catégories qui n'ont qu'un nom. L'identifiant de
+        // dossier est validé ici pour ne jamais laisser entrer autre chose
+        // que des caractères d'identifiant Drive — infos-albums.php l'insère
+        // dans une clause `q` envoyée à l'API Google.
+        } elseif (in_array($action, ['ajouter_album', 'modifier_album'], true)) {
+            $dossier = trim((string) ($_POST['dossier_drive'] ?? ''));
+            // Colle aussi bien un identifiant seul qu'une URL de dossier
+            // complète (drive.google.com/drive/folders/ID) : on en extrait
+            // l'identifiant, plus simple que d'exiger un copier-coller précis.
+            if (preg_match('#/folders/([A-Za-z0-9_-]+)#', $dossier, $trouve) === 1) {
+                $dossier = $trouve[1];
+            }
+
+            if ($nom === '') {
+                definir_message('erreur', "Le nom de l'album ne peut pas être vide.");
+            } elseif (preg_match('/^[A-Za-z0-9_-]+$/', $dossier) !== 1) {
+                definir_message('erreur', "Identifiant de dossier Google Drive invalide. Collez l'adresse du dossier, ou seulement la partie après « /folders/ ».");
+            } elseif ($action === 'ajouter_album') {
+                $ordre = (int) $pdo->query('SELECT COALESCE(MAX(ordre), -1) FROM albums_sorties')->fetchColumn() + 1;
+                $pdo->prepare('INSERT INTO albums_sorties (nom, dossier_drive, ordre) VALUES (?, ?, ?)')
+                    ->execute([$nom, $dossier, $ordre]);
+                definir_message('succes', "Album « {$nom} » ajouté.");
+            } else {
+                $pdo->prepare('UPDATE albums_sorties SET nom = ?, dossier_drive = ? WHERE id = ?')
+                    ->execute([$nom, $dossier, $id]);
+                definir_message('succes', "Album « {$nom} » modifié.");
+            }
+
+        } elseif ($action === 'supprimer_album') {
+            // Rien à vérifier avant : les photos vivent sur Google Drive,
+            // supprimer l'album ne retire que son entrée du site.
+            $pdo->prepare('DELETE FROM albums_sorties WHERE id = ?')->execute([$id]);
+            definir_message('succes', "Album supprimé. Les photos restent sur Google Drive.");
         }
 
         header('Location: parametres.php');
@@ -208,6 +244,7 @@ foreach ($requete->fetchAll() as $ligne) {
 $rubriques           = rubriques_documents($pdo);
 $categories_galerie  = categories_galerie($pdo);
 $categories_blog     = categories_blog($pdo);
+$albums              = albums_sorties($pdo);
 
 debut_page("Réglages du site", 'parametres');
 titre_page(
@@ -423,6 +460,56 @@ titre_page(
     </ul>
   </div>
   </div>
+  </div>
+
+  <div class="form-card reglage-rubriques" style="margin-top:32px;">
+    <h2 style="font-family:var(--font-heading);font-size:1.2rem;margin:0 0 6px;">Albums de « Nos Sorties »</h2>
+    <p class="form-note" style="margin-top:0;margin-bottom:20px;">
+      Chaque album correspond à une sortie du club et s'affiche sur la page publique
+      « Nos Sorties ». Les photos restent sur Google Drive : indiquez ici l'adresse du
+      dossier Drive de la sortie, qui doit contenir <strong>un sous-dossier par
+      adhérent</strong> et être partagé en « Tous les utilisateurs disposant du lien ».
+      Supprimer un album ne supprime aucune photo sur Drive.
+    </p>
+
+    <?php foreach ($albums as $album_id => $album): ?>
+      <div class="reglage-album">
+        <form method="post" class="reglage-album-champs">
+          <?= champ_csrf() ?>
+          <input type="hidden" name="action" value="modifier_album">
+          <input type="hidden" name="id" value="<?= $album_id ?>">
+          <label>Nom de l'album
+            <input type="text" name="nom" value="<?= e($album['nom']) ?>" maxlength="120" required>
+          </label>
+          <label>Dossier Google Drive
+            <input type="text" name="dossier_drive" value="<?= e($album['dossier_drive']) ?>" maxlength="190" required>
+          </label>
+          <button type="submit" class="btn btn-ghost">Enregistrer</button>
+        </form>
+        <form method="post"
+              onsubmit="return confirm('Supprimer l\'album « <?= e(addslashes($album['nom'])) ?> » ? Les photos restent sur Google Drive.');">
+          <?= champ_csrf() ?>
+          <input type="hidden" name="action" value="supprimer_album">
+          <input type="hidden" name="id" value="<?= $album_id ?>">
+          <button type="submit" class="lien-danger">Supprimer</button>
+        </form>
+      </div>
+    <?php endforeach; ?>
+
+    <div class="reglage-album reglage-album--nouveau">
+      <form method="post" class="reglage-album-champs">
+        <?= champ_csrf() ?>
+        <input type="hidden" name="action" value="ajouter_album">
+        <label>Nom de l'album
+          <input type="text" name="nom" maxlength="120" required placeholder="Croisière Penbron">
+        </label>
+        <label>Dossier Google Drive
+          <input type="text" name="dossier_drive" maxlength="190" required
+                 placeholder="https://drive.google.com/drive/folders/…">
+        </label>
+        <button type="submit" class="btn btn-primary">Ajouter cet album</button>
+      </form>
+    </div>
   </div>
 </div></section>
 <?php

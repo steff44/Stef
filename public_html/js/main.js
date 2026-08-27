@@ -529,34 +529,63 @@
     return card;
   }
 
-  /* ---------- Page « Expo 2026 » : dossiers par adhérent ----------
-     Choix explicite de l'utilisateur, 24/08/2026 : les photos Google Drive
-     ne sont plus une section de galerie.html, mais leur propre page. Un
-     dossier Drive = un adhérent ; sa carte porte la miniature de sa
-     première photo. Au clic, la grille des dossiers laisse place à celle de
-     ses photos (bascule de vue, pas de navigation : rien à recharger,
-     l'appel à infos-expo-2026.php n'a lieu qu'une fois). Au clic sur une
-     photo, la lightbox partagée s'ouvre, avec son bouton de diaporama.
-     infos-expo-2026.php renvoie [] si la clé API/le dossier ne sont pas
-     encore réglés dans config.local.php, ou en cas d'échec de l'appel
-     (hors ligne, préversion GitHub Pages qui ne peut pas exécuter PHP) :
-     la page affiche alors son message « aucune photo », jamais d'erreur. */
+  /* ---------- Page « Nos Sorties » : albums → adhérents → photos ----------
+     Choix explicite de l'utilisateur, 27/08/2026 : la page « Expo 2026 »
+     (24/08/2026, un seul dossier Drive figé dans config.local.php) devient
+     « Nos Sorties », qui regroupe UN ALBUM PAR SORTIE — Expo 2026,
+     Croisière Penbron, Fête de la mer… — pour éviter une page unique
+     interminable. Les albums se créent depuis Réglages du site (table
+     `albums_sorties`), jamais dans le code.
+
+     Trois niveaux dans la même page, sans navigation ni rechargement :
+       1. la grille des albums (vignette = une photo de l'album) ;
+       2. au clic, les dossiers d'adhérents de cet album (un appel réseau
+          par album, la première fois seulement — ensuite mis en cache ici) ;
+       3. au clic, les photos de cet adhérent, avec la lightbox partagée et
+          son bouton de diaporama.
+     infos-albums.php renvoie une liste vide si aucun album n'est créé, si la
+     clé API n'est pas réglée dans config.local.php, ou en cas d'échec de
+     l'appel (hors ligne, préversion GitHub Pages qui ne peut pas exécuter
+     PHP) : la page affiche alors son message « aucun album », jamais
+     d'erreur. */
   (function () {
     const page = document.querySelector("[data-expo-page]");
     if (!page) return;
 
+    const grilleAlbums = page.querySelector("[data-expo-albums]");
+    const vueDossiers = page.querySelector("[data-expo-vue-dossiers]");
     const grilleDossiers = page.querySelector("[data-expo-dossiers]");
     const vuePhotos = page.querySelector("[data-expo-vue-photos]");
     const grillePhotos = page.querySelector("[data-expo-photos]");
     const titrePhotos = page.querySelector("[data-expo-titre-adherent]");
     const retour = page.querySelector("[data-expo-retour]");
+    const retourAlbums = page.querySelector("[data-expo-retour-albums]");
     const vide = page.querySelector("[data-expo-vide]");
     const chargement = page.querySelector("[data-expo-chargement]");
-    if (!grilleDossiers || !vuePhotos || !grillePhotos) return;
+    const titre = page.querySelector("[data-expo-titre]");
+    const accroche = page.querySelector("[data-expo-accroche]");
+    if (!grilleAlbums || !vueDossiers || !grilleDossiers || !vuePhotos || !grillePhotos) return;
+
+    const TITRE_PAR_DEFAUT = titre ? titre.textContent : "";
+    const ACCROCHE_PAR_DEFAUT = accroche ? accroche.textContent : "";
+
+    // Contenu déjà chargé, par identifiant d'album : rouvrir un album déjà
+    // visité ne redemande rien au serveur.
+    const albumsCharges = {};
+
+    function montrerAlbums() {
+      vuePhotos.hidden = true;
+      vueDossiers.hidden = true;
+      grilleAlbums.hidden = false;
+      grillePhotos.innerHTML = "";
+      if (titre) titre.textContent = TITRE_PAR_DEFAUT;
+      if (accroche) accroche.textContent = ACCROCHE_PAR_DEFAUT;
+    }
 
     function montrerDossiers() {
       vuePhotos.hidden = true;
-      grilleDossiers.hidden = false;
+      grilleAlbums.hidden = true;
+      vueDossiers.hidden = false;
       grillePhotos.innerHTML = "";
     }
 
@@ -592,47 +621,108 @@
         grillePhotos.appendChild(buildPhotoCard(photo, 0, adherent.nom, 0, photos, true));
       });
 
-      grilleDossiers.hidden = true;
+      vueDossiers.hidden = true;
       vuePhotos.hidden = false;
       vuePhotos.scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
-    /* Carte de dossier : même habillage que .photo-card (vignette de la
-       première photo, légende en incrustation), mais son clic ouvre le
-       dossier au lieu de la lightbox. */
-    function construireCarteDossier(adherent) {
+    /* Carte cliquable : même habillage que .photo-card (vignette en fond,
+       légende en incrustation), mais son clic descend d'un niveau au lieu
+       d'ouvrir la lightbox. Sert aussi bien aux albums qu'aux dossiers
+       d'adhérents — seules la vignette, la légende et l'action changent. */
+    function construireCarte(vignette, titreCarte, meta, libelle, action) {
       const carte = document.createElement("button");
       carte.type = "button";
       carte.className = "photo-card";
-      carte.setAttribute("aria-label", "Voir les photos de " + adherent.nom);
-      const nombre = adherent.photos.length;
+      carte.setAttribute("aria-label", libelle);
       carte.innerHTML =
         '<span class="photo-frame" style="background:' +
-        photoBackground({ image: adherent.vignette, hue: 0, index: 0 }) +
+        photoBackground({ image: vignette, hue: 0, index: 0 }) +
         '"></span>' +
         '<span class="photo-caption">' +
-        '<span class="title">' + echapperHtml(adherent.nom) + "</span>" +
-        '<span class="meta">' + nombre + (nombre > 1 ? " photos" : " photo") + "</span>" +
+        '<span class="title">' + echapperHtml(titreCarte) + "</span>" +
+        '<span class="meta">' + echapperHtml(meta) + "</span>" +
         "</span>";
-      carte.addEventListener("click", function () {
-        ouvrirDossier(adherent);
-      });
+      carte.addEventListener("click", action);
       return carte;
     }
 
-    if (retour) retour.addEventListener("click", montrerDossiers);
+    function peindreDossiers(album, adherents) {
+      grilleDossiers.innerHTML = "";
+      adherents.forEach(function (adherent) {
+        if (!adherent || !Array.isArray(adherent.photos) || !adherent.photos.length) return;
+        const nombre = adherent.photos.length;
+        grilleDossiers.appendChild(
+          construireCarte(
+            adherent.vignette,
+            adherent.nom,
+            nombre + (nombre > 1 ? " photos" : " photo"),
+            "Voir les photos de " + adherent.nom,
+            function () { ouvrirDossier(adherent); }
+          )
+        );
+      });
 
-    fetch("infos-expo-2026.php")
+      if (titre) titre.textContent = album.nom;
+      if (accroche) {
+        accroche.textContent = adherents.length
+          ? "Cliquez sur un dossier pour découvrir ses photos."
+          : "Aucune photo dans cet album pour le moment.";
+      }
+      montrerDossiers();
+      vueDossiers.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function ouvrirAlbum(album) {
+      // Déjà chargé : on rebascule sans redemander au serveur.
+      if (albumsCharges[album.id]) {
+        peindreDossiers(album, albumsCharges[album.id]);
+        return;
+      }
+
+      if (chargement) {
+        chargement.textContent = "Chargement de l'album…";
+        chargement.hidden = false;
+      }
+
+      fetch("infos-albums.php?album=" + encodeURIComponent(album.id))
+        .then(function (reponse) { return reponse.ok ? reponse.json() : Promise.reject(); })
+        .then(function (donnees) {
+          if (chargement) chargement.hidden = true;
+          const adherents = donnees && Array.isArray(donnees.dossiers) ? donnees.dossiers : [];
+          albumsCharges[album.id] = adherents;
+          peindreDossiers(album, adherents);
+        })
+        .catch(function () {
+          if (chargement) chargement.hidden = true;
+          peindreDossiers(album, []);
+        });
+    }
+
+    if (retour) retour.addEventListener("click", montrerDossiers);
+    if (retourAlbums) retourAlbums.addEventListener("click", montrerAlbums);
+
+    fetch("infos-albums.php")
       .then(function (reponse) { return reponse.ok ? reponse.json() : Promise.reject(); })
-      .then(function (adherents) {
+      .then(function (donnees) {
         if (chargement) chargement.hidden = true;
-        if (!Array.isArray(adherents) || !adherents.length) {
+        const albums = donnees && Array.isArray(donnees.albums) ? donnees.albums : [];
+        if (!albums.length) {
           if (vide) vide.hidden = false;
           return;
         }
-        adherents.forEach(function (adherent) {
-          if (!adherent || !Array.isArray(adherent.photos) || !adherent.photos.length) return;
-          grilleDossiers.appendChild(construireCarteDossier(adherent));
+        albums.forEach(function (album) {
+          if (!album || !album.nom) return;
+          const nombre = album.dossiers || 0;
+          grilleAlbums.appendChild(
+            construireCarte(
+              album.vignette,
+              album.nom,
+              nombre ? nombre + (nombre > 1 ? " participants" : " participant") : "",
+              "Voir l'album " + album.nom,
+              function () { ouvrirAlbum(album); }
+            )
+          );
         });
       })
       .catch(function () {

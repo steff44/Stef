@@ -178,6 +178,22 @@ CREATE TABLE IF NOT EXISTS articles_blog (
   CONSTRAINT fk_article_adherent  FOREIGN KEY (depose_par)   REFERENCES adherents(id)       ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Albums de la page publique « Nos Sorties » (nos-sorties.html) : un album
+-- = une sortie du club (« Expo 2026 », « Croisière Penbron », « Fête de la
+-- mer »…), dont les photos vivent sur Google Drive plutôt que sur ce
+-- serveur. `dossier_drive` est l'identifiant du dossier Drive de l'album
+-- (celui de son URL : drive.google.com/drive/folders/CET_IDENTIFIANT), qui
+-- contient un sous-dossier par adhérent. Créés et modifiés par un
+-- responsable depuis parametres.php — volontairement non semés, c'est au
+-- club de créer ses propres albums. Voir inc/albums.php et
+-- infos-albums.php.
+CREATE TABLE IF NOT EXISTS albums_sorties (
+  id            INT AUTO_INCREMENT PRIMARY KEY,
+  nom           VARCHAR(120) NOT NULL,
+  dossier_drive VARCHAR(190) NOT NULL,
+  ordre         INT          NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Coordonnées du club (adresse, téléphone, e-mail, présentation), modifiables
 -- par un responsable dans parametres.php et affichées sur les pages publiques
 -- statiques via infos-club.php. Les valeurs par défaut sont posées par

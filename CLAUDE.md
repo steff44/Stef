@@ -23,7 +23,8 @@ Club Turballais**, club photo associatif de La Turballe (44).
 public_html/          ← racine du site, déployée telle quelle
   index.html          ← accueil : hero photo, cartes, galerie, CTA
   galerie.html        ← galerie publique : vraies photos de la Galerie du Club
-  expo-2026.html      ← Expo 2026 : photos Google Drive, un dossier par adhérent (voir plus bas)
+  nos-sorties.html    ← Nos Sorties : albums Google Drive, un album par sortie (voir plus bas)
+  expo-2026.html      ← redirection vers nos-sorties.html (ne pas supprimer)
   evenements.html     ← redirection vers espace/agenda.php (ne pas supprimer)
   membres.html        ← redirection vers espace/le-club.php (ne pas supprimer)
   contact.html
@@ -32,7 +33,7 @@ public_html/          ← racine du site, déployée telle quelle
   connexion.html      ← redirection vers espace/connexion.php (ne pas supprimer)
   infos-club.php      ← API publique en lecture seule (coordonnées du club, voir plus bas)
   infos-galerie-club.php ← API publique en lecture seule (photos de la Galerie du Club, voir plus bas)
-  infos-expo-2026.php ← API publique en lecture seule (photos Google Drive par adhérent, voir plus bas)
+  infos-albums.php    ← API publique en lecture seule (albums Google Drive par sortie, voir plus bas)
   infos-prochaine-sortie.php ← API publique en lecture seule (bandeau de l'accueil, voir plus bas)
   espace/             ← ESPACE ADHÉRENTS en PHP + MySQL (voir plus bas)
   css/style.css       ← tout le style, variables CSS en haut du fichier
@@ -55,19 +56,19 @@ public_html/          ← racine du site, déployée telle quelle
   `@media (max-width: 760px) { :root { ... } }` en haut de `style.css` —
   tout le reste du CSS lit déjà ces variables, rien d'autre à toucher.
 - Ordre du menu (imposé par l'utilisateur, à ne pas réordonner) :
-  Accueil, Galerie, **Expo 2026**, **Blog**, Agenda, Le Club, Nous Contacter,
-  Espace Adhérent. « Expo 2026 » (`expo-2026.html`, les photos Google Drive
+  Accueil, Galerie, **Nos Sorties**, **Blog**, Agenda, Le Club, Nous Contacter,
+  Espace Adhérent. « Nos Sorties » (`nos-sorties.html`, les albums Google Drive
   groupées par adhérent — voir plus bas) a été ajouté le 24/08/2026 entre
   Galerie et Agenda ; « Blog » (`espace/blog.php`, voir plus bas) a été
-  ajouté le 25/08/2026, **entre Expo 2026 et Agenda** — l'utilisateur avait
-  demandé « entre Galerie et Agenda », mais Expo 2026 occupait déjà cette
+  ajouté le 25/08/2026, **entre Nos Sorties et Agenda** — l'utilisateur avait
+  demandé « entre Galerie et Agenda », mais cette page occupait déjà cette
   place depuis la veille : question posée explicitement à l'utilisateur, qui
   a choisi cette position plutôt que juste après Galerie. Ce sont les deux
   seuls changements de cet ordre depuis le début du projet.
   **Agenda et Espace Adhérent sont tous deux des menus déroulants**
-  (`.nav-dropdown`, voir juste en dessous) ; Galerie, Expo 2026, Blog, Le
+  (`.nav-dropdown`, voir juste en dessous) ; Galerie, Nos Sorties, Blog, Le
   Club et Nous Contacter sont des liens simples. Le menu est écrit en dur
-  dans chaque page statique (`index.html`, `galerie.html`, `expo-2026.html`,
+  dans chaque page statique (`index.html`, `galerie.html`, `nos-sorties.html`,
   `contact.html`) **et** dans `espace/inc/page.php` (`debut_page()`, avec un
   préfixe `../`) : y ajouter une entrée demande donc **cinq** modifications
   identiques, plus la liste « Liens rapides » du pied de page des pages
@@ -618,59 +619,110 @@ couleur si jamais une photo sans champ `image` réapparaissait. Toute
 catégorie de photo inconnue de `CLUB_DATA.themes` s'ajoute automatiquement
 aux filtres.
 
-**Les photos Google Drive ont leur propre page, `expo-2026.html`
-(« Expo 2026 »)**, entre Galerie et Agenda dans le menu (choix explicite de
-l'utilisateur, 24/08/2026 — c'est le seul ajout au menu depuis l'ordre fixé
-au début du projet). Elle a d'abord vécu, du 23 au 24/08/2026, comme une
-simple section « Photos Google Drive » de `galerie.html`, alimentée par
-`infos-galerie-drive.php` : cette section et ce point d'accès **ont été
-supprimés** avec cette bascule, ne pas les réintroduire. Le principe reste
-le même — des photos conservées sur Google Drive plutôt que déposées sur
-l'hébergement Hostinger, pour ne pas l'encombrer — mais elles sont
-désormais **groupées par adhérent**, comme le dossier du club les range
-déjà (`Expo FOCAL 2026 / {Prénom} / …`).
+**Les photos Google Drive vivent sur `nos-sorties.html` (« Nos Sorties »),
+un album par sortie**, entre Galerie et Blog dans le menu. Historique en
+trois temps :
+- 23–24/08/2026 : simple section « Photos Google Drive » de `galerie.html`,
+  alimentée par `infos-galerie-drive.php` — section et point d'accès
+  **supprimés**, ne pas les réintroduire.
+- 24/08/2026 : page dédiée `expo-2026.html` (« Expo 2026 »), un seul dossier
+  Drive figé dans `config.local.php`, photos groupées par adhérent.
+- 27/08/2026 (choix explicite de l'utilisateur) : devient **« Nos Sorties »**
+  (`nos-sorties.html`), qui regroupe **un album par sortie** — Expo 2026,
+  Croisière Penbron, Fête de la mer… L'objectif énoncé était d'« éviter des
+  pages trop longues » : chaque sortie a maintenant son album plutôt que de
+  tout empiler sur une page unique. L'utilisatrice avait pensé à des
+  « catégories » dans la page Expo 2026 ; la proposition retenue va plus
+  loin — **les albums se créent depuis Réglages du site**, pas dans le code,
+  donc une nouvelle sortie ne demande plus aucun déploiement.
+  `expo-2026.html` est conservée en **redirection** vers `nos-sorties.html`
+  (même principe qu'`evenements.html`/`membres.html`), et le libellé de menu
+  « Expo 2026 » devient « Nos Sorties » (le nom a été choisi explicitement
+  par l'utilisatrice parmi trois propositions). Le principe de fond ne change
+  pas : les photos restent sur Google Drive plutôt que sur l'hébergement
+  Hostinger, pour ne pas l'encombrer.
 
-`infos-expo-2026.php` (à la racine, même principe d'autonomie
-qu'`infos-club.php`) interroge l'API Google Drive (`files.list`, clé API
-sans OAuth). Il liste d'abord les **enfants directs** du dossier racine
-configuré : chaque sous-dossier est un adhérent (un fichier posé
-directement à la racine, hors dossier, est ignoré — il n'a pas de nom
-d'adhérent à afficher). Il appelle ensuite `collecter_images_drive()` **une
-fois par adhérent** — la même fonction qu'avant, inchangée, avec toute sa
-robustesse déjà éprouvée (voir plus bas) — plutôt que d'aplatir toute
-l'arborescence en une seule liste : c'est cette frontière par dossier dont
-la page a besoin. Sortie JSON : `[{nom, vignette, photos:[{titre, image}]}]`,
-trié par nom d'adhérent, `vignette` étant simplement l'adresse de sa
-première photo. Un adhérent sans aucune photo (dossier vide, ou dossier
-inaccessible faute de partage individuel) est **absent de la liste** plutôt
-que d'y figurer avec une carte vide. Chaque photo porte son titre (nom du
-fichier sans extension) et l'adresse de sa vignette publique
-(`https://drive.google.com/thumbnail?id={id}&sz=w1000` — sert l'image
-directement depuis Google, jamais copiée sur le serveur). Résultat mis en
-cache sur disque 15 minutes (`espace/inc/.cache-expo-2026.json`, non
-versionné) pour ne pas user le quota gratuit de l'API à chaque visite ; en
-cas d'échec du **premier** appel (quota dépassé, clé invalide, panne), le
-dernier résultat connu est resservi plutôt que de vider la page.
+**Un album = une ligne de la table `albums_sorties`** (`nom`,
+`dossier_drive`, `ordre` — voir `schema.sql` et `inc/albums.php`, qui porte
+la seule fonction `albums_sorties($pdo)`, même forme que
+`categories_galerie()`). Volontairement **non semée** : c'est à
+l'utilisatrice de créer ses albums. Gestion dans `parametres.php`, pavé
+« Albums de "Nos Sorties" » en pleine largeur sous la grille des catégories
+— contrairement aux catégories (un seul champ nom), un album porte deux
+champs, d'où un bloc empilé `.reglage-album` plutôt qu'une ligne
+`.reglage-forme-nom`. Le champ « Dossier Google Drive » accepte aussi bien
+un identifiant seul qu'une **URL de dossier complète** (l'identifiant en est
+extrait par expression régulière) ; il est validé (`[A-Za-z0-9_-]+`) avant
+tout enregistrement, puisqu'il finit dans la clause `q` envoyée à l'API
+Google. Supprimer un album ne retire que son entrée du site, jamais une
+photo sur Drive — d'où l'absence de garde-fou « album non vide », contrairement
+aux catégories.
 
-Côté page, `js/main.js` détecte `[data-expo-page]` et gère deux vues dans
-la même page, sans navigation ni second appel réseau : la grille des
-dossiers (`[data-expo-dossiers]`, une `.photo-card` par adhérent, vignette
-= sa première photo, légende = son nom et son nombre de photos) et, au
-clic, la grille de ses photos (`[data-expo-vue-photos]`, avec un bouton
-« ← Retour aux dossiers » qui rebascule). Les cartes de photo passent par
-`buildPhotoCard()`, donc l'agrandissement au clic (lightbox partagée)
-fonctionne comme ailleurs sur le site. Deux réglages dans
-`espace/inc/config.local.php` (jamais commités, voir plus bas) :
-`google_drive_cle_api` et `google_drive_dossier_id` — vides par défaut
-(`config.example.php`), ce qui affiche simplement « Aucune photo pour le
-moment. », sans erreur (même message en cas d'échec de l'appel : hors
-ligne, ou préversion GitHub Pages qui ne peut pas exécuter PHP).
-**Le dossier Drive doit être partagé « Accessible à tous les
+`infos-albums.php` (à la racine, même principe d'autonomie
+qu'`infos-club.php` : connexion PDO propre, jamais `base_de_donnees()`)
+remplace `infos-expo-2026.php` (supprimé). Deux modes :
+- **sans paramètre** — la liste des albums : `{albums:[{id, nom, vignette,
+  dossiers}]}`. Volontairement économe : un appel pour lister les adhérents
+  de l'album, puis au plus `REQUETES_MAX_COUVERTURE` (4) appels pour trouver
+  **une seule** photo de couverture (`collecter_images_drive()` prend un
+  paramètre `$images_voulues` qui l'arrête dès qu'il en a assez). Faire la
+  collecte complète de chaque album ici rendrait la page d'accueil des
+  albums très lente et userait le quota gratuit pour rien. Un album mal
+  partagé ou vide reste affiché, `vignette: null` (dégradé de repli côté
+  page), plutôt que de disparaître.
+- **`?album=ID`** — le contenu d'un album : `{nom, dossiers:[{nom, vignette,
+  photos:[{titre, image, image_grande}]}]}`, exactement la structure que
+  servait `infos-expo-2026.php`. Chaque sous-dossier direct de l'album est
+  un adhérent (un fichier posé directement à la racine est ignoré, il n'a pas
+  de nom d'adhérent à afficher) ; `collecter_images_drive()` est appelée une
+  fois par adhérent, avec toute sa robustesse déjà éprouvée (voir plus bas).
+  Un adhérent sans aucune photo est **absent de la liste** plutôt que d'y
+  figurer avec une carte vide.
+
+Cache disque 15 minutes, **un fichier par mode** :
+`espace/inc/.cache-albums-liste.json` et `.cache-albums-album-{id}.json`
+(non versionnés, `.gitignore` couvre `.cache-albums-*.json`). En cas d'échec
+du **premier** appel (quota dépassé, clé invalide, panne), le dernier
+résultat connu est resservi — même expiré — plutôt que de vider la page.
+
+Côté page, `js/main.js` détecte `[data-expo-page]` et gère **trois** vues
+dans la même page, sans navigation : la grille des albums
+(`[data-expo-albums]`), au clic celle des dossiers d'adhérents
+(`[data-expo-vue-dossiers]`, bouton « ← Retour aux albums »), au clic celle
+de ses photos (`[data-expo-vue-photos]`, bouton « ← Retour aux dossiers »).
+Le contenu d'un album déjà ouvert est gardé en mémoire (`albumsCharges`) :
+y revenir ne redemande rien au serveur. Le titre et l'accroche du bandeau
+(`[data-expo-titre]`/`[data-expo-accroche]`) prennent le nom de l'album
+quand on y entre, et sont restaurés au retour. `construireCarte()` sert
+aussi bien aux albums qu'aux dossiers — seules la vignette, la légende et
+l'action changent. Les cartes de photo passent par `buildPhotoCard()`, donc
+l'agrandissement au clic (lightbox partagée) fonctionne comme ailleurs.
+
+**Un seul réglage reste dans `espace/inc/config.local.php`** (jamais
+commité) : `google_drive_cle_api`. C'est un secret, il n'a rien à faire en
+base ni dans une interface web. L'ancien `google_drive_dossier_id`, unique et
+figé, **a disparu** avec la page Expo 2026 — s'il traîne encore dans le
+`config.local.php` en ligne, il est simplement ignoré. Clé vide ou aucun
+album créé : la page affiche « Aucun album pour le moment. », sans erreur
+(même message en cas d'échec de l'appel : hors ligne, ou préversion GitHub
+Pages qui ne peut pas exécuter PHP).
+**Chaque dossier Drive d'album doit être partagé « Accessible à tous les
 utilisateurs disposant du lien »** : une clé API seule (sans OAuth) ne
 peut lire que des fichiers Drive publics, jamais un dossier resté privé.
 La requête à `files.list` inclut `supportsAllDrives`/
 `includeItemsFromAllDrives` (sans quoi un dossier vivant dans un Drive
 partagé — « Shared Drive » — resterait invisible même bien partagé).
+
+Testé hors ligne (27/08/2026) avec un **faux annuaire Drive** injecté dans
+la copie de test (`patch-infos-albums.php` remplace `recuperer_url()`, le
+domaine googleapis.com étant bloqué depuis ce sandbox) : liste des albums
+(couvertures, comptes de participants, album vide sans vignette), contenu
+d'un album, exploration des sous-dossiers, tri naturel des photos,
+navigation aux trois niveaux et retours, lightbox, redirection de
+`expo-2026.html`, et le cycle complet ajouter/renommer/supprimer un album
+depuis Réglages (URL Drive collée entière, identifiant invalide refusé).
+Aucun débordement à 390px sur les trois niveaux ni sur `parametres.php` ;
+suite de 39 tests du blog rejouée sans régression.
 
 **Le diaporama se lance depuis la photo agrandie** (choix explicite de
 l'utilisateur, 24/08/2026) : un bouton `.lightbox-diaporama` (▶ / ⏸) dans
@@ -681,7 +733,7 @@ fonctions reflètent maintenant l'état sur le bouton
 (`reglerBoutonDiaporama()`), donc le diaporama s'affiche bien comme
 arrêté quand on clique sur une flèche ou qu'on ferme la lightbox.
 Générique : présent dans le HTML de la lightbox d'`index.html`,
-`galerie.html`, `expo-2026.html` et (depuis le 26/08/2026, voir plus bas)
+`galerie.html`, `nos-sorties.html` et (depuis le 26/08/2026, voir plus bas)
 `espace/galerie-club.php` ; `js/main.js` ne câble rien si le bouton est
 absent, ce qui laisse `espace/galerie.php` sans ce bouton (pas de
 diaporama sur la Galerie privée, hors scope de ce changement).
@@ -716,7 +768,7 @@ quoi une photo large passerait sous les flèches précédente/suivante. En
 dessous de 761px, les flèches restent volontairement en surimpression sur
 les bords de la photo : réserver 2×68px sur un écran de 390px la
 réduirait beaucoup trop — c'est le comportement du site depuis toujours.
-Côté source, `infos-expo-2026.php` renvoie **deux** adresses par photo :
+Côté source, `infos-albums.php` renvoie **deux** adresses par photo :
 `image` en `sz=w1000` pour la vignette de la grille, et `image_grande` en
 `sz=w1920` pour l'agrandissement — servir 1920 partout alourdirait la
 grille, et servir 1000 partout rendrait la photo agrandie floue une fois
@@ -923,7 +975,7 @@ l'agrandissement au clic sur `espace/galerie.php` et `galerie-club.php`
 (fonctions `afficher()`/`ouvrir()`/`fermer()` propres, séparées du système
 des pages publiques) a été réécrit pour réutiliser directement
 `openLightbox()`/`renderLightbox()`/`startDiaporama()`, déjà en place pour
-`index.html`/`galerie.html`/`expo-2026.html` — une carte de l'espace
+`index.html`/`galerie.html`/`nos-sorties.html` — une carte de l'espace
 (`espace/inc/photo-carte.php`) porte déjà `data-titre`/`data-description`/
 `data-meta`/`data-image` ; ces attributs sont recomposés en objet `photo`
 compatible (`meta` devient `membreNom`, `theme` reste vide) plutôt que de
@@ -978,7 +1030,7 @@ auraient disparu au premier `textContent =`) : il bascule maintenant
 et une icône « pause » + « Pause », tout en gardant la classe
 `.is-playing` (fond en dégradé) pour l'état actif. Générique, comme avant :
 présent dans le HTML de la lightbox d'`index.html`, `galerie.html`,
-`expo-2026.html` et `espace/galerie-club.php`.
+`nos-sorties.html` et `espace/galerie-club.php`.
 
 **Dépôt de plusieurs photos à la fois, par sélection multiple ou
 glissé-déposé, dans la Galerie privée et la Galerie du Club** (choix
@@ -1669,7 +1721,7 @@ faut regarder.
   sur toutes les pages publiques et de l'espace adhérents :
   1. **Message « Aucun(e) … pour le moment » chevauchant les boutons
      flottants** (`.retour-nav`, bas-droite) sur mobile — visible sur
-     `galerie.html`, `expo-2026.html` et le même motif `.empty-state` dans
+     `galerie.html`, `nos-sorties.html` et le même motif `.empty-state` dans
      `espace/` (Sorties à venir, Galerie privée/du Club, Documents, Blog) :
      le texte centré, presque aussi large que le conteneur, passait sous la
      colonne de boutons quand il tombait en bas d'écran. Corrigé par
@@ -1761,7 +1813,7 @@ droit à l'image des mentions légales.
 
 Liens ajoutés dans la liste « Liens rapides » du pied de page des quatre
 pages statiques principales (`index.html`, `galerie.html`,
-`expo-2026.html`, `contact.html`) — même liste déjà documentée plus haut,
+`nos-sorties.html`, `contact.html`) — même liste déjà documentée plus haut,
 donc pas de nouvelle CSS. Le pied de page minimal des pages de l'espace
 adhérents (`espace/inc/page.php`, volontairement réduit à la ligne de
 copyright — voir plus haut) reçoit en plus une courte ligne « Mentions
