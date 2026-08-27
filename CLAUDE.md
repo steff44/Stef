@@ -508,6 +508,46 @@ au-dessus — pour la base déjà en ligne, qui contient déjà une catégorie
 passé à `v3` : sans ce changement, une base déjà migrée aurait ignoré ce
 correctif, le considérant à tort déjà à jour.
 
+**Ce correctif du 26/08/2026 n'était qu'une synchronisation ponctuelle, pas
+un lien permanent** — le piège s'est reproduit le 27/08/2026, signalé de
+nouveau par l'utilisateur (capture d'écran à l'appui) : elle avait renommé
+« Architecture » et « Créatif » en « Voyage » et « Sport » depuis Réglages
+du site, et la Galerie du Club (`galerie-club.php`, rendue côté serveur,
+lit `categories_galerie` à chaque affichage) montrait bien les nouveaux
+noms — mais la page publique `galerie.html` gardait « Architecture » et
+« Créatif » indéfiniment. Cause exacte : `CLUB_DATA.themes` (`js/data.js`)
+est une liste **figée au moment du déploiement** — la synchroniser une fois
+avec `CATEGORIES_GALERIE_PAR_DEFAUT` (comme le 26/08/2026) ne fait que
+repousser le problème à la prochaine fois qu'un responsable modifie une
+catégorie, puisque rien ne relie plus jamais cette liste à la table après
+coup. **Corrigé cette fois en supprimant la dépendance à une liste figée** :
+`infos-galerie-club.php` renvoie désormais `{photos: [...], categories:
+[...]}` plutôt qu'un simple tableau de photos — `categories` vient de
+`categories_galerie($pdo)` (`inc/galerie_categories.php`, requise
+directement depuis ce point d'accès autonome), la même fonction déjà
+utilisée par `galerie-club.php` et `parametres.php`. Côté page publique,
+`js/main.js` peint d'abord les pastilles à partir de `CLUB_DATA.themes`
+(inchangé, pour un premier affichage instantané et un repli hors ligne/
+préversion GitHub Pages), puis les **reconstruit entièrement**
+(`rebuildThemeFilters()`, vide `filtersRoot` et rejoue `addThemeFilter()`
+sur la vraie liste) dès que `infos-galerie-club.php` répond — au lieu de
+seulement *ajouter* les catégories des photos trouvées par-dessus la liste
+figée, comme avant, ce qui pouvait ajouter une catégorie manquante mais ne
+retirait jamais une catégorie obsolète. Toute catégorie encore vide (sans
+aucune photo) continue d'apparaître, puisque la liste vient de la table et
+non des photos elles-mêmes — l'exigence documentée plus bas
+(« CLUB_DATA.themes reste la liste des filtres... même sans aucune photo »)
+tient donc toujours, simplement portée par la vraie table plutôt qu'un
+tableau JS. Le même correctif profite à la sélection de photos récentes de
+l'accueil (`[data-highlights]`), seule autre consommatrice de ce point
+d'accès, adaptée à la nouvelle forme de réponse. Testé hors ligne (copie de
+test connectée à SQLite au lieu de MySQL, seul point d'accès autonome de la
+racine encore jamais exercé par le banc d'essai jusqu'ici) : renommage de
+catégorie simulé en base, pastilles de la page publique reconstruites sans
+« Architecture »/« Créatif » ni perdre « Voyage »/« Sport », filtre par
+catégorie et sélection de l'accueil toujours fonctionnels, suite de 39
+tests du blog rejouée sans régression.
+
 `inc/galerie_categories.php` (renommé le 21/08/2026, s'appelait
 `inc/galerie_club.php` avant que `galerie.php` ne partage aussi ses
 catégories) porte la seule fonction `categories_galerie($pdo)`. Tout

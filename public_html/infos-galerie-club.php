@@ -9,6 +9,17 @@
  * Même principe que infos-club.php : connexion à la base autonome plutôt que
  * espace/inc/db.php (dont l'échec affiche une page d'erreur HTML, inadaptée
  * ici), pour rester debout même si le reste de l'espace adhérents est cassé.
+ *
+ * Renvoie aussi la vraie liste des catégories (`categories_galerie`, la même
+ * que Réglages du site et Galerie du Club) à côté des photos — piège
+ * rencontré le 27/08/2026 : la page publique construisait ses pastilles de
+ * filtre à partir de CLUB_DATA.themes (js/data.js), une liste figée au
+ * moment du dernier déploiement. Un responsable qui renomme ou supprime une
+ * catégorie depuis Réglages voyait alors la page publique garder l'ancien
+ * nom indéfiniment (jamais mis à jour tant que personne ne retouche
+ * data.js), pendant que Galerie du Club, elle, lisait déjà la table en
+ * direct. Servir la liste ici permet à js/main.js de reconstruire ses
+ * pastilles à partir de la même source de vérité que les deux autres pages.
  */
 
 declare(strict_types=1);
@@ -21,7 +32,7 @@ header('Cache-Control: public, max-age=300');
 $chemin = __DIR__ . '/espace/inc/config.local.php';
 if (!is_file($chemin)) {
     http_response_code(503);
-    echo '[]';
+    echo json_encode(['photos' => [], 'categories' => []]);
     exit;
 }
 
@@ -42,6 +53,7 @@ try {
     // Assure que les tables existent (et leurs catégories par défaut), sans
     // dépendre d'une visite préalable d'une page de l'espace adhérents.
     require_once __DIR__ . '/espace/inc/migration.php';
+    require_once __DIR__ . '/espace/inc/galerie_categories.php';
     appliquer_migrations($pdo);
 
     $lignes = $pdo->query(
@@ -52,10 +64,12 @@ try {
            LEFT JOIN categories_galerie c ON c.id = p.categorie_id
           ORDER BY p.cree_le DESC"
     )->fetchAll();
+
+    $categories = array_values(categories_galerie($pdo));
 } catch (PDOException $e) {
     error_log('infos-galerie-club.php — base injoignable : ' . $e->getMessage());
     http_response_code(503);
-    echo '[]';
+    echo json_encode(['photos' => [], 'categories' => []]);
     exit;
 }
 
@@ -73,4 +87,7 @@ foreach ($lignes as $ligne) {
     ];
 }
 
-echo json_encode($photos, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+echo json_encode(
+    ['photos' => $photos, 'categories' => $categories],
+    JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+);
