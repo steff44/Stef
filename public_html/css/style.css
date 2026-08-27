@@ -1993,6 +1993,13 @@ button.lien-retour {
   margin: 12px 0;
   font-size: 0.92rem;
 }
+.sortie-description a {
+  color: var(--accent-3);
+  text-decoration: underline;
+}
+.sortie-description a:hover {
+  color: var(--accent);
+}
 .sortie-actions {
   display: flex;
   align-items: center;

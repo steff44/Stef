@@ -90,6 +90,16 @@ public_html/          ← racine du site, déployée telle quelle
     (l'action `modifier`, dans `sorties-a-venir.php`, relit la photo actuelle
     avant d'écraser la ligne). Uniquement sur les sorties à venir, pas sur
     les sorties passées (qui n'ont aucune action).
+    **Les adresses http(s):// tapées dans les « Précisions » d'une sortie
+    sont cliquables** (choix explicite de l'utilisateur, 27/08/2026, capture
+    d'écran à l'appui) : `texte_avec_liens_html()` (`inc/page.php`) reprend
+    la même détection de lien que `texte_riche_html()` (`inc/blog.php` — même
+    expression régulière, nouvel onglet) mais sans le gras `**...**` ni le
+    découpage en paragraphes, pour un texte court affiché tel quel plutôt
+    qu'un article long. `.sortie-description a` (`css/style.css`) rend le
+    lien reconnaissable — même piège déjà rencontré et corrigé sur le blog
+    (un `<a>` se fond sinon dans le texte, `a { color: inherit; }` étant la
+    règle générale du site).
   - Blog → `espace/blog.php` (voir « Blog du Club » plus bas), ajouté le
     25/08/2026.
   - Le Club → `espace/le-club.php` (voir « Le Club » plus bas) : **réservé
