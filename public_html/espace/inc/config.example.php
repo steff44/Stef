@@ -32,8 +32,10 @@ return [
     //
     // Seule la clé API vit ici : c'est un secret, il n'a rien à faire en
     // base ni dans une interface web. Les dossiers Drive, eux, se règlent
-    // album par album depuis « Réglages du site » (depuis le 27/08/2026 —
-    // l'ancien réglage unique 'google_drive_dossier_id' a disparu avec la
-    // page « Expo 2026 », et n'est plus lu s'il traîne encore ici).
+    // album par album depuis « Réglages du site » (depuis le 27/08/2026).
+    // L'ancien réglage unique 'google_drive_dossier_id' n'est plus utilisé
+    // par le code, mais a été lu automatiquement UNE FOIS lors de la mise à
+    // jour, pour en faire le premier album « Expo 2026 » sans intervention —
+    // sur une installation neuve, laisser cette clé absente ou vide.
     'google_drive_cle_api'     => '',
 ];

@@ -645,18 +645,34 @@ trois temps :
 **Un album = une ligne de la table `albums_sorties`** (`nom`,
 `dossier_drive`, `ordre` — voir `schema.sql` et `inc/albums.php`, qui porte
 la seule fonction `albums_sorties($pdo)`, même forme que
-`categories_galerie()`). Volontairement **non semée** : c'est à
-l'utilisatrice de créer ses albums. Gestion dans `parametres.php`, pavé
-« Albums de "Nos Sorties" » en pleine largeur sous la grille des catégories
-— contrairement aux catégories (un seul champ nom), un album porte deux
-champs, d'où un bloc empilé `.reglage-album` plutôt qu'une ligne
-`.reglage-forme-nom`. Le champ « Dossier Google Drive » accepte aussi bien
-un identifiant seul qu'une **URL de dossier complète** (l'identifiant en est
-extrait par expression régulière) ; il est validé (`[A-Za-z0-9_-]+`) avant
-tout enregistrement, puisqu'il finit dans la clause `q` envoyée à l'API
-Google. Supprimer un album ne retire que son entrée du site, jamais une
-photo sur Drive — d'où l'absence de garde-fou « album non vide », contrairement
-aux catégories.
+`categories_galerie()`). Les albums suivants sont créés à la main depuis
+`parametres.php`, pavé « Albums de "Nos Sorties" » en pleine largeur sous la
+grille des catégories — contrairement aux catégories (un seul champ nom),
+un album porte deux champs, d'où un bloc empilé `.reglage-album` plutôt
+qu'une ligne `.reglage-forme-nom`. Le champ « Dossier Google Drive » accepte
+aussi bien un identifiant seul qu'une **URL de dossier complète**
+(l'identifiant en est extrait par expression régulière) ; il est validé
+(`[A-Za-z0-9_-]+`) avant tout enregistrement, puisqu'il finit dans la clause
+`q` envoyée à l'API Google. Supprimer un album ne retire que son entrée du
+site, jamais une photo sur Drive — d'où l'absence de garde-fou
+« album non vide », contrairement aux catégories.
+
+**Le tout premier album, « Expo 2026 », est repris automatiquement** —
+revirement le jour même (27/08/2026) : l'utilisatrice avait d'abord dit
+qu'elle le recréerait elle-même depuis Réglages, puis a demandé l'inverse
+quelques échanges plus tard. `appliquer_migrations()` (`inc/migration.php`)
+lit directement `config.local.php` (le seul endroit du fichier de migration
+à le faire — les autres migrations ne touchent qu'à des colonnes) et, si
+`albums_sorties` est encore vide, reprend l'ancien réglage unique
+`google_drive_dossier_id` (celui de l'ex-page « Expo 2026 ») pour en faire
+le premier album, ordre 0. Ne se joue qu'**une seule fois** — dès qu'un
+album existe, qu'il s'appelle « Expo 2026 » ou autrement, plus aucune
+réintroduction, même si l'utilisatrice le supprime ensuite. Le témoin
+`albums_sorties_v1` de `signature_schema()` est passé à `v2` pour que cette
+reprise s'applique aussi à la base déjà en ligne, migrée une première fois
+la veille sous l'ancienne signature. Sur une base neuve sans
+`config.local.php` (ou sans ce réglage dedans), rien ne se passe — pas
+d'erreur, juste aucun album créé, comme avant.
 
 `infos-albums.php` (à la racine, même principe d'autonomie
 qu'`infos-club.php` : connexion PDO propre, jamais `base_de_donnees()`)
@@ -723,6 +739,17 @@ navigation aux trois niveaux et retours, lightbox, redirection de
 depuis Réglages (URL Drive collée entière, identifiant invalide refusé).
 Aucun débordement à 390px sur les trois niveaux ni sur `parametres.php` ;
 suite de 39 tests du blog rejouée sans régression.
+
+**La reprise automatique du premier album** a été testée séparément, trois
+scénarios avec le même faux annuaire Drive : témoin de schéma repositionné à
+la main sur l'ancienne signature (`albums_sorties_v1`) avec `albums_sorties`
+vide et `google_drive_dossier_id` renseigné → album « Expo 2026 » créé avec
+sa couverture et ses dossiers d'adhérents corrects ; même scénario mais avec
+un album déjà présent (simule une base où l'utilisatrice aurait déjà créé un
+album entre-temps) → aucun doublon, la migration se contente de ne rien
+faire ; base neuve sans `config.local.php` du tout → aucune erreur dans les
+journaux PHP, page « Aucun album pour le moment. » comme attendu. Suite de
+39 tests du blog rejouée une dernière fois sans régression.
 
 **Le diaporama se lance depuis la photo agrandie** (choix explicite de
 l'utilisateur, 24/08/2026) : un bouton `.lightbox-diaporama` (▶ / ⏸) dans
