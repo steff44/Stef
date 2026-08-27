@@ -751,6 +751,84 @@ faire ; base neuve sans `config.local.php` du tout → aucune erreur dans les
 journaux PHP, page « Aucun album pour le moment. » comme attendu. Suite de
 39 tests du blog rejouée une dernière fois sans régression.
 
+**Un album peut aussi être hébergé directement sur ce site, sans Google
+Drive** (choix explicite de l'utilisateur, 27/08/2026, même jour : « je
+voudrais aussi pouvoir intégrer de nouveaux albums qui seraient hébergés sur
+mon hébergement Hostinger… je ne veux pas mettre beaucoup de photos par
+album hébergé sur le site, si il y a beaucoup de photos ce sera par le
+cloud »). `albums_sorties` porte donc une colonne `type` (`'drive'` par
+défaut, ou `'local'`, migration ALTER + `signature_schema()` passé à
+`albums_sorties_v3`) — un album Drive fonctionne exactement comme avant ;
+un album local n'a pas de dossier Drive (`dossier_drive` reste une chaîne
+vide) et ses photos vivent dans une nouvelle table `photos_sorties` (`id`,
+`album_id`, `titre`, `description`, `nom_affiche`, `fichier`, `depose_par`,
+`cree_le` — mêmes colonnes que `photos_club`, `ON DELETE CASCADE` sur
+`album_id`), déposées par les adhérents eux-mêmes depuis une nouvelle page,
+`espace/album.php?id=…`.
+
+`espace/album.php` reprend le formulaire de dépôt de `galerie-club.php`
+(sélection multiple/glissé-déposé, `TAILLE_MAX_PHOTO_ADHERENT` — 1000 Ko,
+même plafond que la Galerie du Club et la Galerie privée, cohérent avec la
+consigne « pas beaucoup de photos »), mais sans catégorie ni filtre par
+thème — un album suffit à classer les photos, une seule liste de la plus
+récente à la plus ancienne. Titre gardé en session d'un dépôt à l'autre
+(une clé par album, `dernier_titre_album_{id}`, pour ne pas mélanger deux
+albums). Suppression d'une photo : son auteur ou un responsable seulement
+— jamais un éditeur, même règle de modération que `galerie-club.php`
+(`inc/photo-carte.php`, partagé tel quel, porte déjà cette restriction).
+Fichiers dans `espace/photos_sorties/` (fermé par `.htaccess`, comme
+`photos_club/`), servis par `telecharger.php?type=sortie_album` —
+**public**, comme `type=sortie`/`galerie_club`/`blog`.
+
+Dans `parametres.php`, le pavé « Albums de "Nos Sorties" » porte maintenant
+deux cases radio (Dossier Google Drive / Hébergé sur ce site) sur chaque
+formulaire d'album — `js/main.js` (inline, propre à cette page) masque le
+champ « Dossier Google Drive » quand « Hébergé sur ce site » est coché,
+sans quoi il resterait affiché et requis pour un album qui n'en a pas
+besoin. Supprimer un album local efface d'abord ses fichiers sur le disque
+(la suppression en cascade de `photos_sorties` ne touche que les lignes,
+jamais le disque) ; supprimer un album Drive ne touche à rien, comme avant.
+**Rebasculer un album local vers Drive est refusé tant qu'il contient
+encore des photos** — un aller-retour orphelinerait ces photos (ni
+affichables, l'album deviendrait un dossier Drive vide, ni supprimables,
+`album.php` refuse un album qui n'est plus de type local) : message
+explicite, même principe que les catégories encore utilisées un peu plus
+haut dans cette page. L'inverse (Drive vers local) reste toujours permis,
+un album Drive n'ayant jamais de photo à perdre ici.
+
+`infos-albums.php` traite les deux types côte à côte, en gardant la même
+forme de réponse pour ne rien changer au JavaScript de `nos-sorties.html` :
+un album local ajoute simplement `"type": "local"` à son entrée, et ses
+« dossiers » sont les photos de `photos_sorties` groupées par adhérent
+(`depose_par`), exactement comme un dossier Drive contiendrait les photos
+d'un adhérent. Contrairement aux albums Drive, un album local n'est
+**jamais mis en cache et ne dépend jamais de la clé API Google** — une
+simple requête SQL, sans quota à ménager — pour qu'une photo tout juste
+déposée apparaisse aussitôt sur la page publique, y compris en mode liste
+où le bloc mis en cache (protégeant le quota Drive) est ré-actualisé pour
+ses seules entrées locales avant chaque réponse. Cette ré-actualisation lit
+le type **actuel** de l'album (table `albums_sorties`), jamais celui figé
+dans le cache : un album peut avoir changé de type depuis l'écriture du
+cache (voir le refus ci-dessus pour l'unique sens qui resterait dangereux).
+Sans clé API configurée, la liste des albums n'est plus vidée comme avant
+l'introduction des albums locaux : seuls les albums Drive retombent sur une
+carte sans vignette, les albums locaux s'affichent normalement.
+
+`js/main.js` (bloc Nos Sorties) affiche un lien « Déposer des photos »
+(`[data-expo-deposer]`, dans `.expo-barre` du niveau 2 — les dossiers d'un
+album ouvert) uniquement quand l'album ouvert est de type `local`, vers
+`espace/album.php?id=…`.
+
+Testé hors ligne (27/08/2026, même jour) avec un vrai serveur PHP intégré
+branché sur SQLite : création d'un album local depuis Réglages, dépôt
+multiple, affichage immédiat en liste et en détail (y compris avec un cache
+liste déjà écrit), suppression d'une photo par son auteur, refus de
+suppression par un autre adhérent non responsable, suppression de l'album
+(fichiers + lignes effacés), refus de bascule vers Drive tant que des
+photos restent, bascule Drive → local acceptée, page `album.php` refusant
+un identifiant d'album Drive (404), et liste des albums non vidée par
+l'absence de clé API Google.
+
 **Le diaporama se lance depuis la photo agrandie** (choix explicite de
 l'utilisateur, 24/08/2026) : un bouton `.lightbox-diaporama` (▶ / ⏸) dans
 la lightbox elle-même, à côté de Fermer. Il réutilise
@@ -1557,16 +1635,17 @@ espace/
   connexion.php  deconnexion.php  inscription.php  index.php    ← tableau de bord
   galerie.php    galerie-club.php documents.php     agenda.php   annuaire.php
   blog.php       blog-article.php ← Blog du Club, page publique (voir plus haut)
+  album.php          ← dépôt de photos pour un album « Nos Sorties » hébergé sur ce site (type=local, voir plus haut)
   adherents.php      ← gestion des comptes, responsables et éditeurs
   parametres.php     ← coordonnées du club affichées sur le site public, responsables uniquement
   installation.php   ← à jouer UNE fois, se verrouille ensuite tout seul
-  telecharger.php    ← seule porte d'accès aux fichiers privés (+ types publics : sortie, galerie_club, blog)
+  telecharger.php    ← seule porte d'accès aux fichiers privés (+ types publics : sortie, galerie_club, blog, sortie_album)
   statut-connexion.php ← état de connexion en JSON, pour js/main.js sur les pages statiques
   inc/               ← code interne, fermé par .htaccess
     config.local.php ← À CRÉER À LA MAIN SUR LE SERVEUR, jamais dans Git
     config.example.php  db.php  auth.php  page.php  televersement.php
-    mail.php  blog.php  schema.sql
-  photos/  photos_club/  photos_blog/  fichiers/  ← dépôts, fermés par .htaccess
+    mail.php  blog.php  albums.php  schema.sql
+  photos/  photos_club/  photos_blog/  photos_sorties/  fichiers/  ← dépôts, fermés par .htaccess
 ```
 
 Points à ne pas casser :

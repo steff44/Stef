@@ -7,12 +7,15 @@ public_html/espace/inc/config.local.php
 public_html/espace/photos/*
 public_html/espace/fichiers/*
 public_html/espace/photos_blog/*
+public_html/espace/photos_sorties/*
 !public_html/espace/photos/.gitkeep
 !public_html/espace/fichiers/.gitkeep
 !public_html/espace/photos_blog/.gitkeep
+!public_html/espace/photos_sorties/.gitkeep
 !public_html/espace/photos/.htaccess
 !public_html/espace/fichiers/.htaccess
 !public_html/espace/photos_blog/.htaccess
+!public_html/espace/photos_sorties/.htaccess
 
 # Base de test créée hors ligne, jamais déployée.
 public_html/espace/test.sqlite
