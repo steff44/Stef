@@ -6,7 +6,7 @@
 <title>Nos Sorties — Focal Club Turballais</title>
 <meta name="description" content="Les albums photo des sorties du Focal Club Turballais, album par album, adhérent par adhérent.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%23a855f7%22/></svg>">
-<link rel="stylesheet" href="css/style.css?v=202608271230">
+<link rel="stylesheet" href="css/style.css?v=202608271500">
 </head>
 <body>
 <a class="skip-link" href="#main">Aller au contenu</a>
@@ -68,6 +68,8 @@
       <div data-expo-vue-dossiers hidden>
         <div class="expo-barre">
           <button type="button" class="lien-retour" data-expo-retour-albums>← Retour aux albums</button>
+          <!-- Visible seulement pour un album hébergé sur ce site (type=local) — masqué en dur ici, affiché par js/main.js. -->
+          <a class="btn btn-ghost" data-expo-deposer href="espace/album.php" hidden>Déposer des photos</a>
         </div>
         <div class="photo-grid" data-expo-dossiers></div>
       </div>
@@ -151,6 +153,6 @@
 </div>
 
 <script src="js/data.js?v=202608260935"></script>
-<script src="js/main.js?v=202608271230"></script>
+<script src="js/main.js?v=202608271500"></script>
 </body>
 </html>

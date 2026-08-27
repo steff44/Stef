@@ -1057,6 +1057,11 @@ a {
   gap: 16px;
   margin-bottom: 24px;
 }
+/* Lien « Déposer des photos », affiché par js/main.js seulement sur un album
+   hébergé sur ce site (type=local) — poussé à droite du bouton retour. */
+.expo-barre [data-expo-deposer] {
+  margin-left: auto;
+}
 /* .lien-retour est écrit pour un <a> ; ici c'est un <button>, il faut donc
    effacer le fond et la bordure que le navigateur lui donne par défaut. */
 button.lien-retour {
@@ -1824,6 +1829,26 @@ button.lien-retour {
 .reglage-album-champs input[type="text"]:focus {
   outline: none;
   border-color: var(--accent);
+}
+/* Sélecteur Drive/Hébergé (27/08/2026) : deux options radio sur une ligne,
+   plutôt qu'un des champs .reglage-album-champs (ni une étiquette de texte,
+   ni un input) — largeur pleine pour ne pas se retrouver coincé entre le nom
+   et le dossier Drive dans la ligne flex parente. */
+.reglage-album-type {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  flex-basis: 100%;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+.reglage-album-type label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  min-width: 0;
 }
 @media (max-width: 520px) {
   .reglage-album,

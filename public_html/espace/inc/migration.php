@@ -69,6 +69,16 @@ const COLONNES_PHOTOS_PRIVEES_ATTENDUES = [
     'categorie_id' => 'INT DEFAULT NULL',
 ];
 
+// Colonne attendue sur `albums_sorties` — deux façons de créer un album
+// (choix explicite de l'utilisateur, 27/08/2026) : 'drive' (par défaut, un
+// dossier Google Drive) ou 'local' (hébergé sur Hostinger, les adhérents
+// déposent directement leurs photos — réservé aux sorties avec peu de
+// photos, l'utilisatrice ayant explicitement écarté d'y stocker beaucoup de
+// photos). Voir photos_sorties plus bas pour la table associée au type local.
+const COLONNES_ALBUMS_ATTENDUES = [
+    'type' => "VARCHAR(10) NOT NULL DEFAULT 'drive'",
+];
+
 // Classification par défaut des documents, semée une seule fois — la
 // première fois que `rubriques_documents` est créée — par
 // appliquer_migrations() ci-dessous. Un responsable la modifie ensuite
@@ -232,6 +242,17 @@ function appliquer_migrations(PDO $pdo): void
                 $pdo->exec("ALTER TABLE photos_privees ADD COLUMN {$colonne} {$definition}");
             } catch (PDOException $e) {
                 error_log('Espace adhérents — migration photos_privees.' . $colonne . ' : ' . $e->getMessage());
+                $reussi = false;
+            }
+        }
+    }
+
+    foreach (COLONNES_ALBUMS_ATTENDUES as $colonne => $definition) {
+        if (colonne_absente($pdo, 'albums_sorties', $colonne)) {
+            try {
+                $pdo->exec("ALTER TABLE albums_sorties ADD COLUMN {$colonne} {$definition}");
+            } catch (PDOException $e) {
+                error_log('Espace adhérents — migration albums_sorties.' . $colonne . ' : ' . $e->getMessage());
                 $reussi = false;
             }
         }
@@ -454,6 +475,32 @@ function appliquer_migrations(PDO $pdo): void
     }
 
     try {
+        // Photos d'un album hébergé sur Hostinger (type='local' sur
+        // albums_sorties, voir plus haut) — déposées directement par les
+        // adhérents, sur le même principe que photos_club. `description` est
+        // reprise ici bien qu'inutilisée à la saisie initiale : elle évite un
+        // avertissement PHP dans inc/photo-carte.php, le partiel partagé par
+        // toutes les cartes de photo du site, qui lit toujours cette clé.
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS photos_sorties (
+                id          INT AUTO_INCREMENT PRIMARY KEY,
+                album_id    INT          NOT NULL,
+                titre       VARCHAR(190) NOT NULL,
+                description TEXT         DEFAULT NULL,
+                nom_affiche VARCHAR(120) DEFAULT NULL,
+                fichier     VARCHAR(190) NOT NULL,
+                depose_par  INT          DEFAULT NULL,
+                cree_le     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT fk_photo_sortie_album    FOREIGN KEY (album_id)    REFERENCES albums_sorties(id) ON DELETE CASCADE,
+                CONSTRAINT fk_photo_sortie_adherent FOREIGN KEY (depose_par)  REFERENCES adherents(id)      ON DELETE SET NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+    } catch (PDOException $e) {
+        error_log('Espace adhérents — migration photos_sorties : ' . $e->getMessage());
+        $reussi = false;
+    }
+
+    try {
         // Semé une seule fois : si aucune réunion de ce titre n'existe déjà
         // (première migration après l'ajout de ce semis, ou responsable qui
         // a tout supprimé), on ne réintroduit jamais la série.
@@ -499,13 +546,15 @@ function signature_schema(): string
         implode('|', array_keys(COLONNES_SORTIES_ATTENDUES)) . '||' .
         implode('|', array_keys(COLONNES_DOCUMENTS_ATTENDUES)) . '||' .
         implode('|', array_keys(COLONNES_PHOTOS_PRIVEES_ATTENDUES)) . '||' .
+        implode('|', array_keys(COLONNES_ALBUMS_ATTENDUES)) . '||' .
         implode('|', array_keys(PARAMETRES_PAR_DEFAUT)) . '||' .
         'rubriques_documents_v1' . '||' .
         'categories_galerie_v3' . '||' .
         'reunion_hebdomadaire_v1' . '||' .
         'categories_blog_v1' . '||' .
         'articles_blog_v1' . '||' .
-        'albums_sorties_v2'
+        'albums_sorties_v3' . '||' .
+        'photos_sorties_v1'
     );
 }
 

@@ -560,6 +560,7 @@
     const titrePhotos = page.querySelector("[data-expo-titre-adherent]");
     const retour = page.querySelector("[data-expo-retour]");
     const retourAlbums = page.querySelector("[data-expo-retour-albums]");
+    const deposer = page.querySelector("[data-expo-deposer]");
     const vide = page.querySelector("[data-expo-vide]");
     const chargement = page.querySelector("[data-expo-chargement]");
     const titre = page.querySelector("[data-expo-titre]");
@@ -649,6 +650,16 @@
 
     function peindreDossiers(album, adherents) {
       grilleDossiers.innerHTML = "";
+
+      // Un album hébergé sur ce site (type=local, choix explicite de
+      // l'utilisateur, 27/08/2026, réservé aux sorties avec peu de photos)
+      // propose un lien de dépôt direct ; un album Drive n'en a pas besoin,
+      // les photos y étant déposées par le club sur Google Drive.
+      if (deposer) {
+        deposer.hidden = album.type !== "local";
+        if (album.type === "local") deposer.href = "espace/album.php?id=" + encodeURIComponent(album.id);
+      }
+
       adherents.forEach(function (adherent) {
         if (!adherent || !Array.isArray(adherent.photos) || !adherent.photos.length) return;
         const nombre = adherent.photos.length;

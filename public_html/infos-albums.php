@@ -15,15 +15,21 @@
  *                           exactement la structure que servait
  *                           infos-expo-2026.php.
  *
- * Les albums viennent de la base (table `albums_sorties`, voir
- * inc/albums.php) ; les photos restent hébergées sur Google Drive, jamais
- * copiées sur ce serveur. La clé API Google reste, elle, un réglage global
- * de espace/inc/config.local.php ('google_drive_cle_api') : c'est un secret,
- * il n'a rien à faire en base ni dans une interface web.
- *
- * Chaque dossier Drive d'album doit être partagé en « Accessible à tous les
- * utilisateurs disposant du lien » — une clé API (sans OAuth) ne peut lire
- * que des fichiers Drive publics, jamais un dossier resté privé.
+ * Chaque album a un `type` (voir albums_sorties.type, inc/albums.php) :
+ *   - 'drive' (par défaut) : les photos restent hébergées sur Google Drive,
+ *     jamais copiées sur ce serveur. La clé API Google reste un réglage
+ *     global de espace/inc/config.local.php ('google_drive_cle_api') : c'est
+ *     un secret, il n'a rien à faire en base ni dans une interface web.
+ *     Chaque dossier Drive d'album doit être partagé en « Accessible à tous
+ *     les utilisateurs disposant du lien » — une clé API (sans OAuth) ne
+ *     peut lire que des fichiers Drive publics, jamais un dossier resté
+ *     privé.
+ *   - 'local' (choix explicite de l'utilisateur, 27/08/2026, réservé aux
+ *     sorties avec peu de photos) : les photos sont déposées directement par
+ *     les adhérents sur cet hébergement (table `photos_sorties`, voir
+ *     espace/album.php). Toujours lu en direct depuis la base, jamais mis en
+ *     cache ni soumis à la clé API — une simple requête SQL, sans quota à
+ *     ménager, contrairement à Drive.
  */
 
 declare(strict_types=1);
@@ -285,15 +291,100 @@ try {
     repondre_depuis_le_cache($cle_cache, $repli_vide);
 }
 
-// Aucun album créé, ou clé API pas encore renseignée : page simplement vide,
-// pas une erreur (même philosophie que le reste du site).
-if ($albums === [] || $cle_api === '') {
+// Aucun album créé : page simplement vide, pas une erreur (même philosophie
+// que le reste du site). Contrairement à avant l'introduction des albums
+// locaux, une clé API absente ne suffit plus à elle seule à vider la page :
+// un album local n'en a jamais eu besoin (voir plus bas).
+if ($albums === []) {
     repondre($repli_vide);
 }
 
-// Cache encore valable : on ne rappelle pas l'API à chaque visite.
+/*
+ * Contenu d'UN album local (photos_sorties, groupées par adhérent — même
+ * forme que le mode 1 pour un album Drive) : toujours lu en direct, jamais
+ * mis en cache ni conditionné à la clé API Google, pour que la photo tout
+ * juste déposée par un adhérent (espace/album.php) apparaisse aussitôt.
+ */
+function contenu_album_local(PDO $pdo, int $album_id, string $nom_album): array
+{
+    $requete = $pdo->prepare(
+        'SELECT p.id, p.titre, p.nom_affiche, p.depose_par, a.nom AS auteur
+           FROM photos_sorties p
+           LEFT JOIN adherents a ON a.id = p.depose_par
+          WHERE p.album_id = ?
+          ORDER BY p.cree_le DESC'
+    );
+    $requete->execute([$album_id]);
+
+    $groupes = [];
+    foreach ($requete->fetchAll() as $ligne) {
+        // Regroupées par adhérent (comme un sous-dossier Drive) — une clé
+        // dédiée par photo si l'auteur a été supprimé depuis (depose_par
+        // NULL), pour ne jamais mélanger deux comptes différents.
+        $cle = $ligne['depose_par'] !== null ? 'a' . $ligne['depose_par'] : 'p' . $ligne['id'];
+        if (!isset($groupes[$cle])) {
+            $groupes[$cle] = [
+                'nom'    => $ligne['nom_affiche'] ?: ($ligne['auteur'] ?: 'Adhérent retiré'),
+                'photos' => [],
+            ];
+        }
+        $groupes[$cle]['photos'][] = [
+            'titre' => $ligne['titre'],
+            // Une seule taille disponible pour une photo hébergée ici,
+            // contrairement à Drive (image/image_grande) — buildPhotoCard()
+            // et renderLightbox() (js/main.js) savent déjà retomber sur
+            // `image` quand `image_grande` est absent.
+            'image' => 'espace/telecharger.php?type=sortie_album&id=' . (int) $ligne['id'],
+        ];
+    }
+
+    $dossiers = [];
+    foreach ($groupes as $groupe) {
+        $dossiers[] = [
+            'nom'      => $groupe['nom'],
+            'vignette' => $groupe['photos'][0]['image'],
+            'photos'   => $groupe['photos'],
+        ];
+    }
+
+    return ['nom' => $nom_album, 'type' => 'local', 'dossiers' => $dossiers];
+}
+
+if ($album_demande > 0 && isset($albums[$album_demande]) && $albums[$album_demande]['type'] === 'local') {
+    repondre(contenu_album_local($pdo, $album_demande, $albums[$album_demande]['nom']));
+}
+
+// Un album précis (mode 1) et de type Drive : sans clé API, impossible d'en
+// lire quoi que ce soit — page vide comme avant l'introduction des albums
+// locaux. En mode 2 (liste), en revanche, une clé absente ne vide pas la
+// page : les albums locaux s'affichent quand même, seuls les albums Drive
+// retombent alors sur une carte sans vignette (voir plus bas).
+if ($album_demande > 0 && $cle_api === '') {
+    repondre($repli_vide);
+}
+
+// Cache encore valable : on ne rappelle pas l'API Google à chaque visite. Ce
+// cache protège le quota Drive, pas les albums locaux (voir
+// contenu_album_local() plus haut, jamais mis en cache) — en mode 1
+// (?album=ID), on n'arrive ici que pour un album Drive, donc rien de plus à
+// faire. En mode 2 (liste), le bloc mis en cache mélange les deux types :
+// les entrées locales qu'il contient sont ré-actualisées avant de répondre,
+// pour qu'une photo tout juste déposée apparaisse sans attendre 15 minutes.
 $cache = lire_cache($cle_cache);
 if ($cache !== null) {
+    if ($album_demande === 0 && isset($cache['albums']) && is_array($cache['albums'])) {
+        // Le type ACTUEL (table albums_sorties, $albums) fait foi, jamais
+        // celui figé dans le cache : un responsable peut avoir basculé un
+        // album de Drive vers local (ou l'inverse) depuis parametres.php
+        // depuis que ce cache a été écrit.
+        foreach ($cache['albums'] as &$entree_en_cache) {
+            $id_entree = $entree_en_cache['id'] ?? null;
+            if ($id_entree !== null && isset($albums[$id_entree]) && $albums[$id_entree]['type'] === 'local') {
+                $entree_en_cache = resume_album_local($pdo, $id_entree, $albums[$id_entree]['nom']);
+            }
+        }
+        unset($entree_en_cache);
+    }
     repondre($cache);
 }
 
@@ -381,23 +472,57 @@ if ($album_demande > 0) {
         ];
     }
 
-    $resultat = ['nom' => $album['nom'], 'dossiers' => $adherents];
+    $resultat = ['nom' => $album['nom'], 'type' => 'drive', 'dossiers' => $adherents];
     ecrire_cache($cle_cache, $resultat);
     repondre($resultat);
 }
 
+/* Résumé d'UN album local pour le mode liste : nombre d'adhérents ayant
+   déposé au moins une photo, et vignette de la plus récente. Toujours lu en
+   direct — même principe que contenu_album_local() plus haut, une simple
+   requête SQL n'a pas besoin d'être ménagée comme l'API Google. */
+function resume_album_local(PDO $pdo, int $id, string $nom): array
+{
+    $requete = $pdo->prepare('SELECT id, depose_par FROM photos_sorties WHERE album_id = ? ORDER BY cree_le DESC');
+    $requete->execute([$id]);
+    $lignes = $requete->fetchAll();
+
+    $participants = [];
+    foreach ($lignes as $ligne) {
+        $participants[$ligne['depose_par'] !== null ? 'a' . $ligne['depose_par'] : 'p' . $ligne['id']] = true;
+    }
+
+    return [
+        'id'       => $id,
+        'nom'      => $nom,
+        'type'     => 'local',
+        'vignette' => $lignes ? 'espace/telecharger.php?type=sortie_album&id=' . (int) $lignes[0]['id'] : null,
+        'dossiers' => count($participants),
+    ];
+}
+
 /* ---- Mode 2 : la liste des albums ----
-   Volontairement économe : un appel pour lister les adhérents de l'album,
-   puis au plus quelques appels pour trouver UNE photo de couverture. Faire
-   la collecte complète de chaque album ici rendrait la page d'accueil des
-   albums très lente et userait le quota gratuit pour rien. */
+   Volontairement économe pour les albums Drive : un appel pour lister les
+   adhérents de l'album, puis au plus quelques appels pour trouver UNE photo
+   de couverture. Faire la collecte complète de chaque album ici rendrait la
+   page d'accueil des albums très lente et userait le quota gratuit pour
+   rien. Les albums locaux, eux, passent par resume_album_local() ci-dessus
+   — une requête SQL, jamais l'API Google. */
 $liste = [];
 foreach ($albums as $id => $album) {
-    $dossiers = sous_dossiers($album['dossier_drive'], $interroger);
+    if ($album['type'] === 'local') {
+        $liste[] = resume_album_local($pdo, $id, $album['nom']);
+        continue;
+    }
+
+    // Pas de clé API : inutile de tenter l'appel (échouerait de toute façon,
+    // au prix d'un délai d'attente inutile) — même repli que ci-dessous pour
+    // un dossier mal partagé ou une API en panne.
+    $dossiers = $cle_api !== '' ? sous_dossiers($album['dossier_drive'], $interroger) : null;
     if ($dossiers === null) {
         // Album mal partagé ou API en panne : on le montre quand même, sans
         // vignette, plutôt que de le faire disparaître de la liste.
-        $liste[] = ['id' => $id, 'nom' => $album['nom'], 'vignette' => null, 'dossiers' => 0];
+        $liste[] = ['id' => $id, 'nom' => $album['nom'], 'type' => 'drive', 'vignette' => null, 'dossiers' => 0];
         continue;
     }
 
@@ -419,6 +544,7 @@ foreach ($albums as $id => $album) {
     $liste[] = [
         'id'       => $id,
         'nom'      => $album['nom'],
+        'type'     => 'drive',
         'vignette' => $couverture,
         'dossiers' => count($dossiers),
     ];

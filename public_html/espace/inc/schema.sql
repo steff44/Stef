@@ -180,18 +180,45 @@ CREATE TABLE IF NOT EXISTS articles_blog (
 
 -- Albums de la page publique « Nos Sorties » (nos-sorties.html) : un album
 -- = une sortie du club (« Expo 2026 », « Croisière Penbron », « Fête de la
--- mer »…), dont les photos vivent sur Google Drive plutôt que sur ce
--- serveur. `dossier_drive` est l'identifiant du dossier Drive de l'album
--- (celui de son URL : drive.google.com/drive/folders/CET_IDENTIFIANT), qui
--- contient un sous-dossier par adhérent. Créés et modifiés par un
--- responsable depuis parametres.php — volontairement non semés, c'est au
--- club de créer ses propres albums. Voir inc/albums.php et
--- infos-albums.php.
+-- mer »…). Deux façons de les alimenter (choix explicite de l'utilisateur,
+-- 27/08/2026) selon `type` : 'drive' (par défaut), les photos vivent sur
+-- Google Drive — `dossier_drive` est alors l'identifiant du dossier Drive de
+-- l'album (celui de son URL : drive.google.com/drive/folders/CET_IDENTIFIANT),
+-- qui contient un sous-dossier par adhérent ; 'local', les photos sont
+-- déposées directement par les adhérents sur cet hébergement (voir
+-- photos_sorties plus bas) — réservé aux sorties avec peu de photos, pour ne
+-- pas charger l'hébergement Hostinger. `dossier_drive` reste une chaîne vide
+-- pour un album local, jamais utilisée. Créés et modifiés par un responsable
+-- depuis parametres.php — volontairement non semés, c'est au club de créer
+-- ses propres albums. Voir inc/albums.php et infos-albums.php.
 CREATE TABLE IF NOT EXISTS albums_sorties (
   id            INT AUTO_INCREMENT PRIMARY KEY,
   nom           VARCHAR(120) NOT NULL,
   dossier_drive VARCHAR(190) NOT NULL,
+  type          VARCHAR(10)  NOT NULL DEFAULT 'drive',
   ordre         INT          NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Photos d'un album « Nos Sorties » hébergé sur Hostinger (albums_sorties.type
+-- = 'local') : déposées directement par les adhérents, sur le même principe
+-- que photos_club (voir plus haut). Le fichier est stocké dans
+-- espace/photos_sorties/, dossier interdit d'accès direct, servi par
+-- telecharger.php (type=sortie_album, public comme les photos de sortie et de
+-- la Galerie du Club). `nom_affiche` permet de signer autrement que son
+-- identifiant de connexion ; vide, l'affichage retombe sur le nom de
+-- l'adhérent. Supprimer l'album (parametres.php) efface d'abord les fichiers
+-- sur disque, puis les lignes ici via la suppression en cascade.
+CREATE TABLE IF NOT EXISTS photos_sorties (
+  id          INT AUTO_INCREMENT PRIMARY KEY,
+  album_id    INT          NOT NULL,
+  titre       VARCHAR(190) NOT NULL,
+  description TEXT         DEFAULT NULL,
+  nom_affiche VARCHAR(120) DEFAULT NULL,
+  fichier     VARCHAR(190) NOT NULL,
+  depose_par  INT          DEFAULT NULL,
+  cree_le     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_photo_sortie_album    FOREIGN KEY (album_id)   REFERENCES albums_sorties(id) ON DELETE CASCADE,
+  CONSTRAINT fk_photo_sortie_adherent FOREIGN KEY (depose_par) REFERENCES adherents(id)      ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Coordonnées du club (adresse, téléphone, e-mail, présentation), modifiables
