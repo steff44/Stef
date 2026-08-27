@@ -414,9 +414,11 @@ function appliquer_migrations(PDO $pdo): void
     try {
         // Albums de « Nos Sorties » (choix explicite de l'utilisateur,
         // 27/08/2026) : un album = une sortie du club = un dossier Google
-        // Drive. Volontairement NON semée : c'est à l'utilisatrice de créer
-        // ses albums (« Expo 2026 », « Croisière Penbron »…) depuis Réglages
-        // du site, avec l'identifiant de dossier Drive de chacun.
+        // Drive. Les albums suivants se créent depuis Réglages du site,
+        // avec l'identifiant de dossier Drive de chacun — mais le tout
+        // premier, « Expo 2026 », est repris automatiquement ci-dessous
+        // (l'utilisatrice avait d'abord dit qu'elle le recréerait
+        // elle-même, puis a demandé l'inverse le jour même).
         $pdo->exec(
             'CREATE TABLE IF NOT EXISTS albums_sorties (
                 id            INT AUTO_INCREMENT PRIMARY KEY,
@@ -425,6 +427,27 @@ function appliquer_migrations(PDO $pdo): void
                 ordre         INT          NOT NULL DEFAULT 0
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
         );
+
+        // Reprend l'ancien réglage unique 'google_drive_dossier_id' (celui
+        // de la page « Expo 2026 », avant le passage aux albums) pour en
+        // faire automatiquement le premier album — seulement si aucun
+        // album n'existe déjà (qu'il s'agisse de celui-ci ou d'un autre créé
+        // depuis Réglages entre-temps), pour ne jamais réintroduire un album
+        // supprimé volontairement. `config.local.php` est lu directement ici
+        // plutôt que reçu en paramètre : c'est le seul endroit du fichier de
+        // migration qui a besoin d'un réglage plutôt que d'une colonne, et
+        // ce fichier vit dans le même dossier que migration.php.
+        if ((int) $pdo->query('SELECT COUNT(*) FROM albums_sorties')->fetchColumn() === 0) {
+            $chemin_config_local = __DIR__ . '/config.local.php';
+            if (is_file($chemin_config_local)) {
+                $config_local   = require $chemin_config_local;
+                $ancien_dossier = trim((string) ($config_local['google_drive_dossier_id'] ?? ''));
+                if ($ancien_dossier !== '' && preg_match('/^[A-Za-z0-9_-]+$/', $ancien_dossier) === 1) {
+                    $pdo->prepare('INSERT INTO albums_sorties (nom, dossier_drive, ordre) VALUES (?, ?, 0)')
+                        ->execute(['Expo 2026', $ancien_dossier]);
+                }
+            }
+        }
     } catch (PDOException $e) {
         error_log('Espace adhérents — migration albums_sorties : ' . $e->getMessage());
         $reussi = false;
@@ -482,7 +505,7 @@ function signature_schema(): string
         'reunion_hebdomadaire_v1' . '||' .
         'categories_blog_v1' . '||' .
         'articles_blog_v1' . '||' .
-        'albums_sorties_v1'
+        'albums_sorties_v2'
     );
 }
 
