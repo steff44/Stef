@@ -260,6 +260,28 @@ function taille_lisible(int $octets): string
     return $octets . ' o';
 }
 
+/*
+ * Texte échappé avec les adresses http(s):// rendues cliquables (nouvel
+ * onglet) et les retours à la ligne conservés (nl2br) — même détection de
+ * lien que texte_riche_html() (inc/blog.php), sans le gras ni le découpage
+ * en paragraphes : pour un texte court affiché tel quel (ex. précisions
+ * d'une sortie), pas un article long.
+ */
+function texte_avec_liens_html(string $texte): string
+{
+    $echappe = htmlspecialchars($texte, ENT_QUOTES, 'UTF-8');
+    $lien    = preg_replace_callback(
+        '/https?:\/\/[^\s<]+/i',
+        static function (array $correspondance): string {
+            $url = rtrim($correspondance[0], '.,;:!?');
+            return '<a href="' . $url . '" target="_blank" rel="noopener noreferrer">' . $url . '</a>';
+        },
+        $echappe
+    );
+
+    return nl2br((string) $lien);
+}
+
 /* Message de confirmation ou d'erreur, transmis d'une page à l'autre. */
 function definir_message(string $type, string $texte): void
 {

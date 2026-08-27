@@ -280,7 +280,7 @@ titre_page("Sorties à venir", "Les prochaines sorties du club, et qui y partici
               <p class="sortie-detail">🚗 Covoiturage proposé</p>
             <?php endif; ?>
             <?php if ($sortie['description']): ?>
-              <p class="sortie-description"><?= nl2br(e($sortie['description'])) ?></p>
+              <p class="sortie-description"><?= texte_avec_liens_html((string) $sortie['description']) ?></p>
             <?php endif; ?>
 
             <p class="sortie-detail">
