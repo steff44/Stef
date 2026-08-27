@@ -691,8 +691,9 @@
   if (highlightSection && highlightGrid) {
     fetch("infos-galerie-club.php")
       .then(function (reponse) { return reponse.ok ? reponse.json() : Promise.reject(); })
-      .then(function (photosClub) {
-        if (!Array.isArray(photosClub) || !photosClub.length) return;
+      .then(function (donnees) {
+        const photosClub = Array.isArray(donnees.photos) ? donnees.photos : [];
+        if (!photosClub.length) return;
 
         // Déjà triées des plus récentes aux plus anciennes par l'API.
         const picked = photosClub.slice(0, 8).map(function (p) {
@@ -768,7 +769,7 @@
     }
 
     const toutesLesPhotos = "Toutes";
-    const themesConnus = [];
+    let themesConnus = [];
 
     function addThemeFilter(theme) {
       if (themesConnus.indexOf(theme) !== -1) return;
@@ -790,7 +791,18 @@
       filtersRoot.appendChild(btn);
     }
 
-    [toutesLesPhotos].concat(CLUB_DATA.themes).forEach(addThemeFilter);
+    // Reconstruit les pastilles de filtre à partir de zéro — utilisé une
+    // fois la vraie liste de catégories (celle de Réglages du site) reçue,
+    // pour ne pas garder une pastille renommée/supprimée depuis, ni en
+    // manquer une nouvelle (piège rencontré le 27/08/2026, voir plus bas).
+    function rebuildThemeFilters(themes) {
+      filtersRoot.innerHTML = "";
+      themesConnus = [];
+      currentTheme = "";
+      [toutesLesPhotos].concat(themes).forEach(addThemeFilter);
+    }
+
+    rebuildThemeFilters(CLUB_DATA.themes);
     renderGrid();
 
     /* ---------- Vraies photos de la Galerie du Club (espace/galerie-club.php) ----------
@@ -798,11 +810,19 @@
        grille et les filtres s'affichent donc immédiatement avec la démo, puis
        se complètent sans à-coup. Silencieusement ignoré si l'appel échoue
        (hors ligne, ou préversion GitHub Pages, qui ne peut pas exécuter PHP) —
-       comme pour infos-club.php. */
+       comme pour infos-club.php.
+
+       Les pastilles de filtre sont reconstruites à partir de la vraie liste
+       de catégories renvoyée par l'API (`donnees.categories`, la table
+       `categories_galerie`), plutôt que simplement complétées par-dessus
+       CLUB_DATA.themes : sinon une catégorie renommée ou supprimée depuis
+       Réglages du site restait affichée indéfiniment sur cette page, alors
+       que Galerie du Club (qui lit la table en direct) montrait déjà la
+       bonne liste — piège signalé par l'utilisateur le 27/08/2026. */
     fetch("infos-galerie-club.php")
       .then(function (reponse) { return reponse.ok ? reponse.json() : Promise.reject(); })
-      .then(function (photosClub) {
-        if (!Array.isArray(photosClub) || !photosClub.length) return;
+      .then(function (donnees) {
+        const photosClub = Array.isArray(donnees.photos) ? donnees.photos : [];
 
         photosClub.forEach(function (p) {
           pool.push({
@@ -814,8 +834,13 @@
             hue: 0,
             index: 0,
           });
-          addThemeFilter(p.categorie);
         });
+
+        if (Array.isArray(donnees.categories) && donnees.categories.length) {
+          rebuildThemeFilters(donnees.categories);
+        } else {
+          photosClub.forEach(function (p) { addThemeFilter(p.categorie); });
+        }
         renderGrid();
       })
       .catch(function () {});
