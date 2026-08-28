@@ -1747,6 +1747,25 @@ changement : bandeau, couleurs, tailles de police, largeurs de colonnes,
 figeage de la ligne d'en-tête et dates raccourcies tous corrects sur un
 export réel généré par la page (deux adhérents, dont un jamais connecté).
 
+**Le bandeau s'affichait en points gris avec du texte blanc au lieu du bleu
+nuit attendu** (signalé par l'utilisateur le 28/08/2026, même jour) : piège
+classique du format OOXML — Excel réserve l'**index 1** de la liste des
+fonds (`<fills>`) au motif intégré « gray125 » (quadrillage gris à 12,5 %)
+et l'affiche à cet index **quelle que soit la définition réellement
+écrite**, même un fond uni bleu nuit comme ici. Le premier essai plaçait le
+fond bleu nuit du bandeau justement à cet index 1 (juste après l'index 0,
+réservé lui à « aucun fond » — respecté dès le départ), pensant qu'il
+suffisait de le déclarer soi-même ; seul le texte (couleur de police)
+suivait la vraie définition, d'où des lettres blanches lisibles sur un
+quadrillage gris plutôt que sur le bleu nuit voulu. Corrigé en insérant
+explicitement `<fill><patternFill patternType="gray125"/></fill>` à
+l'index 1 (jamais réutilisé par aucun style) et en décalant le fond bleu
+nuit et le fond gris clair du zébrage aux index 2 et 3 — `cellXfs` mis à
+jour en conséquence (`fillId="2"`/`fillId="3"`). Revalidé avec `openpyxl` :
+`fill_type`/`fgColor` du bandeau et des lignes zébrées lisent bien
+`FF0F172A`/`FFF1F5F9`, et l'ordre des fonds dans `xl/styles.xml` confirmé
+par inspection XML directe (index 1 bien du `gray125` inutilisé).
+
 ```
 espace/
   connexion.php  deconnexion.php  inscription.php  index.php    ← tableau de bord
