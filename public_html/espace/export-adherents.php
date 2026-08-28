@@ -34,7 +34,7 @@ $entetes = [
 // sa largeur par défaut (8-9 caractères), bien trop étroite pour la
 // plupart de ces champs — choix explicite de l'utilisateur, 28/08/2026
 // (« formate le fichier Excel de façon à ce qu'il soit plus lisible »).
-$largeurs = [14, 20, 26, 14, 26, 12, 16, 18, 16, 12, 10, 13, 16];
+$largeurs = [14, 20, 26, 14, 26, 12, 16, 18, 16, 12, 10, 13, 20];
 
 // « Inscrit le » et « Dernière connexion » en date courte (ex. 26-06-2026),
 // pas la formulation longue utilisée ailleurs sur le site — choix explicite
