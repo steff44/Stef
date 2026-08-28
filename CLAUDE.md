@@ -1644,6 +1644,13 @@ POST l'action correspondante (`basculer_admin`/`basculer_editeur`) au clic
 — aucun JavaScript nécessaire, même principe que les autres actions de
 cette page.
 
+**Un petit texte sous le tableau rappelle le rôle de chaque niveau**
+(choix explicite de l'utilisateur, 28/08/2026) : Adhérent, Éditeur,
+Responsable — reprend `.form-note` (texte discret déjà utilisé ailleurs
+sur le site, aucune nouvelle règle CSS) plutôt que de dupliquer les cases
+à cocher du formulaire de création un peu plus haut sur la page, qui ne
+sont visibles qu'en dépliant « Créer un compte adhérent ».
+
 **Le champ `From:` de ces e-mails est toujours `noreply@myfocal.online`,
 jamais l'adresse de contact du club** (piège rencontré et corrigé le
 23/08/2026 : aucun e-mail de notification n'arrivait, même pas en spam).
