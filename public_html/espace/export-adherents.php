@@ -30,6 +30,16 @@ $entetes = [
     'Identifiant', 'Nom', 'E-mail', 'Téléphone', 'Adresse', 'Code postal', 'Ville',
     'Nom du boîtier', 'Rôle', 'Statut', 'Validé', 'Inscrit le', 'Dernière connexion',
 ];
+// Largeur de chaque colonne (en caractères) : sans elle, Excel retombe sur
+// sa largeur par défaut (8-9 caractères), bien trop étroite pour la
+// plupart de ces champs — choix explicite de l'utilisateur, 28/08/2026
+// (« formate le fichier Excel de façon à ce qu'il soit plus lisible »).
+$largeurs = [14, 20, 26, 14, 26, 12, 16, 18, 16, 12, 10, 13, 16];
+
+// « Inscrit le » et « Dernière connexion » en date courte (ex. 26-06-2026),
+// pas la formulation longue utilisée ailleurs sur le site — choix explicite
+// de l'utilisateur, 28/08/2026.
+$date_courte = static fn(?string $date_sql): string => $date_sql ? date('d-m-Y', strtotime($date_sql)) : '';
 
 $lignes = [];
 foreach ($membres as $membre) {
@@ -56,12 +66,19 @@ foreach ($membres as $membre) {
         implode(', ', $roles),
         $membre['actif'] ? 'Actif' : 'Désactivé',
         $membre['valide'] ? 'Oui' : 'Non',
-        $membre['cree_le'] ? date_en_francais($membre['cree_le'], false) : '',
-        $membre['derniere_connexion'] ? date_en_francais($membre['derniere_connexion']) : 'Jamais',
+        $date_courte($membre['cree_le']),
+        $membre['derniere_connexion'] ? $date_courte($membre['derniere_connexion']) : 'Jamais',
     ];
 }
 
-$contenu = generer_xlsx('Adhérents', $entetes, $lignes);
+$contenu = generer_xlsx(
+    'Adhérents',
+    'FOCAL CLUB TURBALLAIS',
+    'Liste des adhérents — Export du ' . date('d-m-Y'),
+    $entetes,
+    $lignes,
+    $largeurs
+);
 
 header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 header('Content-Length: ' . strlen($contenu));

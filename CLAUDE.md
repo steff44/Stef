@@ -1724,6 +1724,29 @@ s'est révélé cassé dans ce sandbox (échoue aussi sur un fichier généré p
 openpyxl lui-même, donc sans rapport avec ce générateur) et n'a pas pu
 servir de second recours.
 
+**Le fichier Excel est mis en forme** (choix explicite de l'utilisateur,
+28/08/2026, même jour : « je veux que tu formates le fichier Excel de
+façon à ce qu'il soit plus lisible avec en titre FOCAL CLUB TURBALLAIS »).
+`generer_xlsx()` prend désormais un titre et un sous-titre, affichés sur
+un bandeau bleu nuit (`#0F172A`, la couleur d'accent du site — voir
+`css/style.css`) fusionné sur toute la largeur du tableau : « FOCAL CLUB
+TURBALLAIS » en grand (18pt, blanc, gras) puis « Liste des adhérents —
+Export du {date du jour} » juste en dessous, en italique plus clair. La
+ligne d'en-tête des colonnes reprend le même bandeau (gras, blanc), et les
+lignes de données sont zébrées (une claire sur deux, `#F1F5F9`) pour rester
+lisibles sur un grand tableau — `export-adherents.php` passe un tableau de
+largeurs de colonnes (en caractères) à `generer_xlsx()`, sans quoi Excel
+retombe sur sa largeur par défaut, trop étroite pour la plupart des champs.
+La ligne d'en-tête reste figée à l'écran quand on fait défiler le tableau
+(`<pane>` gelé sous la ligne 4). **« Inscrit le » et « Dernière
+connexion » sont affichées en date courte** (`26-06-2026`, `date('d-m-Y',
+...)`) plutôt que la formulation longue en français utilisée ailleurs sur
+le site (`date_en_francais()`) — demandé explicitement pour ces deux
+colonnes seulement. Revalidé hors ligne avec `openpyxl` après ce
+changement : bandeau, couleurs, tailles de police, largeurs de colonnes,
+figeage de la ligne d'en-tête et dates raccourcies tous corrects sur un
+export réel généré par la page (deux adhérents, dont un jamais connecté).
+
 ```
 espace/
   connexion.php  deconnexion.php  inscription.php  index.php    ← tableau de bord
