@@ -18,7 +18,9 @@
  * premières lignes, en dégradé bleu nuit — reprend la couleur d'accent du
  * site (#0f172a, voir css/style.css) — puis une ligne d'en-tête de colonnes
  * dans le même bandeau, et des lignes de données zébrées (une claire sur
- * deux) pour rester lisible sur un grand tableau.
+ * deux) pour rester lisible sur un grand tableau. Toutes les cellules sont
+ * centrées et entourées d'une bordure fine (choix explicite de l'utilisateur,
+ * 28/08/2026, même jour).
  */
 
 declare(strict_types=1);
@@ -162,8 +164,10 @@ function generer_xlsx(
 
     // 4 polices (normale, titre, sous-titre, en-tête), 4 fonds (aucun,
     // l'emplacement réservé par Excel — voir plus bas —, bleu nuit #0F172A
-    // pour le bandeau, gris clair pour le zébrage), 5 formats de cellule
-    // (voir la liste au-dessus de generer_xlsx()).
+    // pour le bandeau, gris clair pour le zébrage), une bordure fine
+    // partagée par toutes les cellules, 5 formats de cellule (voir la liste
+    // au-dessus de generer_xlsx()) — tous centrés (horizontal et vertical)
+    // et bordés.
     $styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         . '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
         . '<fonts count="4">'
@@ -182,14 +186,18 @@ function generer_xlsx(
         . '<fill><patternFill patternType="solid"><fgColor rgb="FF0F172A"/><bgColor indexed="64"/></patternFill></fill>'
         . '<fill><patternFill patternType="solid"><fgColor rgb="FFF1F5F9"/><bgColor indexed="64"/></patternFill></fill>'
         . '</fills>'
-        . '<borders count="1"><border/></borders>'
+        . '<borders count="2">'
+        . '<border/>'
+        . '<border><left style="thin"><color rgb="FF94A3B8"/></left><right style="thin"><color rgb="FF94A3B8"/></right>'
+        . '<top style="thin"><color rgb="FF94A3B8"/></top><bottom style="thin"><color rgb="FF94A3B8"/></bottom></border>'
+        . '</borders>'
         . '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
         . '<cellXfs count="5">'
-        . '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'
-        . '<xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
-        . '<xf numFmtId="0" fontId="2" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
-        . '<xf numFmtId="0" fontId="3" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
-        . '<xf numFmtId="0" fontId="0" fillId="3" borderId="0" xfId="0" applyFill="1"/>'
+        . '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+        . '<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+        . '<xf numFmtId="0" fontId="2" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+        . '<xf numFmtId="0" fontId="3" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+        . '<xf numFmtId="0" fontId="0" fillId="3" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
         . '</cellXfs>'
         . '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>'
         . '</styleSheet>';

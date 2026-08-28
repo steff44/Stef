@@ -1766,6 +1766,22 @@ jour en conséquence (`fillId="2"`/`fillId="3"`). Revalidé avec `openpyxl` :
 `FF0F172A`/`FFF1F5F9`, et l'ordre des fonds dans `xl/styles.xml` confirmé
 par inspection XML directe (index 1 bien du `gray125` inutilisé).
 
+**Toutes les cellules sont centrées et entourées d'une bordure fine, et la
+colonne « Dernière connexion » élargie** (choix explicite de l'utilisateur,
+28/08/2026, même jour : « la colonne M est un peu petite, je voudrais que
+tous les textes soient centrés et que chaque case ait un entourage »).
+`generer_xlsx()` porte désormais une seconde bordure dans `<borders>` (fine,
+`#94A3B8` — un gris-bleu discret cohérent avec la palette du site plutôt
+qu'un noir dur) appliquée aux cinq formats de cellule
+(`cellXfs`, `borderId="1"`), et l'alignement `horizontal="center"
+vertical="center"` — déjà présent sur le bandeau — est étendu aux deux
+styles de données (normal et zébré), qui n'avaient jusque-là aucun
+alignement explicite. `export-adherents.php` porte la largeur de la
+dernière colonne (M, « Dernière connexion ») de 16 à 20 caractères.
+Revalidé avec `openpyxl` : alignement centré et bordure fine sur toutes les
+cellules testées (bandeau, en-tête, données normales et zébrées), largeurs
+de colonnes inchangées ailleurs.
+
 ```
 espace/
   connexion.php  deconnexion.php  inscription.php  index.php    ← tableau de bord
