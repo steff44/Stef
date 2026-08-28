@@ -11,6 +11,14 @@
  * l'hébergement mutualisé Hostinger comme sur la quasi-totalité des
  * hébergements PHP) — un fichier .xlsx est une simple archive zip
  * contenant des fichiers XML au format OOXML/SpreadsheetML.
+ *
+ * Mise en forme (choix explicite de l'utilisateur, 28/08/2026, « je veux
+ * que tu formates le fichier Excel de façon à ce qu'il soit plus lisible ») :
+ * un bandeau titre + sous-titre (avec la date d'export) sur les deux
+ * premières lignes, en dégradé bleu nuit — reprend la couleur d'accent du
+ * site (#0f172a, voir css/style.css) — puis une ligne d'en-tête de colonnes
+ * dans le même bandeau, et des lignes de données zébrées (une claire sur
+ * deux) pour rester lisible sur un grand tableau.
  */
 
 declare(strict_types=1);
@@ -39,38 +47,92 @@ function texte_xml(string $texte): string
 }
 
 /*
- * Construit un classeur .xlsx en mémoire — une seule feuille, $entetes en
- * première ligne puis une ligne par élément de $lignes (mêmes clés que
- * $entetes, dans le même ordre) — et renvoie son contenu binaire, prêt à
- * être servi en téléchargement.
+ * Construit un classeur .xlsx en mémoire et renvoie son contenu binaire,
+ * prêt à être servi en téléchargement — une seule feuille :
+ *   ligne 1 : $titre, en bandeau (fusionné sur toute la largeur) ;
+ *   ligne 2 : $sous_titre, même bandeau, pour la date d'export ;
+ *   ligne 4 : $entetes, dans le même bandeau (ligne 3 laissée vide, pour
+ *             respirer entre le sous-titre et le tableau) ;
+ *   lignes 5+ : une ligne par élément de $lignes (mêmes clés que $entetes,
+ *             dans le même ordre), zébrées une sur deux.
+ * $largeurs_colonnes est facultatif : largeur de chaque colonne, en
+ * nombre de caractères (unité Excel) — sans quoi Excel retombe sur sa
+ * largeur par défaut, bien trop étroite pour la plupart des champs.
  */
-function generer_xlsx(string $nom_feuille, array $entetes, array $lignes): string
-{
-    $construire_ligne = static function (int $numero, array $valeurs): string {
-        $cellules = [];
-        foreach (array_values($valeurs) as $index => $valeur) {
-            $reference  = colonne_excel($index) . $numero;
-            $cellules[] = '<c r="' . $reference . '" t="inlineStr"><is><t xml:space="preserve">'
-                . texte_xml((string) $valeur) . '</t></is></c>';
-        }
-        return '<row r="' . $numero . '">' . implode('', $cellules) . '</row>';
+function generer_xlsx(
+    string $nom_feuille,
+    string $titre,
+    string $sous_titre,
+    array $entetes,
+    array $lignes,
+    array $largeurs_colonnes = []
+): string {
+    $nb_colonnes       = max(1, count($entetes));
+    $derniere_colonne  = colonne_excel($nb_colonnes - 1);
+
+    // Styles (voir xl/styles.xml plus bas pour le détail) :
+    //   0 = donnée normale · 1 = titre · 2 = sous-titre
+    //   3 = en-tête de colonne · 4 = donnée zébrée (ligne claire)
+    $construire_cellule = static function (int $colonne, int $ligne, string $valeur, int $style): string {
+        $reference = colonne_excel($colonne) . $ligne;
+        $s         = $style !== 0 ? ' s="' . $style . '"' : '';
+        return '<c r="' . $reference . '"' . $s . ' t="inlineStr"><is><t xml:space="preserve">'
+            . texte_xml($valeur) . '</t></is></c>';
     };
 
-    $lignes_xml   = [$construire_ligne(1, $entetes)];
-    $numero_ligne = 2;
-    foreach ($lignes as $ligne) {
-        $lignes_xml[] = $construire_ligne($numero_ligne, $ligne);
+    // Bandeau titre/sous-titre/en-tête : chaque cellule de la ligne porte le
+    // même style, sinon la couleur de fond ne s'étend pas visuellement
+    // au-delà de la première colonne dans certains lecteurs.
+    $construire_bandeau = static function (int $ligne, array $valeurs, int $style, ?string $hauteur = null) use ($nb_colonnes, $construire_cellule): string {
+        $cellules = [];
+        for ($colonne = 0; $colonne < $nb_colonnes; $colonne++) {
+            $cellules[] = $construire_cellule($colonne, $ligne, (string) ($valeurs[$colonne] ?? ''), $style);
+        }
+        $hauteur_attr = $hauteur !== null ? ' customHeight="1" ht="' . $hauteur . '"' : '';
+        return '<row r="' . $ligne . '"' . $hauteur_attr . '>' . implode('', $cellules) . '</row>';
+    };
+
+    $lignes_xml   = [];
+    $lignes_xml[] = $construire_bandeau(1, [$titre], 1, '28');
+    $lignes_xml[] = $construire_bandeau(2, [$sous_titre], 2, '20');
+    // Ligne 3 volontairement absente (espace visuel avant le tableau).
+    $lignes_xml[] = $construire_bandeau(4, array_values($entetes), 3, '18');
+
+    $numero_ligne = 5;
+    foreach ($lignes as $index => $ligne) {
+        $style    = $index % 2 === 1 ? 4 : 0;
+        $cellules = [];
+        foreach (array_values($ligne) as $colonne => $valeur) {
+            $cellules[] = $construire_cellule($colonne, $numero_ligne, (string) $valeur, $style);
+        }
+        $lignes_xml[] = '<row r="' . $numero_ligne . '">' . implode('', $cellules) . '</row>';
         $numero_ligne++;
     }
 
-    $derniere_colonne = colonne_excel(max(0, count($entetes) - 1));
-    $dimension        = 'A1:' . $derniere_colonne . max(1, $numero_ligne - 1);
+    $derniere_ligne = max(4, $numero_ligne - 1);
+    $dimension      = 'A1:' . $derniere_colonne . $derniere_ligne;
+
+    $cols_xml = '';
+    if ($largeurs_colonnes) {
+        $definitions = [];
+        foreach (array_values($largeurs_colonnes) as $index => $largeur) {
+            $numero        = $index + 1;
+            $definitions[] = '<col min="' . $numero . '" max="' . $numero . '" width="' . (float) $largeur . '" customWidth="1"/>';
+        }
+        $cols_xml = '<cols>' . implode('', $definitions) . '</cols>';
+    }
 
     $feuille_xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         . '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
         . '<dimension ref="' . $dimension . '"/>'
+        . '<sheetViews><sheetView workbookViewId="0"><pane ySplit="4" topLeftCell="A5" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft" activeCell="A5" sqref="A5"/></sheetView></sheetViews>'
         . '<sheetFormatPr defaultRowHeight="15"/>'
+        . $cols_xml
         . '<sheetData>' . implode('', $lignes_xml) . '</sheetData>'
+        . '<mergeCells count="2">'
+        . '<mergeCell ref="A1:' . $derniere_colonne . '1"/>'
+        . '<mergeCell ref="A2:' . $derniere_colonne . '2"/>'
+        . '</mergeCells>'
         . '</worksheet>';
 
     $content_types = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
@@ -98,16 +160,32 @@ function generer_xlsx(string $nom_feuille, array $entetes, array $lignes): strin
         . '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
         . '</Relationships>';
 
-    // Styles minimaux, sans aucune mise en forme particulière (une seule
-    // police, un seul format de cellule) : suffisant pour qu'Excel/
-    // LibreOffice ouvrent le fichier sans le juger endommagé.
+    // 4 polices (normale, titre, sous-titre, en-tête), 3 fonds (aucun, bleu
+    // nuit #0F172A — la couleur d'accent du site, gris clair pour le
+    // zébrage), 5 formats de cellule (voir la liste au-dessus de
+    // generer_xlsx()).
     $styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         . '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
-        . '<fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts>'
-        . '<fills count="1"><fill><patternFill patternType="none"/></fill></fills>'
+        . '<fonts count="4">'
+        . '<font><sz val="11"/><color rgb="FF111111"/><name val="Calibri"/></font>'
+        . '<font><b/><sz val="18"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>'
+        . '<font><i/><sz val="11"/><color rgb="FFCBD5E1"/><name val="Calibri"/></font>'
+        . '<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>'
+        . '</fonts>'
+        . '<fills count="3">'
+        . '<fill><patternFill patternType="none"/></fill>'
+        . '<fill><patternFill patternType="solid"><fgColor rgb="FF0F172A"/><bgColor indexed="64"/></patternFill></fill>'
+        . '<fill><patternFill patternType="solid"><fgColor rgb="FFF1F5F9"/><bgColor indexed="64"/></patternFill></fill>'
+        . '</fills>'
         . '<borders count="1"><border/></borders>'
         . '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
-        . '<cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs>'
+        . '<cellXfs count="5">'
+        . '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'
+        . '<xf numFmtId="0" fontId="1" fillId="1" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+        . '<xf numFmtId="0" fontId="2" fillId="1" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+        . '<xf numFmtId="0" fontId="3" fillId="1" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+        . '<xf numFmtId="0" fontId="0" fillId="2" borderId="0" xfId="0" applyFill="1"/>'
+        . '</cellXfs>'
         . '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>'
         . '</styleSheet>';
 
