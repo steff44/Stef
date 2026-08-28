@@ -29,7 +29,7 @@ $pdo = base_de_donnees();
 $erreurs = [];
 $valeurs = [
     'pseudo' => '', 'nom' => '', 'prenom' => '', 'email' => '',
-    'telephone' => '', 'code_postal' => '', 'ville' => '',
+    'telephone' => '', 'adresse' => '', 'code_postal' => '', 'ville' => '', 'boitier' => '',
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -53,11 +53,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($valeurs['email'] === '' || !filter_var($valeurs['email'], FILTER_VALIDATE_EMAIL)) {
         $erreurs[] = "L'adresse e-mail est obligatoire et doit être valide.";
     }
-    if ($valeurs['code_postal'] !== '' && !preg_match('/^[0-9]{4,10}$/', $valeurs['code_postal'])) {
+    // Adresse, code postal et ville obligatoires — choix explicite de
+    // l'utilisateur, 28/08/2026 (auparavant tous deux facultatifs).
+    if ($valeurs['adresse'] === '') {
+        $erreurs[] = "L'adresse est obligatoire.";
+    }
+    if ($valeurs['code_postal'] === '') {
+        $erreurs[] = "Le code postal est obligatoire.";
+    } elseif (!preg_match('/^[0-9]{4,10}$/', $valeurs['code_postal'])) {
         $erreurs[] = "Le code postal ne doit contenir que des chiffres.";
+    }
+    if ($valeurs['ville'] === '') {
+        $erreurs[] = "La ville est obligatoire.";
     }
     if (mb_strlen($mot1) < 10) {
         $erreurs[] = "Le mot de passe doit contenir au moins 10 caractères.";
+    }
+    // Une majuscule et un caractère spécial — choix explicite de
+    // l'utilisateur, 28/08/2026.
+    if (!preg_match('/[A-Z]/', $mot1)) {
+        $erreurs[] = "Le mot de passe doit contenir au moins une majuscule.";
+    }
+    if (!preg_match('/[^a-zA-Z0-9]/', $mot1)) {
+        $erreurs[] = "Le mot de passe doit contenir au moins un caractère spécial.";
     }
     if ($mot1 !== $mot2) {
         $erreurs[] = "Les deux mots de passe ne sont pas identiques.";
@@ -76,15 +94,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$erreurs) {
         $pdo->prepare(
             'INSERT INTO adherents
-                (identifiant, nom, email, telephone, code_postal, ville, mot_de_passe, administrateur, actif, valide)
-             VALUES (?, ?, ?, ?, ?, ?, ?, 0, 1, 0)'
+                (identifiant, nom, email, telephone, adresse, code_postal, ville, boitier, mot_de_passe, administrateur, actif, valide)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, 0)'
         )->execute([
             $valeurs['pseudo'],
             trim($valeurs['prenom'] . ' ' . $valeurs['nom']),
             $valeurs['email'],
             $valeurs['telephone'] !== '' ? $valeurs['telephone'] : null,
-            $valeurs['code_postal'] !== '' ? $valeurs['code_postal'] : null,
-            $valeurs['ville'] !== '' ? $valeurs['ville'] : null,
+            $valeurs['adresse'],
+            $valeurs['code_postal'],
+            $valeurs['ville'],
+            $valeurs['boitier'] !== '' ? $valeurs['boitier'] : null,
             password_hash($mot1, PASSWORD_DEFAULT),
         ]);
 
@@ -170,25 +190,39 @@ titre_page("Rejoignez le club", "Créez votre compte pour accéder à l'espace a
                  value="<?= e($valeurs['telephone']) ?>">
         </div>
       </div>
+      <div class="field">
+        <label for="adresse">Adresse</label>
+        <input type="text" id="adresse" name="adresse" required
+               value="<?= e($valeurs['adresse']) ?>" placeholder="12 rue de la Fontaine">
+      </div>
       <div class="field-row">
         <div class="field">
-          <label for="code_postal">Code postal (facultatif)</label>
-          <input type="text" id="code_postal" name="code_postal" inputmode="numeric"
+          <label for="code_postal">Code postal</label>
+          <input type="text" id="code_postal" name="code_postal" inputmode="numeric" required
                  value="<?= e($valeurs['code_postal']) ?>">
         </div>
         <div class="field">
-          <label for="ville">Ville (facultatif)</label>
-          <input type="text" id="ville" name="ville"
+          <label for="ville">Ville</label>
+          <input type="text" id="ville" name="ville" required
                  value="<?= e($valeurs['ville']) ?>">
         </div>
       </div>
       <div class="field">
-        <label for="mot_de_passe">Mot de passe (10 caractères minimum)</label>
-        <input type="password" id="mot_de_passe" name="mot_de_passe" required minlength="10">
+        <label for="boitier">Nom du boîtier (facultatif)</label>
+        <input type="text" id="boitier" name="boitier"
+               value="<?= e($valeurs['boitier']) ?>" placeholder="Canon EOS R6">
+      </div>
+      <div class="field">
+        <label for="mot_de_passe">Mot de passe (10 caractères minimum, avec au moins une majuscule et un caractère spécial)</label>
+        <input type="password" id="mot_de_passe" name="mot_de_passe" required minlength="10"
+               pattern="(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{10,}"
+               title="Au moins 10 caractères, une majuscule et un caractère spécial">
       </div>
       <div class="field">
         <label for="confirmation">Confirmer le mot de passe</label>
-        <input type="password" id="confirmation" name="confirmation" required minlength="10">
+        <input type="password" id="confirmation" name="confirmation" required minlength="10"
+               pattern="(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{10,}"
+               title="Au moins 10 caractères, une majuscule et un caractère spécial">
       </div>
       <button type="submit" class="btn btn-primary" style="width:100%;">Créer le compte</button>
       <p class="form-note">

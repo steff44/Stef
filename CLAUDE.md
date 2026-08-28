@@ -1659,6 +1659,69 @@ que répondre au mail atterrisse au bon endroit.
 les affiche pour l'instant (l'annuaire ne montre encore que
 nom/identifiant/contact).
 
+**Adresse, code postal et ville sont obligatoires à l'inscription, et un
+adhérent peut renseigner le nom de son boîtier** (choix explicite de
+l'utilisateur, 28/08/2026 — auparavant code postal et ville étaient
+facultatifs, et il n'y avait pas de champ adresse ni boîtier). `adresse`
+(nouvelle colonne, comme `boitier`) et `code_postal`/`ville` (déjà
+existantes, voir juste au-dessus) sont désormais tous les trois exigés par
+`inscription.php` avant l'INSERT — `boitier` reste facultatif, comme
+`telephone`. Comme pour les autres champs obligatoires du site (l'e-mail
+par exemple), la contrainte est posée côté formulaire (validation PHP +
+attribut `required`), pas en `NOT NULL` en base : un compte déjà existant
+avant ce changement n'a pas ces informations, et la colonne doit rester
+nullable pour ne pas le casser.
+
+**Le mot de passe (inscription et changement depuis l'Annuaire) doit
+contenir une majuscule et un caractère spécial**, en plus des 10
+caractères déjà exigés (choix explicite de l'utilisateur, 28/08/2026).
+Appliqué aux deux seuls endroits où un adhérent choisit lui-même son mot
+de passe — `inscription.php` et le formulaire « Changer mon mot de passe »
+de `annuaire.php` — pour qu'un changement ne permette pas de revenir à un
+mot de passe plus faible que celui exigé à la création du compte. Même
+regex des deux côtés (`/[A-Z]/` et `/[^a-zA-Z0-9]/`, PHP) et attribut HTML
+`pattern="(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{10,}"` côté client, pour un retour
+immédiat dans le navigateur avant même l'envoi du formulaire. Le mot de
+passe **provisoire** généré par un responsable/éditeur depuis
+`adherents.php` (`mot_de_passe_provisoire()`) n'est pas concerné — il n'est
+pas choisi par l'adhérent, et reste volontairement sans caractère ambigu
+(0/O, 1/l/I) pour rester facile à recopier à la main.
+
+**Export Excel des adhérents, réservé au responsable** (choix explicite de
+l'utilisateur, 28/08/2026, « je veux qu'à partir des inscriptions tu
+fasses un fichier excel avec toutes ces informations disponible pour
+l'administrateur ») : bouton « Télécharger la liste des adhérents (Excel) »
+en haut de `adherents.php`, visible seulement pour `est_administrateur()`
+(jamais un éditeur — cohérent avec `parametres.php`, le seul autre endroit
+du site réservé au seul rôle responsable). `espace/export-adherents.php`
+construit le fichier et le sert en téléchargement (`Content-Disposition:
+attachment`, pas de page HTML) : identifiant, nom, e-mail, téléphone,
+adresse, code postal, ville, nom du boîtier, rôle, statut, validé, date
+d'inscription, dernière connexion — un adhérent par ligne.
+
+**Le fichier `.xlsx` est généré sans aucune dépendance externe**
+(`espace/inc/xlsx.php`, `generer_xlsx()`) — même philosophie que
+`inc/mail.php` (`mail()` natif plutôt que PHPMailer) : pas de Composer, pas
+de PHPSpreadsheet. Un `.xlsx` n'est qu'une archive zip de fichiers XML
+(format OOXML/SpreadsheetML) ; `ZipArchive` (extension PHP standard,
+présente sur l'hébergement mutualisé Hostinger) suffit à la construire à
+la main — six fichiers minimum (`[Content_Types].xml`, `_rels/.rels`,
+`xl/workbook.xml`, `xl/_rels/workbook.xml.rels`, `xl/styles.xml`,
+`xl/worksheets/sheet1.xml`), cellules en texte brut (`t="inlineStr"`, le
+texte écrit directement dans la cellule plutôt que dans une table de
+chaînes partagées à gérer séparément) — largement suffisant pour un export
+de données tabulaire, pas un vrai éditeur de classeur. `texte_xml()`
+échappe les entités XML et retire les caractères de contrôle interdits en
+XML 1.0 qu'un champ saisi à la main pourrait contenir. Validé hors ligne
+(28/08/2026) avec `openpyxl` (Python) : ouverture du fichier généré,
+lecture cellule par cellule, contenu exact retrouvé y compris avec des
+caractères spéciaux, accents, guillemets, esperluettes et chevrons dans les
+données (`&`, `<`, `>`, `"`) et un caractère de contrôle injecté
+volontairement (bien supprimé) — `LibreOffice --headless --convert-to`
+s'est révélé cassé dans ce sandbox (échoue aussi sur un fichier généré par
+openpyxl lui-même, donc sans rapport avec ce générateur) et n'a pas pu
+servir de second recours.
+
 ```
 espace/
   connexion.php  deconnexion.php  inscription.php  index.php    ← tableau de bord
@@ -1666,6 +1729,7 @@ espace/
   blog.php       blog-article.php ← Blog du Club, page publique (voir plus haut)
   album.php          ← dépôt de photos pour un album « Nos Sorties » hébergé sur ce site (type=local, voir plus haut)
   adherents.php      ← gestion des comptes, responsables et éditeurs
+  export-adherents.php ← liste des adhérents en .xlsx, responsables uniquement (voir plus haut)
   parametres.php     ← coordonnées du club affichées sur le site public, responsables uniquement
   installation.php   ← à jouer UNE fois, se verrouille ensuite tout seul
   telecharger.php    ← seule porte d'accès aux fichiers privés (+ types publics : sortie, galerie_club, blog, sortie_album)
@@ -1673,7 +1737,7 @@ espace/
   inc/               ← code interne, fermé par .htaccess
     config.local.php ← À CRÉER À LA MAIN SUR LE SERVEUR, jamais dans Git
     config.example.php  db.php  auth.php  page.php  televersement.php
-    mail.php  blog.php  albums.php  schema.sql
+    mail.php  blog.php  albums.php  xlsx.php  schema.sql
   photos/  photos_club/  photos_blog/  photos_sorties/  fichiers/  ← dépôts, fermés par .htaccess
 ```
 

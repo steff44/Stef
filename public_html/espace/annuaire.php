@@ -23,10 +23,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $requete->execute([$adherent['id']]);
         $hachage = (string) $requete->fetchColumn();
 
+        // Même politique qu'à l'inscription (majuscule + caractère spécial,
+        // choix explicite de l'utilisateur, 28/08/2026) : un changement de
+        // mot de passe ne doit pas permettre de revenir à un mot de passe
+        // plus faible que celui exigé à la création du compte.
         if (!password_verify($actuel, $hachage)) {
             definir_message('erreur', "Votre mot de passe actuel est incorrect.");
         } elseif (mb_strlen($mot1) < 10) {
             definir_message('erreur', "Le nouveau mot de passe doit contenir au moins 10 caractères.");
+        } elseif (!preg_match('/[A-Z]/', $mot1)) {
+            definir_message('erreur', "Le nouveau mot de passe doit contenir au moins une majuscule.");
+        } elseif (!preg_match('/[^a-zA-Z0-9]/', $mot1)) {
+            definir_message('erreur', "Le nouveau mot de passe doit contenir au moins un caractère spécial.");
         } elseif ($mot1 !== $mot2) {
             definir_message('erreur', "Les deux nouveaux mots de passe ne sont pas identiques.");
         } else {
@@ -112,12 +120,16 @@ titre_page("Annuaire des adhérents", "Ces coordonnées sont réservées aux mem
         <input type="password" id="actuel" name="actuel" required autocomplete="current-password">
       </div>
       <div class="field">
-        <label for="nouveau">Nouveau mot de passe (10 caractères minimum)</label>
-        <input type="password" id="nouveau" name="nouveau" required minlength="10" autocomplete="new-password">
+        <label for="nouveau">Nouveau mot de passe (10 caractères minimum, avec au moins une majuscule et un caractère spécial)</label>
+        <input type="password" id="nouveau" name="nouveau" required minlength="10" autocomplete="new-password"
+               pattern="(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{10,}"
+               title="Au moins 10 caractères, une majuscule et un caractère spécial">
       </div>
       <div class="field">
         <label for="confirmation">Confirmer</label>
-        <input type="password" id="confirmation" name="confirmation" required minlength="10" autocomplete="new-password">
+        <input type="password" id="confirmation" name="confirmation" required minlength="10" autocomplete="new-password"
+               pattern="(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{10,}"
+               title="Au moins 10 caractères, une majuscule et un caractère spécial">
       </div>
       <button type="submit" class="btn btn-primary">Modifier</button>
     </form>

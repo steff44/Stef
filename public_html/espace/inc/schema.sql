@@ -9,8 +9,11 @@ CREATE TABLE IF NOT EXISTS adherents (
   email              VARCHAR(190) DEFAULT NULL,
   telephone          VARCHAR(30)  DEFAULT NULL,
   mot_de_passe       VARCHAR(255) NOT NULL,
+  adresse            VARCHAR(190) DEFAULT NULL,
   code_postal        VARCHAR(10)  DEFAULT NULL,
   ville              VARCHAR(120) DEFAULT NULL,
+  -- Nom du boîtier (appareil photo) de l'adhérent, facultatif.
+  boitier            VARCHAR(120) DEFAULT NULL,
   administrateur     TINYINT(1)   NOT NULL DEFAULT 0,
   -- Éditeur : mêmes droits que responsable sur les comptes, les documents
   -- et l'agenda, sans accès aux réglages du site (parametres.php reste
