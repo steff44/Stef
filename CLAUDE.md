@@ -90,6 +90,25 @@ public_html/          ← racine du site, déployée telle quelle
     (l'action `modifier`, dans `sorties-a-venir.php`, relit la photo actuelle
     avant d'écraser la ligne). Uniquement sur les sorties à venir, pas sur
     les sorties passées (qui n'ont aucune action).
+    **Créer une sortie prévient les adhérents par e-mail, et propose un
+    partage WhatsApp** (choix explicite de l'utilisateur, 27/08/2026) :
+    dès qu'un responsable ou un éditeur ajoute une sortie (`action=creer`),
+    un e-mail est envoyé à tous les adhérents `valide=1 actif=1` ayant une
+    adresse renseignée (`envoyer_mail()`, un e-mail par adhérent, échoue
+    silencieusement comme les autres notifications du site — voir
+    `inc/mail.php`). Un envoi automatique dans le **groupe** WhatsApp du
+    club n'est techniquement pas possible depuis cet hébergement : aucune
+    API (officielle ou non) ne permet de poster dans un groupe WhatsApp
+    existant sans risquer de faire bannir un vrai numéro, et l'exécuter
+    exigerait un processus Node persistant, absent d'un hébergement
+    mutualisé PHP. À la place, chaque carte « à venir » porte un bouton
+    « Partager sur WhatsApp » (responsable/éditeur seulement, à côté de
+    Modifier) : un lien `https://wa.me/?text=...` (« click-to-chat »,
+    aucune clé ni compte à configurer) qui ouvre WhatsApp avec le message
+    déjà rédigé (titre, date, lieu, précisions, lien vers la sortie) — il
+    ne reste qu'à choisir le groupe Focal Club Turballais et cliquer
+    Envoyer. `SITE_URL` (`inc/mail.php`, `https://myfocal.online`) bâtit le
+    lien absolu vers la sortie, utilisé par les deux canaux.
     **Les adresses http(s):// tapées dans les « Précisions » d'une sortie
     sont cliquables** (choix explicite de l'utilisateur, 27/08/2026, capture
     d'écran à l'appui) : `texte_avec_liens_html()` (`inc/page.php`) reprend

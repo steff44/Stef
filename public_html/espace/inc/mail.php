@@ -10,6 +10,11 @@
 
 declare(strict_types=1);
 
+// Adresse de base du site, pour bâtir des liens absolus dans un e-mail ou un
+// message externe (WhatsApp) — un lien relatif n'aurait aucun sens en dehors
+// d'une page du site.
+const SITE_URL = 'https://myfocal.online';
+
 /* Lit une seule valeur de parametres_site (coordonnées du club). */
 function valeur_parametre(PDO $pdo, string $cle): ?string
 {

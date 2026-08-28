@@ -16,6 +16,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/inc/page.php';
 require_once __DIR__ . '/inc/agenda.php';
 require_once __DIR__ . '/inc/televersement.php';
+require_once __DIR__ . '/inc/mail.php';
 
 const TAILLE_PHOTO_SORTIE = 400;
 
@@ -138,20 +139,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 redimensionner_en_carre(__DIR__ . '/photos/' . $photo, TAILLE_PHOTO_SORTIE);
             }
 
+            $description = trim((string) ($_POST['description'] ?? '')) ?: null;
+            $lieu        = trim((string) ($_POST['lieu'] ?? '')) ?: null;
+
             $pdo->prepare(
                 'INSERT INTO sorties (titre, categorie, description, lieu, debut, rendez_vous, covoiturage, photo)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
             )->execute([
                 $titre,
                 $categorie,
-                trim((string) ($_POST['description'] ?? '')) ?: null,
-                trim((string) ($_POST['lieu'] ?? '')) ?: null,
+                $description,
+                $lieu,
                 date('Y-m-d H:i:s', $horodatage),
                 trim((string) ($_POST['rendez_vous'] ?? '')) ?: null,
                 isset($_POST['covoiturage']) ? 1 : 0,
                 $photo,
             ]);
-            definir_message('succes', "Ajouté à l'agenda.");
+            $nouvelle_id = (int) $pdo->lastInsertId();
+
+            // Prévient tous les adhérents validés par e-mail (choix explicite
+            // de l'utilisateur, 27/08/2026) — un e-mail qui échoue à partir
+            // ne doit jamais faire échouer la création de la sortie elle-même
+            // (envoyer_mail() échoue déjà silencieusement, voir inc/mail.php).
+            $date_francaise = date_en_francais(date('Y-m-d H:i:s', $horodatage));
+            $resume_sortie  = "**{$titre}**\n{$date_francaise}"
+                . ($lieu ? "\nLieu : {$lieu}" : '')
+                . ($description ? "\n\n{$description}" : '');
+            $lien_sortie    = SITE_URL . '/espace/sorties-a-venir.php#sortie-' . $nouvelle_id;
+            $expediteur     = valeur_parametre($pdo, 'email') ?: 'cooky44.sl@gmail.com';
+
+            $destinataires = $pdo->query(
+                "SELECT nom, email FROM adherents WHERE valide = 1 AND actif = 1 AND email IS NOT NULL AND email <> ''"
+            )->fetchAll();
+            foreach ($destinataires as $destinataire) {
+                envoyer_mail(
+                    $destinataire['email'],
+                    $expediteur,
+                    ($categorie === 'Réunion' ? 'Nouvelle réunion : ' : 'Nouvelle sortie : ') . $titre,
+                    "Bonjour {$destinataire['nom']},\n\n"
+                    . "Une nouvelle date vient d'être ajoutée au calendrier du club :\n\n"
+                    . "{$resume_sortie}\n\n"
+                    . "Retrouvez tous les détails et inscrivez-vous ici :\n{$lien_sortie}\n\n"
+                    . "À bientôt,\nLe Focal Club Turballais"
+                );
+            }
+
+            definir_message('succes', "Ajouté à l'agenda. Un e-mail a été envoyé aux adhérents.");
         }
     }
 
@@ -304,6 +337,23 @@ titre_page("Sorties à venir", "Les prochaines sorties du club, et qui y partici
                 <a class="btn btn-ghost" href="connexion.php">Se connecter pour participer</a>
               <?php endif; ?>
               <?php if (est_gestionnaire()): ?>
+                <?php
+                  // Un envoi automatique dans le groupe WhatsApp du club
+                  // n'est pas possible depuis ce site (aucune API officielle
+                  // ne permet de poster dans un groupe existant) — ce lien
+                  // « click-to-chat » (wa.me) ouvre WhatsApp avec le message
+                  // déjà rédigé, il ne reste qu'à choisir le groupe Focal
+                  // Club Turballais et cliquer Envoyer. Choix explicite de
+                  // l'utilisateur, 27/08/2026.
+                  $texte_partage = "📸 Nouvelle sortie du Focal Club Turballais\n\n"
+                      . '*' . $sortie['titre'] . "*\n"
+                      . '🗓 ' . date_en_francais($sortie['debut']) . "\n"
+                      . ($sortie['lieu'] ? '📍 ' . $sortie['lieu'] . "\n" : '')
+                      . ($sortie['description'] ? "\n" . $sortie['description'] . "\n" : '')
+                      . "\nInfos et inscription : " . SITE_URL . '/espace/sorties-a-venir.php#sortie-' . (int) $sortie['id'];
+                  $lien_whatsapp = 'https://wa.me/?text=' . rawurlencode($texte_partage);
+                ?>
+                <a class="btn btn-ghost" href="<?= e($lien_whatsapp) ?>" target="_blank" rel="noopener noreferrer">Partager sur WhatsApp</a>
                 <details class="sortie-modifier">
                   <summary class="btn btn-ghost">Modifier</summary>
                   <form method="post" enctype="multipart/form-data" class="form-card" style="margin-top:16px;">
