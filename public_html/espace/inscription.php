@@ -53,8 +53,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($valeurs['email'] === '' || !filter_var($valeurs['email'], FILTER_VALIDATE_EMAIL)) {
         $erreurs[] = "L'adresse e-mail est obligatoire et doit être valide.";
     }
-    // Adresse, code postal et ville obligatoires — choix explicite de
-    // l'utilisateur, 28/08/2026 (auparavant tous deux facultatifs).
+    // Téléphone, adresse, code postal et ville obligatoires — choix
+    // explicite de l'utilisateur, 28/08/2026 (auparavant tous facultatifs).
+    if ($valeurs['telephone'] === '') {
+        $erreurs[] = "Le téléphone est obligatoire.";
+    }
     if ($valeurs['adresse'] === '') {
         $erreurs[] = "L'adresse est obligatoire.";
     }
@@ -65,6 +68,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if ($valeurs['ville'] === '') {
         $erreurs[] = "La ville est obligatoire.";
+    }
+    // Nom du boîtier obligatoire — choix explicite de l'utilisateur,
+    // 28/08/2026 (auparavant facultatif).
+    if ($valeurs['boitier'] === '') {
+        $erreurs[] = "Le nom du boîtier est obligatoire.";
     }
     if (mb_strlen($mot1) < 10) {
         $erreurs[] = "Le mot de passe doit contenir au moins 10 caractères.";
@@ -100,11 +108,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $valeurs['pseudo'],
             trim($valeurs['prenom'] . ' ' . $valeurs['nom']),
             $valeurs['email'],
-            $valeurs['telephone'] !== '' ? $valeurs['telephone'] : null,
+            $valeurs['telephone'],
             $valeurs['adresse'],
             $valeurs['code_postal'],
             $valeurs['ville'],
-            $valeurs['boitier'] !== '' ? $valeurs['boitier'] : null,
+            $valeurs['boitier'],
             password_hash($mot1, PASSWORD_DEFAULT),
         ]);
 
@@ -185,8 +193,8 @@ titre_page("Rejoignez le club", "Créez votre compte pour accéder à l'espace a
                  value="<?= e($valeurs['email']) ?>">
         </div>
         <div class="field">
-          <label for="telephone">Téléphone (facultatif)</label>
-          <input type="tel" id="telephone" name="telephone"
+          <label for="telephone">Téléphone</label>
+          <input type="tel" id="telephone" name="telephone" required
                  value="<?= e($valeurs['telephone']) ?>">
         </div>
       </div>
@@ -208,8 +216,8 @@ titre_page("Rejoignez le club", "Créez votre compte pour accéder à l'espace a
         </div>
       </div>
       <div class="field">
-        <label for="boitier">Nom du boîtier (facultatif)</label>
-        <input type="text" id="boitier" name="boitier"
+        <label for="boitier">Nom du boîtier</label>
+        <input type="text" id="boitier" name="boitier" required
                value="<?= e($valeurs['boitier']) ?>" placeholder="Canon EOS R6">
       </div>
       <div class="field">

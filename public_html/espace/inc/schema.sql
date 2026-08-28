@@ -12,7 +12,9 @@ CREATE TABLE IF NOT EXISTS adherents (
   adresse            VARCHAR(190) DEFAULT NULL,
   code_postal        VARCHAR(10)  DEFAULT NULL,
   ville              VARCHAR(120) DEFAULT NULL,
-  -- Nom du boîtier (appareil photo) de l'adhérent, facultatif.
+  -- Nom du boîtier (appareil photo) de l'adhérent, obligatoire à
+  -- l'inscription (voir inscription.php) mais nullable ici : un compte créé
+  -- avant ce champ n'a pas cette information.
   boitier            VARCHAR(120) DEFAULT NULL,
   administrateur     TINYINT(1)   NOT NULL DEFAULT 0,
   -- Éditeur : mêmes droits que responsable sur les comptes, les documents
