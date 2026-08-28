@@ -400,6 +400,12 @@ titre_page(
       </tbody>
     </table>
   </div>
+
+  <p class="form-note" style="margin-top:20px;">
+    <strong>Adhérent</strong> : accès à l'espace adhérents (galeries, documents, agenda, annuaire).
+    <strong>Éditeur</strong> : en plus, gère les comptes, les documents et l'agenda, sans accès aux
+    réglages du site. <strong>Responsable</strong> : tous les droits, y compris les réglages du site.
+  </p>
 </div></section>
 <?php
 fin_page();
