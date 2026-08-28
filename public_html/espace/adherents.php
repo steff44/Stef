@@ -241,6 +241,12 @@ titre_page(
 <section class="section"><div class="container container-large">
   <?php afficher_message(); ?>
 
+  <?php if (est_administrateur()): ?>
+    <p style="margin-bottom:20px;">
+      <a class="btn btn-ghost" href="export-adherents.php">Télécharger la liste des adhérents (Excel)</a>
+    </p>
+  <?php endif; ?>
+
   <details class="depot-bloc">
     <summary>Créer un compte adhérent</summary>
     <form method="post" class="form-card" style="margin-top:16px;">

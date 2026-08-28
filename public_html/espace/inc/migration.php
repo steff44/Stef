@@ -35,6 +35,14 @@ const COLONNES_ATTENDUES = [
     // 23/08/2026, choix explicite de l'utilisateur. Voir est_gestionnaire()
     // dans inc/auth.php.
     'editeur'           => 'TINYINT(1) NOT NULL DEFAULT 0',
+    // Adresse postale (numéro et rue) — choix explicite de l'utilisateur,
+    // 28/08/2026, désormais obligatoire à l'inscription avec code_postal et
+    // ville (voir inscription.php). Colonne nullable malgré tout : un
+    // adhérent déjà inscrit avant ce changement n'a pas cette information.
+    'adresse'           => 'VARCHAR(190) DEFAULT NULL',
+    // Nom du boîtier (appareil photo) de l'adhérent — choix explicite de
+    // l'utilisateur, 28/08/2026, facultatif.
+    'boitier'           => 'VARCHAR(120) DEFAULT NULL',
 ];
 
 // Colonnes attendues sur `sorties` — même principe, table différente.
