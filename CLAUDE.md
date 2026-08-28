@@ -1659,18 +1659,20 @@ que répondre au mail atterrisse au bon endroit.
 les affiche pour l'instant (l'annuaire ne montre encore que
 nom/identifiant/contact).
 
-**Adresse, code postal et ville sont obligatoires à l'inscription, et un
-adhérent peut renseigner le nom de son boîtier** (choix explicite de
-l'utilisateur, 28/08/2026 — auparavant code postal et ville étaient
-facultatifs, et il n'y avait pas de champ adresse ni boîtier). `adresse`
-(nouvelle colonne, comme `boitier`) et `code_postal`/`ville` (déjà
-existantes, voir juste au-dessus) sont désormais tous les trois exigés par
-`inscription.php` avant l'INSERT — `boitier` reste facultatif, comme
-`telephone`. Comme pour les autres champs obligatoires du site (l'e-mail
-par exemple), la contrainte est posée côté formulaire (validation PHP +
-attribut `required`), pas en `NOT NULL` en base : un compte déjà existant
-avant ce changement n'a pas ces informations, et la colonne doit rester
-nullable pour ne pas le casser.
+**Téléphone, adresse, code postal, ville et nom du boîtier sont tous
+obligatoires à l'inscription** (choix explicite de l'utilisateur,
+28/08/2026, en deux temps le même jour : téléphone et boîtier avaient
+d'abord été laissés facultatifs, avant que l'utilisatrice ne demande
+explicitement qu'ils le deviennent aussi — « le téléphone et le type de
+boîtier ne sont pas facultatifs »). `adresse` et `boitier` (nouvelles
+colonnes) et `code_postal`/`ville`/`telephone` (déjà existantes, voir
+juste au-dessus) sont désormais tous exigés par `inscription.php` avant
+l'INSERT — seul l'e-mail restait déjà obligatoire depuis le début.
+Comme pour les autres champs obligatoires du site, la contrainte est
+posée côté formulaire (validation PHP + attribut `required`), pas en
+`NOT NULL` en base : un compte déjà existant avant ce changement n'a pas
+ces informations, et les colonnes doivent rester nullables pour ne pas le
+casser.
 
 **Le mot de passe (inscription et changement depuis l'Annuaire) doit
 contenir une majuscule et un caractère spécial**, en plus des 10

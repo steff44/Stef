@@ -36,12 +36,15 @@ const COLONNES_ATTENDUES = [
     // dans inc/auth.php.
     'editeur'           => 'TINYINT(1) NOT NULL DEFAULT 0',
     // Adresse postale (numéro et rue) — choix explicite de l'utilisateur,
-    // 28/08/2026, désormais obligatoire à l'inscription avec code_postal et
-    // ville (voir inscription.php). Colonne nullable malgré tout : un
-    // adhérent déjà inscrit avant ce changement n'a pas cette information.
+    // 28/08/2026, désormais obligatoire à l'inscription avec code_postal,
+    // ville, telephone et boitier (voir inscription.php). Colonne nullable
+    // malgré tout : un adhérent déjà inscrit avant ce changement n'a pas
+    // cette information.
     'adresse'           => 'VARCHAR(190) DEFAULT NULL',
     // Nom du boîtier (appareil photo) de l'adhérent — choix explicite de
-    // l'utilisateur, 28/08/2026, facultatif.
+    // l'utilisateur, 28/08/2026, obligatoire à l'inscription depuis le même
+    // jour (revenu sur « facultatif » quelques échanges plus tard). Colonne
+    // nullable malgré tout, même raison qu'adresse ci-dessus.
     'boitier'           => 'VARCHAR(120) DEFAULT NULL',
 ];
 
