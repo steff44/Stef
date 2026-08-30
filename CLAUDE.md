@@ -1416,6 +1416,61 @@ gestionnaires (Adhérents, Réglages du site) — un contenu public comme les
 autres cartes de cette première rangée, donc pas conditionné par
 `est_gestionnaire()`.
 
+**Publier un article prévient tous les adhérents par e-mail** (choix
+explicite de l'utilisateur, 28/08/2026 : « je veux que quand un nouvel
+article est ajouté au Blog un mail soit envoyé aux adhérents »), même
+principe que la notification de nouvelle sortie
+(`sorties-a-venir.php`, voir plus haut) : dès qu'un responsable ou un
+éditeur publie un article (`action` implicite du formulaire de
+`espace/blog.php`), un e-mail est envoyé à tous les adhérents `valide=1
+actif=1` ayant une adresse renseignée (`envoyer_mail()`, un e-mail par
+adhérent, échoue silencieusement comme les autres notifications du site —
+voir `inc/mail.php`). Le message reprend le titre et l'extrait de
+l'article (celui saisi, ou `extrait_auto()` si laissé vide — la même
+valeur que celle enregistrée en base) et un lien direct vers
+`blog-article.php?id=…` (`SITE_URL`, `inc/mail.php`). Le message de
+confirmation affiché au responsable/éditeur (« Article publié. Un e-mail a
+été envoyé aux adhérents. ») reprend le même principe que celui de
+sorties-a-venir.php.
+
+Testé de bout en bout (28/08/2026) avec le même banc d'essai PHP+SQLite que
+le reste du blog : connexion, publication d'un article, exactement les
+adhérents `valide=1 actif=1` avec e-mail renseigné notifiés (vérifié sur un
+jeu de cinq comptes couvrant chaque cas d'exclusion — sans e-mail, inactif,
+en attente de validation), sujet et lien de l'e-mail corrects. Deux pièges
+rencontrés en construisant ce banc d'essai, sans rapport avec la fonction
+elle-même :
+- **Un piège déjà documenté (`UNIX_TIMESTAMP(NULL)`, voir plus bas) a été
+  réintroduit par erreur** dans le simulateur SQLite de ce test — corrigé
+  en distinguant explicitement « aucun argument » (l'instant présent) d'
+  « argument `NULL` explicite » (`NULL`), plutôt que de tester `=== null`
+  sur un paramètre par défaut, qui ne peut pas faire cette distinction.
+- **Le témoin `espace/inc/.schema-a-jour` (voir plus bas, « Les migrations
+  sont automatiques ») avait survécu à la suppression de la base SQLite**
+  entre deux essais : `appliquer_migrations()` le trouvait à jour et ne
+  rejouait donc aucune migration sur la base pourtant neuve et vide, ce qui
+  laissait `categories_blog` sans aucune catégorie. Un banc d'essai qui
+  recrée la base doit donc aussi supprimer ce témoin, sans quoi il faut
+  penser à le faire à la main à chaque fois.
+- **Une vraie découverte, dans `inc/schema.sql` cette fois** (pas propre au
+  banc d'essai) : quatre commentaires SQL contenaient un point-virgule en
+  plein milieu de ligne (ex. « `catégorie ; \`categorie\` (VARCHAR) est
+  l'ancien` »). `installation.php` découpe `schema.sql` sur les
+  points-virgules avant d'exécuter chaque instruction (`explode(';',
+  $sql)`) — un point-virgule à l'intérieur d'un commentaire, s'il n'est pas
+  suivi de la fin de la ligne, casse ce découpage et produit un fragment
+  invalide (`\`categorie\` (VARCHAR) est l'ancien...`), qui fait échouer
+  toute la création des tables. Resté invisible jusqu'ici parce que
+  `installation.php` ne s'est joué qu'une seule fois en production, avant
+  l'ajout de ces commentaires — un point-virgule en fin de ligne de
+  commentaire (juste avant le retour à la ligne) ne pose lui aucun
+  problème, seul un point-virgule suivi d'autre texte sur la même ligne est
+  dangereux. Corrigé en remplaçant les quatre points-virgules fautifs par
+  un tiret cadratin — purement une correction de commentaire, aucune
+  colonne ni donnée n'est concernée, sans risque pour le site déjà en
+  ligne (dont l'installation est verrouillée) mais qui aurait bloqué toute
+  réinstallation neuve.
+
 Testé de bout en bout (25/08/2026) avec un vrai serveur PHP intégré
 (`php -S`) branché sur SQLite plutôt que MySQL — même principe que le banc
 d'essai déjà utilisé pour l'authentification, complété ici par deux détails

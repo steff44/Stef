@@ -18,6 +18,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/inc/page.php';
 require_once __DIR__ . '/inc/blog.php';
 require_once __DIR__ . '/inc/televersement.php';
+require_once __DIR__ . '/inc/mail.php';
 
 $adherent = adherent_connecte();
 $pdo      = base_de_donnees();
@@ -63,7 +64,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $auteur_nom !== '' ? $auteur_nom : $adherent['nom'],
             $adherent['id'],
         ]);
-        definir_message('succes', "Article publié.");
+        $nouvel_id = (int) $pdo->lastInsertId();
+
+        // Prévient tous les adhérents validés par e-mail (choix explicite de
+        // l'utilisateur, 28/08/2026) — même principe que la notification de
+        // nouvelle sortie (sorties-a-venir.php) : un e-mail qui échoue à
+        // partir ne doit jamais faire échouer la publication de l'article
+        // elle-même (envoyer_mail() échoue déjà silencieusement, voir
+        // inc/mail.php).
+        $extrait_notif = $extrait !== '' ? $extrait : extrait_auto($contenu);
+        $lien_article   = SITE_URL . '/espace/blog-article.php?id=' . $nouvel_id;
+        $expediteur     = valeur_parametre($pdo, 'email') ?: 'cooky44.sl@gmail.com';
+
+        $destinataires = $pdo->query(
+            "SELECT nom, email FROM adherents WHERE valide = 1 AND actif = 1 AND email IS NOT NULL AND email <> ''"
+        )->fetchAll();
+        foreach ($destinataires as $destinataire) {
+            envoyer_mail(
+                $destinataire['email'],
+                $expediteur,
+                'Nouvel article sur le blog : ' . $titre,
+                "Bonjour {$destinataire['nom']},\n\n"
+                . "Un nouvel article vient d'être publié sur le blog du club :\n\n"
+                . "**{$titre}**\n{$extrait_notif}\n\n"
+                . "Lisez l'article complet ici :\n{$lien_article}\n\n"
+                . "À bientôt,\nLe Focal Club Turballais"
+            );
+        }
+
+        definir_message('succes', "Article publié. Un e-mail a été envoyé aux adhérents.");
     }
 
     header('Location: blog.php');
