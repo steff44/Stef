@@ -128,6 +128,242 @@ def _definir_icone_fenetre(fenetre):
         pass  # icône absente ou environnement graphique limité : sans gravité
 
 
+# -- Palette et style ------------------------------------------------------
+# Mêmes couleurs que l'icône (bleu -> violet), pour une présentation
+# cohérente et un peu plus soignée que les widgets gris par défaut.
+COULEUR_ACCENT = "#2563EB"
+COULEUR_ACCENT_ACTIF = "#1D4ED8"
+COULEUR_ACCENT_2 = "#7C3AED"
+COULEUR_DANGER = "#DC2626"
+COULEUR_DANGER_ACTIF = "#B91C1C"
+COULEUR_FOND = "#F8FAFC"
+COULEUR_CARTE = "#FFFFFF"
+COULEUR_BORDURE = "#CBD5E1"
+COULEUR_TEXTE = "#0F172A"
+COULEUR_TEXTE_DOUX = "#64748B"
+COULEUR_LIGNE_ALTERNEE = "#EEF2FF"
+COULEUR_BANDEAU_SOUS_TITRE = "#E0E7FF"
+
+POLICES_CANDIDATES = ["Segoe UI", "Helvetica Neue", "Helvetica", "Arial", "DejaVu Sans"]
+
+
+def _hex_vers_rgb(couleur):
+    couleur = couleur.lstrip("#")
+    return tuple(int(couleur[i : i + 2], 16) for i in (0, 2, 4))
+
+
+def _police(taille, gras=False):
+    """Choisit la première police disponible dans POLICES_CANDIDATES.
+
+    Nécessite qu'une fenêtre Tk existe déjà (tkinter.font.families() en
+    dépend) : à appeler seulement après la création de la fenêtre racine.
+    """
+    import tkinter.font as tkfont
+
+    familles = set(tkfont.families())
+    for nom in POLICES_CANDIDATES:
+        if nom in familles:
+            return (nom, taille, "bold" if gras else "normal")
+    return ("TkDefaultFont", taille, "bold" if gras else "normal")
+
+
+def _configurer_style(fenetre):
+    """Applique la palette et les polices à tous les widgets ttk de
+    l'application (boutons, tableau, champs...). Renvoie (police_base,
+    police_grasse) pour que l'appelant les réutilise sur les widgets Tk
+    "classiques" (Listbox, Text) qui ne suivent pas le style ttk."""
+    style = ttk.Style(fenetre)
+    try:
+        style.theme_use("clam")  # seul thème ttk permettant de vraies couleurs
+    except tk.TclError:
+        pass
+
+    police_base = _police(10)
+    police_grasse = _police(10, gras=True)
+    fenetre.option_add("*Font", police_base)
+
+    style.configure(".", background=COULEUR_FOND, foreground=COULEUR_TEXTE, font=police_base)
+    style.configure("TFrame", background=COULEUR_FOND)
+    style.configure("TLabel", background=COULEUR_FOND, foreground=COULEUR_TEXTE)
+    style.configure(
+        "TLabelframe", background=COULEUR_FOND, bordercolor=COULEUR_BORDURE, relief="solid"
+    )
+    style.configure(
+        "TLabelframe.Label", background=COULEUR_FOND, foreground=COULEUR_ACCENT, font=police_grasse
+    )
+
+    style.configure(
+        "TButton",
+        padding=(12, 7),
+        font=police_base,
+        background=COULEUR_CARTE,
+        foreground=COULEUR_TEXTE,
+        bordercolor=COULEUR_BORDURE,
+        focusthickness=0,
+    )
+    style.map(
+        "TButton",
+        background=[("active", COULEUR_LIGNE_ALTERNEE)],
+        bordercolor=[("focus", COULEUR_ACCENT)],
+    )
+
+    style.configure(
+        "Accent.TButton",
+        padding=(14, 8),
+        font=police_grasse,
+        background=COULEUR_ACCENT,
+        foreground="white",
+        bordercolor=COULEUR_ACCENT,
+    )
+    style.map(
+        "Accent.TButton",
+        background=[("active", COULEUR_ACCENT_ACTIF), ("disabled", COULEUR_BORDURE)],
+        foreground=[("disabled", COULEUR_TEXTE_DOUX)],
+    )
+
+    style.configure(
+        "Danger.TButton",
+        padding=(12, 7),
+        font=police_base,
+        background=COULEUR_DANGER,
+        foreground="white",
+        bordercolor=COULEUR_DANGER,
+    )
+    style.map("Danger.TButton", background=[("active", COULEUR_DANGER_ACTIF)])
+
+    style.configure(
+        "Treeview",
+        background=COULEUR_CARTE,
+        fieldbackground=COULEUR_CARTE,
+        foreground=COULEUR_TEXTE,
+        rowheight=28,
+        bordercolor=COULEUR_BORDURE,
+        font=police_base,
+    )
+    style.map(
+        "Treeview",
+        background=[("selected", COULEUR_ACCENT)],
+        foreground=[("selected", "white")],
+    )
+    style.configure(
+        "Treeview.Heading",
+        background=COULEUR_ACCENT,
+        foreground="white",
+        font=police_grasse,
+        relief="flat",
+        padding=(8, 8),
+    )
+    style.map("Treeview.Heading", background=[("active", COULEUR_ACCENT_ACTIF)])
+
+    style.configure(
+        "TEntry",
+        fieldbackground=COULEUR_CARTE,
+        bordercolor=COULEUR_BORDURE,
+        padding=6,
+    )
+    style.map("TEntry", bordercolor=[("focus", COULEUR_ACCENT)])
+
+    style.configure(
+        "TScrollbar",
+        background=COULEUR_FOND,
+        troughcolor=COULEUR_FOND,
+        bordercolor=COULEUR_FOND,
+        arrowcolor=COULEUR_TEXTE_DOUX,
+    )
+
+    return police_base, police_grasse
+
+
+def _styliser_liste(liste):
+    """Habille un Listbox Tk "classique" (pas de ttk.Listbox) pour qu'il
+    reprenne la palette de l'application au lieu du gris par défaut."""
+    liste.configure(
+        background=COULEUR_CARTE,
+        foreground=COULEUR_TEXTE,
+        selectbackground=COULEUR_ACCENT,
+        selectforeground="white",
+        relief="flat",
+        highlightthickness=1,
+        highlightbackground=COULEUR_BORDURE,
+        highlightcolor=COULEUR_ACCENT,
+        borderwidth=0,
+    )
+
+
+def _styliser_texte(zone_texte):
+    """Idem pour un widget Text (description)."""
+    zone_texte.configure(
+        background=COULEUR_CARTE,
+        foreground=COULEUR_TEXTE,
+        relief="flat",
+        highlightthickness=1,
+        highlightbackground=COULEUR_BORDURE,
+        highlightcolor=COULEUR_ACCENT,
+        borderwidth=0,
+        padx=6,
+        pady=6,
+    )
+
+
+class BandeauTitre(tk.Canvas):
+    """Bandeau dégradé bleu -> violet en haut de la fenêtre principale,
+    avec l'icône de l'application et son nom."""
+
+    NB_BANDES = 120
+
+    def __init__(self, parent, police_titre, police_sous_titre):
+        super().__init__(parent, height=64, highlightthickness=0, bd=0)
+        self._police_titre = police_titre
+        self._police_sous_titre = police_sous_titre
+        try:
+            self._icone = tk.PhotoImage(data=ICONE_FENETRE_BASE64).subsample(4, 4)
+        except tk.TclError:
+            self._icone = None
+        self.bind("<Configure>", self._redessiner)
+
+    def _redessiner(self, _evenement=None):
+        largeur = self.winfo_width()
+        hauteur = self.winfo_height()
+        if largeur <= 1:
+            return
+        self.delete("all")
+
+        depart = _hex_vers_rgb(COULEUR_ACCENT)
+        arrivee = _hex_vers_rgb(COULEUR_ACCENT_2)
+        largeur_bande = largeur / self.NB_BANDES
+        for i in range(self.NB_BANDES):
+            t = i / (self.NB_BANDES - 1)
+            r = round(depart[0] + (arrivee[0] - depart[0]) * t)
+            g = round(depart[1] + (arrivee[1] - depart[1]) * t)
+            b = round(depart[2] + (arrivee[2] - depart[2]) * t)
+            couleur = f"#{r:02x}{g:02x}{b:02x}"
+            x0 = i * largeur_bande
+            x1 = (i + 1) * largeur_bande + 1  # +1 : évite un liseré blanc entre bandes
+            self.create_rectangle(x0, 0, x1, hauteur, fill=couleur, outline=couleur)
+
+        x_texte = 18
+        if self._icone is not None:
+            self.create_image(18, hauteur // 2, image=self._icone, anchor="w")
+            x_texte = 18 + self._icone.width() + 12
+
+        self.create_text(
+            x_texte,
+            hauteur // 2 - 11,
+            text=APP_TITLE,
+            anchor="w",
+            fill="white",
+            font=self._police_titre,
+        )
+        self.create_text(
+            x_texte,
+            hauteur // 2 + 13,
+            text="Catalogue de vos tutoriels photo",
+            anchor="w",
+            fill=COULEUR_BANDEAU_SOUS_TITRE,
+            font=self._police_sous_titre,
+        )
+
+
 RUBRIQUES_PAR_DEFAUT = [
     "Prise de vue",
     "Post-traitement",
@@ -466,10 +702,11 @@ class FormulaireTuto(tk.Toplevel):
 
         self.title("Modifier un tuto" if tuto_existant else "Ajouter un tuto")
         self.resizable(False, False)
+        self.configure(background=COULEUR_FOND)
         self.transient(parent)
         self.grab_set()
 
-        conteneur = ttk.Frame(self, padding=16)
+        conteneur = ttk.Frame(self, padding=18)
         conteneur.grid(sticky="nsew")
 
         if tuto_existant:
@@ -494,6 +731,7 @@ class FormulaireTuto(tk.Toplevel):
             cadre_fichier = ttk.Frame(conteneur)
             cadre_fichier.grid(row=0, column=1, sticky="ew", pady=4)
             self.liste_fichiers = tk.Listbox(cadre_fichier, height=4, exportselection=False)
+            _styliser_liste(self.liste_fichiers)
             self.liste_fichiers.grid(row=0, column=0, sticky="ew")
             cadre_boutons_fichiers = ttk.Frame(cadre_fichier)
             cadre_boutons_fichiers.grid(row=0, column=1, sticky="n", padx=(6, 0))
@@ -517,6 +755,7 @@ class FormulaireTuto(tk.Toplevel):
             row=2, column=0, sticky="nw", pady=4
         )
         self.texte_description = tk.Text(conteneur, width=48, height=4, wrap="word")
+        _styliser_texte(self.texte_description)
         self.texte_description.grid(row=2, column=1, sticky="ew", pady=4)
         if tuto_existant:
             self.texte_description.insert("1.0", tuto_existant["description"])
@@ -529,6 +768,7 @@ class FormulaireTuto(tk.Toplevel):
         self.liste_rubriques = tk.Listbox(
             cadre_rubriques, selectmode="multiple", height=6, exportselection=False
         )
+        _styliser_liste(self.liste_rubriques)
         self.liste_rubriques.grid(row=0, column=0, sticky="ew")
         ttk.Button(
             cadre_rubriques, text="+ Nouvelle rubrique", command=self._nouvelle_rubrique
@@ -543,6 +783,7 @@ class FormulaireTuto(tk.Toplevel):
         self.liste_themes = tk.Listbox(
             cadre_themes, selectmode="multiple", height=6, exportselection=False
         )
+        _styliser_liste(self.liste_themes)
         self.liste_themes.grid(row=0, column=0, sticky="ew")
         ttk.Button(
             cadre_themes, text="+ Nouveau thème", command=self._nouveau_theme
@@ -554,9 +795,9 @@ class FormulaireTuto(tk.Toplevel):
         ttk.Button(cadre_boutons, text="Annuler", command=self.destroy).grid(
             row=0, column=0, padx=(0, 8)
         )
-        ttk.Button(cadre_boutons, text="Enregistrer", command=self._enregistrer).grid(
-            row=0, column=1
-        )
+        ttk.Button(
+            cadre_boutons, text="Enregistrer", style="Accent.TButton", command=self._enregistrer
+        ).grid(row=0, column=1)
 
         self._rubriques_ids = []
         self._themes_ids = []
@@ -733,6 +974,7 @@ class FenetreGestion(tk.Toplevel):
         super().__init__(parent)
         self.title(titre)
         self.resizable(False, False)
+        self.configure(background=COULEUR_FOND)
         self.transient(parent)
         self.grab_set()
 
@@ -743,21 +985,22 @@ class FenetreGestion(tk.Toplevel):
         self.compter_utilisation = compter_utilisation
         self.on_modifie = on_modifie
 
-        conteneur = ttk.Frame(self, padding=16)
+        conteneur = ttk.Frame(self, padding=18)
         conteneur.grid(sticky="nsew")
 
         self.liste = tk.Listbox(conteneur, width=40, height=12)
+        _styliser_liste(self.liste)
         self.liste.grid(row=0, column=0, columnspan=3, sticky="nsew")
 
-        ttk.Button(conteneur, text="Ajouter", command=self._ajouter).grid(
-            row=1, column=0, pady=(8, 0), sticky="ew"
-        )
+        ttk.Button(
+            conteneur, text="Ajouter", style="Accent.TButton", command=self._ajouter
+        ).grid(row=1, column=0, pady=(10, 0), sticky="ew", padx=(0, 4))
         ttk.Button(conteneur, text="Renommer", command=self._renommer).grid(
-            row=1, column=1, pady=(8, 0), sticky="ew"
+            row=1, column=1, pady=(10, 0), sticky="ew", padx=4
         )
-        ttk.Button(conteneur, text="Supprimer", command=self._supprimer).grid(
-            row=1, column=2, pady=(8, 0), sticky="ew"
-        )
+        ttk.Button(
+            conteneur, text="Supprimer", style="Danger.TButton", command=self._supprimer
+        ).grid(row=1, column=2, pady=(10, 0), sticky="ew", padx=(4, 0))
 
         self._ids = []
         self._recharger()
@@ -828,9 +1071,12 @@ class ApplicationSteftuto(tk.Tk):
         self.base = Base(DB_PATH)
 
         self.title(APP_TITLE)
-        self.geometry("980x560")
-        self.minsize(760, 440)
+        self.geometry("1040x620")
+        self.minsize(780, 480)
+        self.configure(background=COULEUR_FOND)
         _definir_icone_fenetre(self)
+
+        self._police_base, self._police_grasse = _configurer_style(self)
 
         self._construire_menu()
         self._construire_interface()
@@ -859,20 +1105,26 @@ class ApplicationSteftuto(tk.Tk):
         self.config(menu=barre)
 
     def _construire_interface(self):
-        cadre_recherche = ttk.LabelFrame(self, text="Recherche", padding=10)
-        cadre_recherche.pack(fill="x", padx=10, pady=(10, 0))
+        police_bandeau_titre = (self._police_base[0], 20, "bold")
+        police_bandeau_sous_titre = (self._police_base[0], 10, "normal")
+        self.bandeau = BandeauTitre(self, police_bandeau_titre, police_bandeau_sous_titre)
+        self.bandeau.pack(fill="x", side="top")
+
+        cadre_recherche = ttk.LabelFrame(self, text="🔍  Recherche", padding=12)
+        cadre_recherche.pack(fill="x", padx=14, pady=(14, 0))
 
         ttk.Label(cadre_recherche, text="Texte :").grid(row=0, column=0, sticky="w")
         self.var_recherche = tk.StringVar()
         entree_recherche = ttk.Entry(cadre_recherche, textvariable=self.var_recherche, width=40)
-        entree_recherche.grid(row=0, column=1, sticky="w", padx=(4, 16))
+        entree_recherche.grid(row=0, column=1, sticky="w", padx=(4, 18))
         entree_recherche.bind("<KeyRelease>", lambda _evt: self.actualiser_liste())
 
         ttk.Label(cadre_recherche, text="Rubriques :").grid(row=0, column=2, sticky="w")
         self.liste_filtre_rubriques = tk.Listbox(
             cadre_recherche, selectmode="multiple", height=4, exportselection=False, width=22
         )
-        self.liste_filtre_rubriques.grid(row=0, column=3, rowspan=2, sticky="w", padx=(4, 16))
+        _styliser_liste(self.liste_filtre_rubriques)
+        self.liste_filtre_rubriques.grid(row=0, column=3, rowspan=2, sticky="w", padx=(4, 18))
         self.liste_filtre_rubriques.bind(
             "<<ListboxSelect>>", lambda _evt: self.actualiser_liste()
         )
@@ -881,16 +1133,17 @@ class ApplicationSteftuto(tk.Tk):
         self.liste_filtre_themes = tk.Listbox(
             cadre_recherche, selectmode="multiple", height=4, exportselection=False, width=22
         )
-        self.liste_filtre_themes.grid(row=0, column=5, rowspan=2, sticky="w", padx=(4, 16))
+        _styliser_liste(self.liste_filtre_themes)
+        self.liste_filtre_themes.grid(row=0, column=5, rowspan=2, sticky="w", padx=(4, 18))
         self.liste_filtre_themes.bind(
             "<<ListboxSelect>>", lambda _evt: self.actualiser_liste()
         )
 
         ttk.Button(
             cadre_recherche, text="Réinitialiser les filtres", command=self._reinitialiser_filtres
-        ).grid(row=1, column=0, columnspan=2, sticky="w", pady=(6, 0))
+        ).grid(row=1, column=0, columnspan=2, sticky="w", pady=(8, 0))
 
-        cadre_liste = ttk.Frame(self, padding=10)
+        cadre_liste = ttk.Frame(self, padding=14)
         cadre_liste.pack(fill="both", expand=True)
 
         colonnes = ("titre", "extension", "rubriques", "themes")
@@ -903,6 +1156,8 @@ class ApplicationSteftuto(tk.Tk):
         self.arbre.column("extension", width=70, anchor="center")
         self.arbre.column("rubriques", width=260)
         self.arbre.column("themes", width=260)
+        self.arbre.tag_configure("impair", background=COULEUR_LIGNE_ALTERNEE)
+        self.arbre.tag_configure("pair", background=COULEUR_CARTE)
         self.arbre.pack(side="left", fill="both", expand=True)
         self.arbre.bind("<Double-1>", lambda _evt: self.ouvrir_selection())
 
@@ -910,22 +1165,30 @@ class ApplicationSteftuto(tk.Tk):
         defilement.pack(side="left", fill="y")
         self.arbre.configure(yscrollcommand=defilement.set)
 
-        cadre_boutons = ttk.Frame(self, padding=(10, 0, 10, 10))
+        cadre_boutons = ttk.Frame(self, padding=(14, 0, 14, 14))
         cadre_boutons.pack(fill="x")
-        ttk.Button(cadre_boutons, text="Ajouter un tuto…", command=self.ajouter_tuto).pack(
-            side="left"
-        )
+        ttk.Button(
+            cadre_boutons,
+            text="＋ Ajouter un tuto…",
+            style="Accent.TButton",
+            command=self.ajouter_tuto,
+        ).pack(side="left")
         ttk.Button(cadre_boutons, text="Ouvrir", command=self.ouvrir_selection).pack(
             side="left", padx=6
         )
         ttk.Button(cadre_boutons, text="Modifier…", command=self.modifier_selection).pack(
             side="left"
         )
-        ttk.Button(cadre_boutons, text="Supprimer", command=self.supprimer_selection).pack(
-            side="left", padx=6
-        )
+        ttk.Button(
+            cadre_boutons,
+            text="Supprimer",
+            style="Danger.TButton",
+            command=self.supprimer_selection,
+        ).pack(side="left", padx=6)
 
-        self.etiquette_compte = ttk.Label(cadre_boutons, text="")
+        self.etiquette_compte = ttk.Label(
+            cadre_boutons, text="", foreground=COULEUR_TEXTE_DOUX, font=self._police_grasse
+        )
         self.etiquette_compte.pack(side="right")
 
         self._tutos_ids_par_ligne = []
@@ -976,7 +1239,7 @@ class ApplicationSteftuto(tk.Tk):
 
         self.arbre.delete(*self.arbre.get_children())
         self._tutos_ids_par_ligne = []
-        for tuto in tutos:
+        for index, tuto in enumerate(tutos):
             ligne = self.arbre.insert(
                 "",
                 "end",
@@ -986,6 +1249,7 @@ class ApplicationSteftuto(tk.Tk):
                     ", ".join(tuto["rubriques"]) or "—",
                     ", ".join(tuto["themes"]) or "—",
                 ),
+                tags=("pair" if index % 2 == 0 else "impair",),
             )
             self._tutos_ids_par_ligne.append((ligne, tuto["id"]))
 
