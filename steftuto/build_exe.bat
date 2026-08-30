@@ -10,7 +10,7 @@ if errorlevel 1 goto erreur
 
 echo.
 echo Fabrication de Steftuto.exe...
-python -m PyInstaller --onefile --windowed --name Steftuto steftuto.py
+python -m PyInstaller --onefile --windowed --name Steftuto --icon icone.ico steftuto.py
 if errorlevel 1 goto erreur
 
 echo.
