@@ -103,7 +103,7 @@ CREATE TABLE IF NOT EXISTS categories_documents (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Documents du club (comptes rendus, statuts, bulletins…). `categorie_id`
--- classe le document dans une catégorie ; `categorie` (VARCHAR) est l'ancien
+-- classe le document dans une catégorie — `categorie` (VARCHAR) est l'ancien
 -- classement en texte libre, conservé pour ne perdre aucune donnée mais plus
 -- lu par le code (voir inc/migration.php).
 CREATE TABLE IF NOT EXISTS documents (
@@ -162,7 +162,7 @@ CREATE TABLE IF NOT EXISTS categories_blog (
 -- espace/blog-article.php), comme l'agenda, mais rédigés uniquement par un
 -- responsable ou un éditeur (voir exige_gestionnaire() dans inc/auth.php).
 -- `auteur_nom` signe l'article (préempli avec le nom de l'adhérent connecté
--- à la rédaction, modifiable) ; `image` est la photo de couverture,
+-- à la rédaction, modifiable) — `image` est la photo de couverture,
 -- facultative, dans espace/photos_blog/, servie par telecharger.php
 -- (type=blog, public comme les photos de sortie et de la Galerie du Club).
 -- `contenu` passe par texte_riche_html() (inc/blog.php) à l'affichage :
@@ -189,7 +189,7 @@ CREATE TABLE IF NOT EXISTS articles_blog (
 -- 27/08/2026) selon `type` : 'drive' (par défaut), les photos vivent sur
 -- Google Drive — `dossier_drive` est alors l'identifiant du dossier Drive de
 -- l'album (celui de son URL : drive.google.com/drive/folders/CET_IDENTIFIANT),
--- qui contient un sous-dossier par adhérent ; 'local', les photos sont
+-- qui contient un sous-dossier par adhérent — 'local', les photos sont
 -- déposées directement par les adhérents sur cet hébergement (voir
 -- photos_sorties plus bas) — réservé aux sorties avec peu de photos, pour ne
 -- pas charger l'hébergement Hostinger. `dossier_drive` reste une chaîne vide
@@ -210,7 +210,7 @@ CREATE TABLE IF NOT EXISTS albums_sorties (
 -- espace/photos_sorties/, dossier interdit d'accès direct, servi par
 -- telecharger.php (type=sortie_album, public comme les photos de sortie et de
 -- la Galerie du Club). `nom_affiche` permet de signer autrement que son
--- identifiant de connexion ; vide, l'affichage retombe sur le nom de
+-- identifiant de connexion — vide, l'affichage retombe sur le nom de
 -- l'adhérent. Supprimer l'album (parametres.php) efface d'abord les fichiers
 -- sur disque, puis les lignes ici via la suppression en cascade.
 CREATE TABLE IF NOT EXISTS photos_sorties (
