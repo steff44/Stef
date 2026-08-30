@@ -15,6 +15,7 @@ Lancement :  python3 steftuto.py
 Données :    steftuto.db (créé automatiquement à côté de ce fichier)
 """
 
+import base64
 import os
 import sqlite3
 import subprocess
@@ -40,6 +41,92 @@ def _dossier_application():
 
 
 DB_PATH = os.path.join(_dossier_application(), "steftuto.db")
+
+# Icône de l'application (appareil photo blanc sur fond dégradé bleu/violet),
+# encodée en base64 pour rester dans ce seul fichier : elle s'affiche ainsi
+# même quand steftuto.py est distribué seul, sans son dossier. Elle sert à
+# l'icône de la fenêtre / barre des tâches ; l'icône du fichier .exe, elle,
+# vient du fichier séparé icone.ico (voir build_exe.bat).
+ICONE_FENETRE_BASE64 = """
+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
+""".strip().replace("\n", "")
+
+
+def _definir_icone_fenetre(fenetre):
+    """Pose l'icône sur la fenêtre (barre des tâches / barre de titre)."""
+    try:
+        image = tk.PhotoImage(data=ICONE_FENETRE_BASE64)
+        fenetre.iconphoto(True, image)
+        fenetre._icone_reference = image  # évite le ramasse-miettes de Tk
+    except tk.TclError:
+        pass  # icône absente ou environnement graphique limité : sans gravité
+
 
 RUBRIQUES_PAR_DEFAUT = [
     "Prise de vue",
@@ -385,24 +472,46 @@ class FormulaireTuto(tk.Toplevel):
         conteneur = ttk.Frame(self, padding=16)
         conteneur.grid(sticky="nsew")
 
-        ttk.Label(conteneur, text="Fichier :").grid(row=0, column=0, sticky="w", pady=4)
-        cadre_fichier = ttk.Frame(conteneur)
-        cadre_fichier.grid(row=0, column=1, sticky="ew", pady=4)
-        self.var_chemin = tk.StringVar(
-            value=tuto_existant["chemin_fichier"] if tuto_existant else ""
-        )
-        self.entree_chemin = ttk.Entry(cadre_fichier, textvariable=self.var_chemin, width=48)
-        self.entree_chemin.grid(row=0, column=0, sticky="ew")
-        ttk.Button(cadre_fichier, text="Parcourir…", command=self._parcourir).grid(
-            row=0, column=1, padx=(6, 0)
-        )
-        cadre_fichier.columnconfigure(0, weight=1)
+        if tuto_existant:
+            # Modification : toujours un seul fichier, comme avant (champ
+            # modifiable à la main, pratique pour corriger un chemin déplacé).
+            ttk.Label(conteneur, text="Fichier :").grid(row=0, column=0, sticky="w", pady=4)
+            cadre_fichier = ttk.Frame(conteneur)
+            cadre_fichier.grid(row=0, column=1, sticky="ew", pady=4)
+            self.var_chemin = tk.StringVar(value=tuto_existant["chemin_fichier"])
+            self.entree_chemin = ttk.Entry(cadre_fichier, textvariable=self.var_chemin, width=48)
+            self.entree_chemin.grid(row=0, column=0, sticky="ew")
+            ttk.Button(
+                cadre_fichier, text="Parcourir…", command=self._parcourir_un_fichier
+            ).grid(row=0, column=1, padx=(6, 0))
+            cadre_fichier.columnconfigure(0, weight=1)
+        else:
+            # Ajout : un ou plusieurs fichiers à la fois. Chaque fichier
+            # devient un tuto séparé ; le titre saisi ne sert que s'il n'y en
+            # a qu'un (sinon chacun reprend son propre nom de fichier).
+            self._chemins = []
+            ttk.Label(conteneur, text="Fichier(s) :").grid(row=0, column=0, sticky="nw", pady=4)
+            cadre_fichier = ttk.Frame(conteneur)
+            cadre_fichier.grid(row=0, column=1, sticky="ew", pady=4)
+            self.liste_fichiers = tk.Listbox(cadre_fichier, height=4, exportselection=False)
+            self.liste_fichiers.grid(row=0, column=0, sticky="ew")
+            cadre_boutons_fichiers = ttk.Frame(cadre_fichier)
+            cadre_boutons_fichiers.grid(row=0, column=1, sticky="n", padx=(6, 0))
+            self.bouton_parcourir = ttk.Button(
+                cadre_boutons_fichiers,
+                text="Parcourir…",
+                command=self._parcourir_plusieurs_fichiers,
+            )
+            self.bouton_parcourir.grid(row=0, column=0, sticky="ew")
+            ttk.Button(
+                cadre_boutons_fichiers, text="Retirer", command=self._retirer_fichier_selectionne
+            ).grid(row=1, column=0, sticky="ew", pady=(4, 0))
+            cadre_fichier.columnconfigure(0, weight=1)
 
         ttk.Label(conteneur, text="Titre :").grid(row=1, column=0, sticky="w", pady=4)
         self.var_titre = tk.StringVar(value=tuto_existant["titre"] if tuto_existant else "")
-        ttk.Entry(conteneur, textvariable=self.var_titre, width=50).grid(
-            row=1, column=1, sticky="ew", pady=4
-        )
+        self.entree_titre = ttk.Entry(conteneur, textvariable=self.var_titre, width=50)
+        self.entree_titre.grid(row=1, column=1, sticky="ew", pady=4)
 
         ttk.Label(conteneur, text="Description\n(facultative) :").grid(
             row=2, column=0, sticky="nw", pady=4
@@ -458,9 +567,13 @@ class FormulaireTuto(tk.Toplevel):
             selection=tuto_existant["theme_ids"] if tuto_existant else []
         )
 
-        self.entree_chemin.focus_set()
+        if tuto_existant:
+            self.entree_chemin.focus_set()
+        else:
+            self.bouton_parcourir.focus_set()
 
-    def _parcourir(self):
+    def _parcourir_un_fichier(self):
+        """Modification : un seul fichier, comme avant."""
         chemin = filedialog.askopenfilename(title="Choisir le fichier du tuto")
         if not chemin:
             return
@@ -468,6 +581,42 @@ class FormulaireTuto(tk.Toplevel):
         if not self.var_titre.get().strip():
             nom_sans_extension = os.path.splitext(os.path.basename(chemin))[0]
             self.var_titre.set(nom_sans_extension)
+
+    def _parcourir_plusieurs_fichiers(self):
+        """Ajout : un ou plusieurs fichiers en une seule sélection."""
+        chemins = filedialog.askopenfilenames(title="Choisir un ou plusieurs fichiers de tuto")
+        if not chemins:
+            return
+        for chemin in chemins:
+            if chemin not in self._chemins:
+                self._chemins.append(chemin)
+        self._rafraichir_liste_fichiers()
+        self._mettre_a_jour_titre_selon_fichiers()
+
+    def _retirer_fichier_selectionne(self):
+        for index in reversed(self.liste_fichiers.curselection()):
+            del self._chemins[index]
+        self._rafraichir_liste_fichiers()
+        self._mettre_a_jour_titre_selon_fichiers()
+
+    def _rafraichir_liste_fichiers(self):
+        self.liste_fichiers.delete(0, "end")
+        for chemin in self._chemins:
+            self.liste_fichiers.insert("end", os.path.basename(chemin))
+
+    def _mettre_a_jour_titre_selon_fichiers(self):
+        """Le titre saisi ne vaut que pour un seul fichier : au-delà, chaque
+        fichier reprendra son propre nom (sans extension) à l'enregistrement."""
+        if len(self._chemins) == 1:
+            self.entree_titre.configure(state="normal")
+            if not self.var_titre.get().strip():
+                nom_sans_extension = os.path.splitext(os.path.basename(self._chemins[0]))[0]
+                self.var_titre.set(nom_sans_extension)
+        elif len(self._chemins) > 1:
+            self.var_titre.set("")
+            self.entree_titre.configure(state="disabled")
+        else:
+            self.entree_titre.configure(state="normal")
 
     def _recharger_rubriques(self, selection):
         self.liste_rubriques.delete(0, "end")
@@ -518,34 +667,59 @@ class FormulaireTuto(tk.Toplevel):
         self._recharger_themes(selection=selection_actuelle)
 
     def _enregistrer(self):
-        chemin = self.var_chemin.get().strip()
         titre = self.var_titre.get().strip()
         description = self.texte_description.get("1.0", "end").strip()
+        rubrique_ids = [self._rubriques_ids[i] for i in self.liste_rubriques.curselection()]
+        theme_ids = [self._themes_ids[i] for i in self.liste_themes.curselection()]
 
-        if not chemin:
-            messagebox.showerror(APP_TITLE, "Veuillez choisir un fichier.", parent=self)
-            return
-        if not titre:
-            messagebox.showerror(APP_TITLE, "Veuillez saisir un titre.", parent=self)
-            return
-        if not os.path.exists(chemin):
-            if not messagebox.askyesno(
+        if self.tuto_existant:
+            chemin = self.var_chemin.get().strip()
+            if not chemin:
+                messagebox.showerror(APP_TITLE, "Veuillez choisir un fichier.", parent=self)
+                return
+            if not titre:
+                messagebox.showerror(APP_TITLE, "Veuillez saisir un titre.", parent=self)
+                return
+            if not os.path.exists(chemin) and not messagebox.askyesno(
                 APP_TITLE,
                 "Ce fichier est introuvable à cet emplacement.\n"
                 "Enregistrer quand même la fiche ?",
                 parent=self,
             ):
                 return
-
-        rubrique_ids = [self._rubriques_ids[i] for i in self.liste_rubriques.curselection()]
-        theme_ids = [self._themes_ids[i] for i in self.liste_themes.curselection()]
-
-        if self.tuto_existant:
             self.base.modifier_tuto(
                 self.tuto_existant["id"], titre, chemin, description, rubrique_ids, theme_ids
             )
         else:
-            self.base.ajouter_tuto(titre, chemin, description, rubrique_ids, theme_ids)
+            if not self._chemins:
+                messagebox.showerror(
+                    APP_TITLE, "Veuillez choisir au moins un fichier.", parent=self
+                )
+                return
+            if len(self._chemins) == 1 and not titre:
+                messagebox.showerror(APP_TITLE, "Veuillez saisir un titre.", parent=self)
+                return
+            manquants = [c for c in self._chemins if not os.path.exists(c)]
+            if manquants and not messagebox.askyesno(
+                APP_TITLE,
+                f"{len(manquants)} fichier(s) sur {len(self._chemins)} sont introuvables "
+                "à cet emplacement.\nEnregistrer quand même ?",
+                parent=self,
+            ):
+                return
+            for chemin in self._chemins:
+                titre_fichier = (
+                    titre
+                    if len(self._chemins) == 1
+                    else os.path.splitext(os.path.basename(chemin))[0]
+                )
+                self.base.ajouter_tuto(
+                    titre_fichier, chemin, description, rubrique_ids, theme_ids
+                )
+            if len(self._chemins) > 1:
+                messagebox.showinfo(
+                    APP_TITLE, f"{len(self._chemins)} tutos ajoutés.", parent=self
+                )
 
         if self.on_valide:
             self.on_valide()
@@ -656,6 +830,7 @@ class ApplicationSteftuto(tk.Tk):
         self.title(APP_TITLE)
         self.geometry("980x560")
         self.minsize(760, 440)
+        _definir_icone_fenetre(self)
 
         self._construire_menu()
         self._construire_interface()

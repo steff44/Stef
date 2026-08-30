@@ -75,11 +75,16 @@ pyinstaller --onefile --windowed --name Steftuto steftuto.py
 ## Utilisation
 
 - **Ajouter un tuto** : bouton « Ajouter un tuto… », puis « Parcourir… »
-  pour choisir le fichier sur votre disque. Le titre se remplit
-  automatiquement avec le nom du fichier (modifiable). Cochez ensuite
-  une ou plusieurs rubriques et un ou plusieurs thèmes (maintenez
-  Ctrl enfoncé pour en sélectionner plusieurs). Vous pouvez créer une
-  nouvelle rubrique ou un nouveau thème directement depuis ce
+  pour choisir un ou **plusieurs fichiers à la fois** sur votre disque
+  (maintenez Ctrl ou Maj enfoncé dans la fenêtre de sélection pour en
+  choisir plusieurs). Avec un seul fichier, le titre se remplit
+  automatiquement avec son nom (modifiable) ; avec plusieurs fichiers,
+  chacun devient un tuto séparé qui reprend directement son propre nom
+  de fichier comme titre. Dans les deux cas, les rubriques, thèmes et
+  la description choisis s'appliquent à tous les fichiers du lot.
+  Cochez une ou plusieurs rubriques et un ou plusieurs thèmes
+  (maintenez Ctrl enfoncé pour en sélectionner plusieurs). Vous pouvez
+  créer une nouvelle rubrique ou un nouveau thème directement depuis ce
   formulaire, avec les boutons « + Nouvelle rubrique » / « + Nouveau
   thème ».
 - **Rechercher** : en haut de la fenêtre, tapez du texte (cherché dans
