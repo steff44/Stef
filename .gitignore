@@ -29,6 +29,10 @@ public_html/espace/inc/.schema-a-jour
 public_html/espace/inc/.cache-albums-*.json
 
 # Steftuto : catalogue personnel de tutos (données propres à chaque
-# utilisateur), et cache Python — jamais versionnés.
+# utilisateur), cache Python et fichiers générés par build_exe.bat —
+# jamais versionnés.
 steftuto/steftuto.db
 steftuto/__pycache__/
+steftuto/build/
+steftuto/dist/
+steftuto/*.spec
