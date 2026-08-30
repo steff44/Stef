@@ -24,7 +24,22 @@ from datetime import datetime
 from tkinter import filedialog, messagebox, simpledialog, ttk
 
 APP_TITLE = "Steftuto"
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "steftuto.db")
+
+
+def _dossier_application():
+    """Dossier où lire/écrire steftuto.db.
+
+    Une fois transformé en .exe par PyInstaller (mode --onefile), __file__
+    pointe vers le dossier temporaire d'extraction (vidé à la fermeture),
+    pas vers l'endroit où se trouve le .exe : sans ce cas particulier, le
+    catalogue serait recréé vide à chaque lancement.
+    """
+    if getattr(sys, "frozen", False):
+        return os.path.dirname(sys.executable)
+    return os.path.dirname(os.path.abspath(__file__))
+
+
+DB_PATH = os.path.join(_dossier_application(), "steftuto.db")
 
 RUBRIQUES_PAR_DEFAUT = [
     "Prise de vue",

@@ -41,6 +41,37 @@ python steftuto.py
 Vous pouvez aussi créer un raccourci vers cette commande sur votre
 bureau pour lancer Steftuto en un double-clic.
 
+## Fabriquer un exécutable Windows (.exe)
+
+Si vous préférez un vrai `.exe`, à double-cliquer sans jamais taper de
+commande (et à partager avec quelqu'un qui n'a pas Python), Steftuto
+peut être transformé en exécutable autonome grâce à
+[PyInstaller](https://pyinstaller.org/). Cette fabrication se fait
+**une seule fois, sur un PC Windows** (Python doit y être installé au
+moment de la fabrication seulement — le `.exe` obtenu, lui, n'en a
+plus besoin et peut être copié sur n'importe quel autre PC Windows).
+
+1. Ouvrez le dossier `steftuto` sur ce PC Windows.
+2. Double-cliquez sur `build_exe.bat`.
+3. Une fenêtre noire s'ouvre, installe PyInstaller puis fabrique
+   l'exécutable (une minute ou deux). À la fin, vous obtenez :
+   ```
+   steftuto\dist\Steftuto.exe
+   ```
+4. Copiez ce fichier où vous voulez (Bureau, clé USB...). Un
+   double-clic dessus suffit à lancer Steftuto.
+
+Le fichier `steftuto.db` (votre catalogue) se crée automatiquement
+**juste à côté du `.exe`**, exactement comme à côté de `steftuto.py`
+en temps normal.
+
+Pour fabriquer l'exécutable à la main plutôt que via `build_exe.bat` :
+
+```
+pip install pyinstaller
+pyinstaller --onefile --windowed --name Steftuto steftuto.py
+```
+
 ## Utilisation
 
 - **Ajouter un tuto** : bouton « Ajouter un tuto… », puis « Parcourir… »
