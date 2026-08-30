@@ -27,3 +27,8 @@ public_html/espace/inc/.schema-a-jour
 # (voir infos-albums.php) — un fichier par album, plus un pour la liste ;
 # se régénèrent tout seuls, rien à versionner.
 public_html/espace/inc/.cache-albums-*.json
+
+# Steftuto : catalogue personnel de tutos (données propres à chaque
+# utilisateur), et cache Python — jamais versionnés.
+steftuto/steftuto.db
+steftuto/__pycache__/
