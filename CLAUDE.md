@@ -8,13 +8,14 @@ Il résume l'état du projet pour repartir sans avoir à tout réexpliquer.
 Site vitrine statique (HTML/CSS/JS, sans framework ni build) pour le **Focal
 Club Turballais**, club photo associatif de La Turballe (44).
 
-- **En ligne :** https://myfocal.online (et `www.myfocal.online`) — espace
-  adhérents sur https://myfocal.online/espace/connexion.php. Depuis le
-  30/08/2026, **`https://focalclub.fr` sert exactement le même site**
-  (choix explicite de l'utilisateur, bascule faite dans hPanel — voir
-  « Pièges déjà rencontrés » plus bas) : ce n'est plus un autre site à
-  approcher visuellement, seulement une seconde adresse pour le même
-  contenu, toujours déployé depuis ce dépôt.
+- **En ligne :** https://focalclub.fr — **adresse de référence du site**
+  depuis le 30/08/2026 (choix explicite de l'utilisateur). `myfocal.online`
+  (et `www.myfocal.online`) reste une seconde adresse qui sert exactement
+  le même contenu — les deux pointent vers le même `~/public_html/` sur
+  Hostinger (bascule faite dans hPanel, voir « Pièges déjà rencontrés »
+  plus bas), donc tout déploiement met les deux à jour d'un coup, sans rien
+  à faire de plus. Espace adhérents sur
+  https://focalclub.fr/espace/connexion.php.
 - **Branche de référence :** `main` — c'est elle, et elle seule, qui met le
   site en ligne. Le travail se fait sur une branche `claude/**`, se relit sur
   la préversion (voir « Déploiement »), puis se fusionne sur `main`.
@@ -2011,7 +2012,11 @@ faut regarder.
   `myfocal.online` : les deux domaines servent désormais exactement le
   même site, l'ancien contenu Hostinger Horizons a été effacé. `.eu` n'a
   pas été concerné par ce changement, toujours à vérifier au cas par cas
-  avant d'affirmer quoi que ce soit sur son contenu.
+  avant d'affirmer quoi que ce soit sur son contenu. **`focalclub.fr` est
+  devenu l'adresse de référence du site** dans cette documentation (choix
+  explicite de l'utilisateur, 30/08/2026, même jour) — toujours citée en
+  premier en haut de ce fichier ; `myfocal.online` reste fonctionnelle en
+  second, sans changement de comportement côté site ou côté déploiement.
 - Dans `css/style.css`, les chemins d'images sont relatifs à `css/`, donc
   `url("../images/...")`.
 - **Hostinger sert le CSS avec `cache-control: max-age=604800`** — sept jours.
