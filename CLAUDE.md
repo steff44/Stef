@@ -291,6 +291,28 @@ type avec le serveur. `public_html/.htaccess` porte désormais
 le bon type quel que soit le réglage par défaut de l'hébergeur. Non
 vérifiable hors ligne (comme les `.htaccess` en général) — à confirmer en
 ligne après déploiement.
+
+**Cause réelle trouvée, sans rapport avec `nosniff`** — l'utilisatrice a
+inspecté l'onglet Réseau des outils de développement (à ma demande, faute
+de pouvoir inspecter `focalclub.fr` moi-même) : la requête vers
+`images/logo-icone.png` répondait `200 OK`, servie depuis le **CDN de
+Hostinger** (`Server: hcdn`, `X-Hcdn-Cache-Status: HIT`), mais avec
+`Content-Type: image/webp` — pas `image/png`. Le CDN de Hostinger
+convertit automatiquement les images PNG/JPEG en WebP à la volée pour
+économiser de la bande passante, en gardant la même URL. Un `<img>`
+classique (le logo dans l'en-tête, `.logo-mark`) s'en accommode sans
+problème — le navigateur affiche l'image quel que soit le format réel des
+octets reçus. Mais un favicon déclaré `type="image/png"` qui reçoit du
+WebP à la place se fait rejeter par le navigateur (type déclaré et type
+réellement reçu ne correspondent pas), tout en continuant de s'afficher
+normalement en navigation directe — exactement les symptômes observés.
+`nosniff` n'était donc pas seul en cause : la conversion silencieuse par
+le CDN en était la vraie source, `nosniff` ne faisant qu'empêcher le
+navigateur de deviner malgré tout le bon type. **Corrigé en pointant le
+favicon vers `favicon.ico` plutôt que vers `images/logo-icone.png`** dans
+les 11 mêmes endroits — un fichier `.ico` n'est pas un format candidat à
+la conversion WebP automatique des CDN (ce n'est pas un format photo), il
+échappe donc à ce problème par construction.
 - **Les libellés du menu principal sont alignés sur une même ligne
   médiane** depuis le 23/08/2026 (choix explicite de l'utilisateur) :
   `.nav-links` porte désormais `align-items: center`. Avant ce changement,
