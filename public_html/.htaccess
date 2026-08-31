@@ -3,6 +3,20 @@
 # N'affecte que les en-têtes de réponse : aucune redirection, aucun impact
 # sur le routage existant.
 
+# Type MIME forcé pour le favicon (piège rencontré le 31/08/2026 : le
+# favicon PNG puis .ico restait invisible dans tous les navigateurs testés,
+# même sans aucun cache — alors que le fichier s'ouvrait normalement en
+# accès direct). Cause probable : combiné à X-Content-Type-Options: nosniff
+# ci-dessous, un Content-Type incorrect ou absent pour .ico/.png sur cet
+# hébergement empêcherait le navigateur d'utiliser le fichier comme icône,
+# tout en le laissant s'afficher normalement en navigation directe (chemin
+# de rendu différent). Ces deux lignes forcent le bon type quel que soit le
+# réglage par défaut du serveur.
+<IfModule mod_mime.c>
+  AddType image/vnd.microsoft.icon .ico
+  AddType image/png .png
+</IfModule>
+
 <IfModule mod_headers.c>
   # Empêche un navigateur de "deviner" le type d'un fichier autrement que
   # par l'en-tête Content-Type envoyé par le serveur (protège contre
@@ -25,10 +39,9 @@
   Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
 
   # Politique de sécurité du contenu (CSP) : n'autorise que les ressources
-  # du site lui-même, plus les deux exceptions réellement utilisées —
-  # les vignettes Google Drive (Nos Sorties, voir infos-albums.php) et le
-  # favicon en data: URI (index.html). 'unsafe-inline' reste nécessaire
-  # pour script-src/style-src : le site n'a pas de build, il utilise des
-  # scripts et attributs style="" en ligne un peu partout.
+  # du site lui-même, plus l'exception réellement utilisée — les vignettes
+  # Google Drive (Nos Sorties, voir infos-albums.php). 'unsafe-inline' reste
+  # nécessaire pour script-src/style-src : le site n'a pas de build, il
+  # utilise des scripts et attributs style="" en ligne un peu partout.
   Header always set Content-Security-Policy "default-src 'self'; img-src 'self' data: https://drive.google.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; frame-ancestors 'self'; form-action 'self' mailto:; base-uri 'self'; object-src 'none'"
 </IfModule>
