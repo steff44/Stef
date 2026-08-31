@@ -1885,6 +1885,24 @@ Points à ne pas casser :
 - Pour tester la logique hors ligne : copier `espace/` ailleurs, remplacer le
   DSN de `db.php` par SQLite et adapter `schema.sql`. C'est ainsi qu'ont été
   validés connexion, CSRF, blocage après échecs, rôles et dépôts de fichiers.
+- **Le cookie de session dure 30 jours** (`DUREE_SESSION_SECONDES`,
+  `inc/auth.php`), pas « jusqu'à la fermeture du navigateur »
+  (`lifetime = 0`, réglage d'origine) — piège signalé par l'utilisatrice
+  le 30/08/2026 : sur mobile, quitter le navigateur pour une autre
+  application (ex. Facebook) pousse souvent le système à décharger le
+  navigateur de la mémoire ; à son retour au premier plan, il redémarre
+  l'onglet et traite ça comme une nouvelle « session navigateur » — un
+  cookie `lifetime = 0` disparaît alors, déconnectant l'adhérent sans
+  qu'il ait rien demandé. `ini_set('session.gc_maxlifetime', ...)` est
+  posé juste avant `session_start()` pour que le nettoyage automatique de
+  PHP côté serveur (souvent bien plus court par défaut chez l'hébergeur)
+  ne supprime pas le fichier de session avant l'expiration du cookie.
+  « Se déconnecter » (`deconnecter()`) continue de fonctionner
+  immédiatement : il efface le cookie explicitement, sans rapport avec sa
+  durée de vie par défaut. Revalidé hors ligne (PHP+SQLite) : connexion
+  (cookie avec une vraie date d'expiration, `Max-Age=2592000`), accès au
+  tableau de bord, puis déconnexion explicite (`Max-Age=0`) et accès
+  refusé ensuite.
 - **Présence et déconnexion à distance** (onglet Adhérents) : deux colonnes sur
   `adherents`. `derniere_activite` est rafraîchie à chaque page réservée par
   `signaler_presence()` ; « en ligne » = activité de moins de

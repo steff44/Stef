@@ -16,18 +16,35 @@ const BLOCAGE_SECONDES   = 900;  // 15 minutes
 // raisonne donc en activité récente, pas en présence certaine.
 const DELAI_PRESENCE_MINUTES = 15;
 
+// Durée du cookie de session (choix explicite de l'utilisateur, 30/08/2026,
+// suite à un signalement : « à la fermeture du navigateur » (lifetime=0)
+// est peu fiable sur mobile — changer d'application (ex. Facebook) pousse
+// souvent le système à décharger le navigateur de la mémoire ; à son retour
+// au premier plan, celui-ci redémarre l'onglet et traite ça comme une
+// nouvelle « session navigateur », ce qui efface le cookie et déconnecte
+// l'adhérent sans qu'il ait rien demandé. Un vrai délai (30 jours) rend le
+// cookie robuste face à ce comportement — « Se déconnecter » continue de
+// fonctionner immédiatement puisqu'il efface le cookie explicitement.
+const DUREE_SESSION_SECONDES = 30 * 24 * 60 * 60;
+
 function demarrer_session(): void
 {
     if (session_status() === PHP_SESSION_ACTIVE) {
         return;
     }
 
+    // Garde le fichier de session sur le serveur au moins aussi longtemps que
+    // le cookie ci-dessous — sans quoi le nettoyage automatique de PHP
+    // (session.gc_maxlifetime, souvent bien plus court par défaut chez
+    // l'hébergeur) supprimerait la session avant l'expiration du cookie.
+    ini_set('session.gc_maxlifetime', (string) DUREE_SESSION_SECONDES);
+
     // Le site est en HTTPS : le cookie de session ne doit jamais circuler en clair.
     $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
         || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
 
     session_set_cookie_params([
-        'lifetime' => 0,          // le cookie expire à la fermeture du navigateur
+        'lifetime' => DUREE_SESSION_SECONDES,
         'path'     => '/',
         'httponly' => true,       // inaccessible au JavaScript
         'secure'   => $https,
