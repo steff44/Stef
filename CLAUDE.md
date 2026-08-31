@@ -9,10 +9,12 @@ Site vitrine statique (HTML/CSS/JS, sans framework ni build) pour le **Focal
 Club Turballais**, club photo associatif de La Turballe (44).
 
 - **En ligne :** https://myfocal.online (et `www.myfocal.online`) — espace
-  adhérents sur https://myfocal.online/espace/connexion.php
-- **Source de vérité du design :** https://focalclub.fr — un autre site du même
-  club, généré avec Hostinger Horizons (React compilé, pas de source lisible).
-  L'utilisateur veut que notre site s'en rapproche visuellement.
+  adhérents sur https://myfocal.online/espace/connexion.php. Depuis le
+  30/08/2026, **`https://focalclub.fr` sert exactement le même site**
+  (choix explicite de l'utilisateur, bascule faite dans hPanel — voir
+  « Pièges déjà rencontrés » plus bas) : ce n'est plus un autre site à
+  approcher visuellement, seulement une seconde adresse pour le même
+  contenu, toujours déployé depuis ce dépôt.
 - **Branche de référence :** `main` — c'est elle, et elle seule, qui met le
   site en ligne. Le travail se fait sur une branche `claude/**`, se relit sur
   la préversion (voir « Déploiement »), puis se fusionne sur `main`.
@@ -1997,11 +1999,19 @@ faut regarder.
   et le README l'ont longtemps annoncé comme l'adresse du site : c'était faux.
   Ne pas réintroduire ce domaine.
 - **Le compte Hostinger héberge plusieurs domaines**, et c'est
-  **`myfocal.online`** qui sert `~/public_html/`, donc notre déploiement. Les
-  autres (`focalclub.fr`, `.eu`) affichent un site Hostinger Horizons sans
-  rapport, qui renvoie une page « 200 » pour *n'importe quelle* adresse — un
-  faux 404. Ne pas en conclure à une fuite de nos fichiers : ils n'y sont pas.
-  Vérifié le 16/08/2026 en interrogeant chaque domaine.
+  **`myfocal.online`** qui sert `~/public_html/`, donc notre déploiement.
+  Jusqu'au 30/08/2026, `focalclub.fr` (et `.eu`) affichait un site
+  Hostinger Horizons sans rapport, qui renvoyait une page « 200 » pour
+  *n'importe quelle* adresse — un faux 404 (vérifié le 16/08/2026 en
+  interrogeant chaque domaine ; ne surtout pas en avoir conclu à une fuite
+  de nos fichiers, ils n'y étaient pas). **`focalclub.fr` a été basculé le
+  30/08/2026** (choix explicite de l'utilisateur, action faite de sa main
+  dans hPanel — hors de portée du sandbox, voir plus haut « ne peut pas
+  faire de SSH ») pour pointer vers le même `~/public_html/` que
+  `myfocal.online` : les deux domaines servent désormais exactement le
+  même site, l'ancien contenu Hostinger Horizons a été effacé. `.eu` n'a
+  pas été concerné par ce changement, toujours à vérifier au cas par cas
+  avant d'affirmer quoi que ce soit sur son contenu.
 - Dans `css/style.css`, les chemins d'images sont relatifs à `css/`, donc
   `url("../images/...")`.
 - **Hostinger sert le CSS avec `cache-control: max-age=604800`** — sept jours.
