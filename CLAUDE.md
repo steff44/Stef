@@ -1966,6 +1966,49 @@ Points à ne pas casser :
   il ne fait que compléter ce que PHP n'a pas pu savoir sur les pages
   statiques.
 
+## Sécurité
+
+Deux durcissements demandés explicitement par l'utilisatrice, 31/08/2026
+(« comment sécuriser mon site » puis « fais les deux points ») :
+
+**En-têtes de sécurité HTTP** (`public_html/.htaccess`, nouveau — la racine
+du site n'avait pas encore de `.htaccess`, seuls `inc/`, `photos/` et les
+dossiers de dépôt en avaient un, pour interdire l'accès) :
+`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`,
+`Strict-Transport-Security` (le site est entièrement en HTTPS, voir plus
+haut), et une politique de sécurité du contenu (CSP). La CSP n'autorise que
+les ressources du site lui-même, plus les deux exceptions réellement
+utilisées ailleurs dans le code — les vignettes Google Drive
+(`drive.google.com`, voir « Nos Sorties » plus haut) et le favicon en
+`data:` URI (`index.html`) — vérifiées par une recherche exhaustive de
+toute référence externe (`https://`, `<script src>`, `<link
+rel="stylesheet">`, `<iframe>`, `fetch()`) dans le dépôt avant d'écrire la
+règle, pour ne rien casser. `'unsafe-inline'` reste nécessaire pour
+`script-src`/`style-src` : le site n'a pas de build, il utilise des
+scripts et des attributs `style=""` en ligne un peu partout. Pas testable
+avec le serveur PHP intégré (voir plus bas, « Les `.htaccess` ne peuvent
+pas se tester ainsi ») — à vérifier en ligne après déploiement.
+
+**Anti-spam sur l'inscription** (`espace/inscription.php`, seul point
+d'écriture public du site sans protection — le formulaire de contact,
+`contact.html`, n'a lui aucun traitement serveur : c'est un formulaire
+`mailto:`, qui ouvre directement le client de messagerie du visiteur, donc
+rien à protéger côté serveur). Sans dépendance externe (pas de CAPTCHA,
+cohérent avec le reste du site) : un champ piège invisible (`site_web`,
+qu'un humain ne voit ni ne remplit jamais, hors de portée du clavier via
+`tabindex="-1"`) et un délai minimum de 3 secondes entre l'affichage du
+formulaire et son envoi (`DELAI_MIN_INSCRIPTION_SECONDES`, comparé à
+`$_SESSION['inscription_affichee_a']`, reposé à chaque affichage du
+formulaire y compris après une erreur de validation) — un robot remplit et
+envoie en général en un instant. Les deux déclenchent exactement le même
+comportement qu'une vraie inscription réussie (même message de succès,
+même redirection), sans qu'aucun compte ne soit créé ni aucun e-mail
+envoyé : un robot pris au piège n'a aucun moyen de savoir qu'il a échoué,
+donc aucune raison de s'adapter. Testé hors ligne (PHP+SQLite) : champ
+piège rempli, soumission en moins de 3 secondes, et inscription légitime
+après un délai de 4 secondes — seule la troisième crée effectivement un
+compte, les trois renvoient le même code 302 vers `connexion.php`.
+
 ## Déploiement
 
 Automatique via GitHub Actions (`.github/workflows/deploy.yml`) : tout push sur
