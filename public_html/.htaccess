@@ -1,0 +1,34 @@
+# En-têtes de sécurité HTTP, appliqués à tout le site (pages statiques et
+# espace adhérents) — choix explicite de l'utilisatrice, 31/08/2026.
+# N'affecte que les en-têtes de réponse : aucune redirection, aucun impact
+# sur le routage existant.
+
+<IfModule mod_headers.c>
+  # Empêche un navigateur de "deviner" le type d'un fichier autrement que
+  # par l'en-tête Content-Type envoyé par le serveur (protège contre
+  # certaines attaques par confusion de type MIME).
+  Header always set X-Content-Type-Options "nosniff"
+
+  # Interdit d'afficher le site dans un <iframe> d'un autre domaine
+  # (protection contre le "clickjacking") — SAMEORIGIN reste permissif pour
+  # nos propres pages entre elles.
+  Header always set X-Frame-Options "SAMEORIGIN"
+
+  # Limite les informations envoyées au site de destination quand un
+  # visiteur clique sur un lien sortant (garde l'origine, jamais le chemin
+  # complet ni les paramètres d'URL).
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+  # Le site est entièrement en HTTPS (myfocal.online et focalclub.fr) :
+  # force le navigateur à toujours utiliser HTTPS pour ce domaine pendant un
+  # an, même si un lien ou un favori pointait vers http://.
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+
+  # Politique de sécurité du contenu (CSP) : n'autorise que les ressources
+  # du site lui-même, plus les deux exceptions réellement utilisées —
+  # les vignettes Google Drive (Nos Sorties, voir infos-albums.php) et le
+  # favicon en data: URI (index.html). 'unsafe-inline' reste nécessaire
+  # pour script-src/style-src : le site n'a pas de build, il utilise des
+  # scripts et attributs style="" en ligne un peu partout.
+  Header always set Content-Security-Policy "default-src 'self'; img-src 'self' data: https://drive.google.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; frame-ancestors 'self'; form-action 'self' mailto:; base-uri 'self'; object-src 'none'"
+</IfModule>

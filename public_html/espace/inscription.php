@@ -26,6 +26,11 @@ if (adherent_connecte()) {
 
 $pdo = base_de_donnees();
 
+// Anti-spam pour ce formulaire public, sans dépendance externe (pas de
+// CAPTCHA, cohérent avec le reste du site) : un robot soumet en général en
+// bien moins de 3 secondes après avoir chargé la page.
+const DELAI_MIN_INSCRIPTION_SECONDES = 3;
+
 $erreurs = [];
 $valeurs = [
     'pseudo' => '', 'nom' => '', 'prenom' => '', 'email' => '',
@@ -34,6 +39,20 @@ $valeurs = [
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verifier_csrf();
+
+    // Champ piège invisible (site_web) : un humain ne le voit ni ne le
+    // remplit jamais, un robot qui remplit tous les champs si. Combiné à un
+    // délai minimum depuis l'affichage du formulaire (inscription_affichee_a,
+    // posé juste avant le rendu plus bas). Un robot pris au piège voit le
+    // même message de succès qu'une vraie inscription, sans qu'aucun compte
+    // ne soit créé ni aucun e-mail envoyé — pour ne pas l'inciter à s'adapter.
+    $piege_rempli = trim((string) ($_POST['site_web'] ?? '')) !== '';
+    $trop_rapide  = (time() - (int) ($_SESSION['inscription_affichee_a'] ?? 0)) < DELAI_MIN_INSCRIPTION_SECONDES;
+    if ($piege_rempli || $trop_rapide) {
+        definir_message('succes', "Votre inscription a bien été enregistrée. Elle est en attente de validation par un responsable du club — vous recevrez un e-mail dès qu'elle sera validée.");
+        header('Location: connexion.php');
+        exit;
+    }
 
     foreach (array_keys($valeurs) as $champ) {
         $valeurs[$champ] = trim((string) ($_POST[$champ] ?? ''));
@@ -155,6 +174,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Réamorce le délai anti-spam à chaque affichage du formulaire (premier
+// chargement ou nouvel essai après une erreur de validation).
+$_SESSION['inscription_affichee_a'] = time();
+
 debut_page("Créer un compte", 'inscription');
 titre_page("Rejoignez le club", "Créez votre compte pour accéder à l'espace adhérents.");
 ?>
@@ -169,6 +192,12 @@ titre_page("Rejoignez le club", "Créez votre compte pour accéder à l'espace a
 
     <form method="post" autocomplete="off">
       <?= champ_csrf() ?>
+      <!-- Champ piège anti-spam : invisible et non focalisable, un humain
+           ne le remplit jamais (voir le commentaire en haut du fichier). -->
+      <div style="position:absolute;left:-9999px;top:-9999px;" aria-hidden="true">
+        <label for="site_web">Laissez ce champ vide</label>
+        <input type="text" id="site_web" name="site_web" tabindex="-1" autocomplete="off">
+      </div>
       <div class="field-row">
         <div class="field">
           <label for="prenom">Prénom</label>
