@@ -269,6 +269,28 @@ public_html/          ← racine du site, déployée telle quelle
   format standard reconnu par tous les navigateurs. Vérifié hors ligne :
   fichier ICO valide (4 icônes intégrées, contenu non vide aux extrema
   RGBA), servi en 200 avec `Content-Type: image/vnd.microsoft.icon`.
+
+**Toujours aucune icône après ce dernier essai** — l'utilisatrice a rouvert
+`focalclub.fr` (toujours sans cache) et confirmé n'en voir aucune,
+signalant que le déploiement du `favicon.ico` avait pourtant réussi
+(vérifié dans les journaux du workflow : le fichier apparaît bien dans la
+liste `rsync`, transféré comme les autres). Suspect retenu : le type MIME
+du fichier. `X-Content-Type-Options: nosniff`, ajouté la veille (voir plus
+bas), empêche un navigateur de deviner le type d'une ressource — si
+l'hébergement sert `.ico`/`.png` avec un `Content-Type` incorrect ou
+absent (piège classique sur certains hébergements mutualisés, plus fréquent
+pour `.ico` que pour les types les plus courants), le navigateur refuse
+alors de l'utiliser comme icône tout en continuant de l'afficher
+normalement en navigation directe — chemin de rendu différent, ce qui
+correspond exactement aux symptômes observés (le lien direct fonctionnait,
+jamais l'icône). Avant `nosniff`, l'ancien favicon en `data:` URI
+n'avait jamais ce problème, puisqu'il ne dépend d'aucune négociation de
+type avec le serveur. `public_html/.htaccess` porte désormais
+`AddType image/vnd.microsoft.icon .ico` et `AddType image/png .png`
+(bloc `<IfModule mod_mime.c>`, avant les en-têtes de sécurité) pour forcer
+le bon type quel que soit le réglage par défaut de l'hébergeur. Non
+vérifiable hors ligne (comme les `.htaccess` en général) — à confirmer en
+ligne après déploiement.
 - **Les libellés du menu principal sont alignés sur une même ligne
   médiane** depuis le 23/08/2026 (choix explicite de l'utilisateur) :
   `.nav-links` porte désormais `align-items: center`. Avant ce changement,
