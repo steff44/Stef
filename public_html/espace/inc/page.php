@@ -61,7 +61,7 @@ function debut_page(string $titre, string $page_active = ''): void
 <title><?= e($titre) ?> — Espace adhérents</title>
 <!-- L'espace adhérents n'a rien à faire dans les résultats de recherche. -->
 <meta name="robots" content="noindex, nofollow">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%23a855f7%22/></svg>">
+<link rel="icon" type="image/png" href="../images/logo-icone.png">
 <link rel="stylesheet" href="<?= e(lien_css()) ?>">
 </head>
 <body>

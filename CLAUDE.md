@@ -235,6 +235,17 @@ public_html/          ← racine du site, déployée telle quelle
   simplement avec la vraie icône à la place du dessin SVG recréé. Texte
   du logo (`.logo`) à `1.85rem`. S'applique partout où `.logo` est utilisé
   (en-tête et pied de page de chaque page).
+- **Le favicon (icône d'onglet) reprend aussi `images/logo-icone.png`**
+  depuis le 31/08/2026 (choix explicite de l'utilisateur) — remplace
+  l'ancien favicon provisoire, une simple pastille violette en SVG intégré
+  (`data:image/svg+xml,...`, posée faute d'image réelle avant que le vrai
+  logo ne soit récupéré). `<link rel="icon" type="image/png"
+  href="images/logo-icone.png">` (`../images/logo-icone.png` depuis
+  `espace/inc/page.php`), dans les 11 endroits où la balise favicon
+  apparaît — une par page statique, plus `page.php` pour tout l'espace
+  adhérents. Compatible avec la CSP posée le même jour (voir « Sécurité »
+  plus bas) sans rien y changer : le favicon est désormais un fichier de
+  même origine, que `img-src 'self'` couvre déjà.
 - **Les libellés du menu principal sont alignés sur une même ligne
   médiane** depuis le 23/08/2026 (choix explicite de l'utilisateur) :
   `.nav-links` porte désormais `align-items: center`. Avant ce changement,
