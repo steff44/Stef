@@ -254,6 +254,21 @@ public_html/          ← racine du site, déployée telle quelle
   d'une semaine que les autres fichiers statiques (voir « Hostinger sert le
   CSS avec... » plus bas) — sans ce suffixe, les navigateurs ayant déjà
   visité le site gardaient l'ancienne icône en cache jusqu'à expiration.
+- **Un vrai `favicon.ico` à la racine du site**, ajouté le 31/08/2026 (même
+  jour), en plus de la balise `<link rel="icon">` — le cache-busting seul
+  n'a pas suffi : l'utilisatrice a testé sur trois navigateurs différents
+  (Chrome, Firefox, Chromium), à chaque fois en navigation privée (donc
+  sans aucun cache), et n'a toujours vu aucune icône. Le site n'avait
+  jamais eu de `favicon.ico` — beaucoup de navigateurs interrogent cette
+  adresse par convention, en parallèle de la balise `<link>`, et son
+  absence pure et simple (plutôt qu'une balise mal réglée) explique mieux
+  qu'aucune icône ne s'affiche, dans aucun navigateur, même sans cache.
+  Généré avec Pillow à partir de `images/logo-icone.png` (déjà utilisée
+  pour `.logo-mark` et le favicon PNG) : quatre résolutions incluses
+  (16×16, 32×32, 48×48, 64×64) dans un seul fichier `.ico` multi-tailles,
+  format standard reconnu par tous les navigateurs. Vérifié hors ligne :
+  fichier ICO valide (4 icônes intégrées, contenu non vide aux extrema
+  RGBA), servi en 200 avec `Content-Type: image/vnd.microsoft.icon`.
 - **Les libellés du menu principal sont alignés sur une même ligne
   médiane** depuis le 23/08/2026 (choix explicite de l'utilisateur) :
   `.nav-links` porte désormais `align-items: center`. Avant ce changement,
