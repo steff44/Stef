@@ -245,7 +245,15 @@ public_html/          ← racine du site, déployée telle quelle
   apparaît — une par page statique, plus `page.php` pour tout l'espace
   adhérents. Compatible avec la CSP posée le même jour (voir « Sécurité »
   plus bas) sans rien y changer : le favicon est désormais un fichier de
-  même origine, que `img-src 'self'` couvre déjà.
+  même origine, que `img-src 'self'` couvre déjà. **Porte aussi un suffixe
+  `?v=` de cache-busting**, comme `style.css` — signalé par l'utilisatrice
+  le jour même (« j'ai l'impression que la pastille violette est au-dessus
+  du logo ») : contrairement à l'ancienne pastille en `data:` URI, jamais
+  mise en cache séparément puisque intégrée dans le HTML lui-même,
+  `logo-icone.png` est un vrai fichier soumis au même cache Hostinger
+  d'une semaine que les autres fichiers statiques (voir « Hostinger sert le
+  CSS avec... » plus bas) — sans ce suffixe, les navigateurs ayant déjà
+  visité le site gardaient l'ancienne icône en cache jusqu'à expiration.
 - **Les libellés du menu principal sont alignés sur une même ligne
   médiane** depuis le 23/08/2026 (choix explicite de l'utilisateur) :
   `.nav-links` porte désormais `align-items: center`. Avant ce changement,
