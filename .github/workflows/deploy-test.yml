@@ -1,0 +1,26 @@
+name: Déploiement test (myfocal.online)
+
+# Manuel uniquement — jamais déclenché par un push. Permet de déployer
+# n'importe quelle branche (via le sélecteur de branche du bouton
+# "Run workflow") vers le site de test myfocal.online, indépendamment de
+# focalclub.fr (qui, lui, se déploie automatiquement depuis main).
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Déploiement via rsync/SSH vers myfocal.online
+        uses: easingthemes/ssh-deploy@v5.1.0
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
+          REMOTE_HOST: ${{ secrets.HOSTINGER_HOST }}
+          REMOTE_PORT: ${{ secrets.HOSTINGER_PORT }}
+          REMOTE_USER: ${{ secrets.HOSTINGER_USER }}
+          SOURCE: "public_html/"
+          TARGET: ${{ secrets.HOSTINGER_TEST_TARGET_DIR }}
+          ARGS: "-avzr --exclude='.git*'"

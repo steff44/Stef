@@ -47,6 +47,15 @@ Dans le dépôt GitHub : **Settings → Secrets and variables → Actions → Ne
 
 Une fois les secrets renseignés, tout push sur la branche de déploiement déclenche automatiquement la mise à jour du site. Le workflow peut aussi être lancé manuellement depuis l'onglet **Actions** du dépôt (bouton "Run workflow").
 
+## Déployer sur le site de test (myfocal.online)
+
+`.github/workflows/deploy-test.yml` déploie `public_html/` vers `myfocal.online`, **uniquement à la demande** (jamais sur un push) — utile pour voir une branche fonctionner réellement (base de données, espace adhérents compris) avant de la fusionner sur `main` et donc de la mettre en ligne sur `focalclub.fr`.
+
+1. Ajoutez le secret `HOSTINGER_TEST_TARGET_DIR` avec la valeur `/home/u912253694/public_html/` (les autres secrets — hôte, port, utilisateur, clé SSH — sont déjà partagés avec le déploiement principal, le compte Hostinger étant le même).
+2. Onglet **Actions** du dépôt → **Déploiement test (myfocal.online)** → bouton **Run workflow** → choisissez la branche à tester (par exemple une branche `claude/**` pas encore fusionnée) → **Run workflow**.
+
+Ce déploiement ne touche jamais `focalclub.fr`.
+
 ## Espace adhérents (connexion)
 
 L'espace réservé vit dans `public_html/espace/` et fonctionne en **PHP + MySQL**, directement sur l'hébergement Hostinger. Une fois connecté, un adhérent accède à quatre rubriques : galerie privée, documents du club, agenda des sorties (avec inscription) et annuaire des membres.
