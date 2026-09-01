@@ -1787,6 +1787,46 @@ ligne (logique de filtrage rejouée isolément en PHP, sans DB) : une seule
 rubrique/catégorie peuplée sur trois retenue, cas limite « aucun document
 nulle part » donnant bien un tableau vide.
 
+**Ce correctif ne suffisait pas encore** — l'utilisatrice a redemandé,
+le jour même, que le résultat d'une recherche apparaisse **juste sous le
+champ**, et que les intitulés de rubrique/catégorie ne vivent **que**
+dans le sommaire (pas répétés autour des résultats). `documents.php`
+distingue désormais deux modes, bien plus nettement qu'un simple
+filtre : navigation (sommaire + liste groupée par rubrique/catégorie,
+comme avant) et **recherche** (un nouveau `<ul id="resultats-recherche">`
+juste après le champ, sommaire et blocs `.rubrique-documents` — y
+compris « Autres documents » — masqués tant que la recherche n'est pas
+vide). Le script inline (bas de `documents.php`) ne se contente plus de
+poser `hidden` sur les lignes : il **déplace** les `<li class=
+"document-ligne">` correspondants dans `#resultats-recherche` (chaque
+ligne garde une référence `_parent` vers son emplacement d'origine, posée
+une fois au chargement) ; vider le champ les ramène, dans l'ordre —
+`lignes` étant une NodeList statique figée dans l'ordre du document au
+chargement, réinsérer chaque ligne en dernier enfant de son parent,
+dans cet ordre, reconstruit exactement l'ordre initial (chaque `<ul
+class="liste-documents">` ne contient jamais que des lignes de
+document, rien d'autre à repositionner). Aucune duplication de DOM : les
+mêmes éléments changent seulement de parent, les actions Télécharger/
+Supprimer de chaque ligne restent donc fonctionnelles sans réécouteur.
+Testé hors ligne (page HTML isolée reproduisant le script, Playwright) :
+recherche exacte, recherche partielle (plusieurs résultats à plat, sans
+titre de rubrique/catégorie), recherche sans résultat (message dédié),
+et remise en ordre exacte après avoir vidé le champ — y compris avec le
+champ déjà pré-rempli au chargement (lien `?recherche=…` depuis la
+Galerie du Club).
+
+**Le lien de la fiche XnConvert ne fonctionnait pas** (signalé par
+l'utilisatrice le jour même) : le nom réel du fichier qu'elle a déposé
+est **« Fiche Export_XnConvert »** — un espace entre « Fiche » et
+« Export », pas un tiret bas comme sur les deux autres fiches
+(« Fiche**\_**Export\_darktable\_1000Ko »,
+« Fiche**\_**Export\_Lightroom\_1000Ko »). Le lien de `galerie-club.php`
+cherchait `Fiche_Export_XnConvert` (tiret bas, une correction de
+cohérence faite à tort lors du premier essai, en supposant une faute de
+frappe) — ne correspondait donc jamais au titre réel du document déposé
+(dérivé du nom de fichier). Corrigé pour reprendre l'espace exact, à la
+fois dans le texte du lien et dans le terme de recherche envoyé.
+
 **Connexion et inscription vivent sur deux pages séparées**,
 `connexion.php` et `inscription.php` (choix explicite de l'utilisateur,
 20/08/2026, d'après sa maquette Word — revient sur une tentative du
