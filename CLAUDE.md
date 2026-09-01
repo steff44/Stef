@@ -2320,7 +2320,14 @@ couleur de trait que les séparateurs déjà utilisés ailleurs sur le site
 (cartes de sortie, pied de page…). Scindé volontairement de `.blog-meta`
 de base pour ne pas ajouter ce trait sur la page de liste `blog.php`, où
 chaque ligne d'article a déjà sa propre séparation (`.blog-article-ligne {
-border-bottom }`).
+border-bottom }`) — **corrigé le jour même** : l'utilisatrice a montré
+avec une capture d'écran annotée qu'elle voulait ce même trait *aussi*
+sur la liste, juste sous la méta de chaque article (pas seulement en fin
+de bloc), avec l'extrait poussé « au moins une ligne plus bas ». Une
+seconde règle scindée, `.blog-article-ligne .blog-meta` (même principe que
+`.blog-article-complet .blog-meta`), ajoute le même trait, plus un
+`margin-bottom` doublé (14px → 28px) pour créer l'espace supplémentaire
+demandé avant l'extrait.
 
 **Anti-spam sur l'inscription** (`espace/inscription.php`, seul point
 d'écriture public du site sans protection — le formulaire de contact,
