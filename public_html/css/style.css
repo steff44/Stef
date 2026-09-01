@@ -2841,6 +2841,8 @@ button.lien-retour {
 /* Article complet (blog-article.php) */
 .blog-article-complet .blog-meta {
   margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
 }
 .blog-image-article {
   width: 100%;
