@@ -1542,9 +1542,16 @@ aucun recadrage serveur, stockée dans `espace/photos_blog/` (fermé par
 article, la photo n'est remplacée que si un nouveau fichier est envoyé
 (même logique que la photo de sortie dans `sorties-a-venir.php`) ; à la
 suppression, le fichier est retiré du disque. **Vignette agrandie sur la
-page de liste** (`blog.php`, choix explicite de l'utilisatrice, 01/09/2026) :
-`.blog-vignette` passe de 140×105 à 180×135 (même ratio 4:3, `object-fit:
-cover` inchangé) — seule cette règle CSS change, rien dans le HTML.
+page de liste** (`blog.php`, choix explicite de l'utilisatrice, 01/09/2026,
+deux passages le même jour) : `.blog-vignette` passe d'abord de 140×105 à
+180×135, puis, l'utilisatrice l'ayant trouvée encore trop petite, à
+250×188 (toujours le ratio 4:3, `object-fit: cover` inchangé). Elle a aussi
+signalé que la photo n'était « pas calée en haut » : `object-fit: cover`
+recadre par défaut en gardant le **centre** de l'image, ce qui peut couper
+le haut d'une photo (portrait de groupe, panneau…) selon son cadrage
+d'origine. `object-position: top` fait démarrer le recadrage depuis le
+haut de l'image plutôt que son centre. Seule cette règle CSS change, rien
+dans le HTML.
 
 **Remplacer une photo de couverture restait invisible côté navigateur**
 (piège signalé par l'utilisateur le 25/08/2026, corrigé le jour même) :
