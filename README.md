@@ -2,7 +2,7 @@
 
 Site statique responsive pour un club photo : présentation du club, page adhérents, galerie individuelle par adhérent, page contact.
 
-**En ligne :** https://myfocal.online
+**En ligne :** https://focalclub.fr (`myfocal.online` est un second site Hostinger indépendant, utilisé comme site de test — il ne reçoit plus les déploiements automatiques depuis le 01/09/2026)
 
 ## Structure
 
@@ -37,7 +37,7 @@ Dans le dépôt GitHub : **Settings → Secrets and variables → Actions → Ne
 | `HOSTINGER_PORT` | `65002` |
 | `HOSTINGER_USER` | `u912253694` |
 | `HOSTINGER_SSH_KEY` | Clé privée SSH (format PEM, voir ci-dessous) |
-| `HOSTINGER_TARGET_DIR` | `/home/u912253694/public_html/` (chemin exact à vérifier dans hPanel) |
+| `HOSTINGER_TARGET_DIR` | `/home/u912253694/domains/focalclub.fr/public_html/` (chemin exact à vérifier dans hPanel — chaque site du compte a son propre dossier `public_html`, même avec les mêmes identifiants SSH) |
 
 ### Générer une clé SSH pour le déploiement
 

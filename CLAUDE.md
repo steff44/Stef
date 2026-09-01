@@ -8,17 +8,18 @@ Il résume l'état du projet pour repartir sans avoir à tout réexpliquer.
 Site vitrine statique (HTML/CSS/JS, sans framework ni build) pour le **Focal
 Club Turballais**, club photo associatif de La Turballe (44).
 
-- **En ligne :** https://focalclub.fr — **adresse de référence du site**
-  depuis le 30/08/2026 (choix explicite de l'utilisateur), mais **ne reçoit
-  plus les déploiements automatiques depuis cette date** (diagnostic du
-  01/09/2026, voir « Pièges déjà rencontrés » plus bas — `focalclub.fr`
-  sert une copie figée d'avant la bascule, malgré la configuration faite
-  dans hPanel). **`myfocal.online`** (et `www.myfocal.online`) reste la
-  seconde adresse, et c'est actuellement **la seule à jour** : c'est elle
-  qu'il faut utiliser pour vérifier qu'un déploiement a bien pris effet,
-  tant que la configuration hPanel de `focalclub.fr` n'a pas été corrigée
-  par l'utilisatrice. Espace adhérents sur
-  https://myfocal.online/espace/connexion.php.
+- **En ligne :** https://focalclub.fr — **adresse de référence du site**,
+  et depuis le 01/09/2026 la **seule à recevoir les déploiements
+  automatiques** (voir « Déploiement » et « Pièges déjà rencontrés » plus
+  bas pour l'historique de la panne et son diagnostic). Espace adhérents
+  sur https://focalclub.fr/espace/connexion.php.
+- **`myfocal.online`** (et `www.myfocal.online`) est un **second site
+  Hostinger indépendant**, choisi par l'utilisatrice comme **site de
+  test** (01/09/2026) : il ne reçoit plus les déploiements automatiques
+  depuis ce jour-là, et peut donc être modifié à la main (dépôt de
+  fichiers via hPanel, essais…) sans jamais affecter `focalclub.fr`. Ne
+  pas le remettre en cible de déploiement sans qu'on le redemande
+  explicitement.
 - **Branche de référence :** `main` — c'est elle, et elle seule, qui met le
   site en ligne. Le travail se fait sur une branche `claude/**`, se relit sur
   la préversion (voir « Déploiement »), puis se fusionne sur `main`.
@@ -2173,39 +2174,66 @@ faut regarder.
 - **`myfocalclub.online` N'EXISTE PAS** — le DNS répond `NXDOMAIN`. Ce fichier
   et le README l'ont longtemps annoncé comme l'adresse du site : c'était faux.
   Ne pas réintroduire ce domaine.
-- **Le compte Hostinger héberge plusieurs domaines**, et c'est
-  **`myfocal.online`** qui sert `~/public_html/`, donc notre déploiement.
-  Jusqu'au 30/08/2026, `focalclub.fr` (et `.eu`) affichait un site
-  Hostinger Horizons sans rapport, qui renvoyait une page « 200 » pour
-  *n'importe quelle* adresse — un faux 404 (vérifié le 16/08/2026 en
-  interrogeant chaque domaine ; ne surtout pas en avoir conclu à une fuite
-  de nos fichiers, ils n'y étaient pas). **`focalclub.fr` a été basculé le
-  30/08/2026** (choix explicite de l'utilisateur, action faite de sa main
-  dans hPanel — hors de portée du sandbox, voir plus haut « ne peut pas
-  faire de SSH »), avec l'intention de pointer vers le même
-  `~/public_html/` que `myfocal.online` ; l'ancien contenu Hostinger
-  Horizons a bien disparu (elle affiche notre site). `.eu` n'a pas été
-  concerné par ce changement, toujours à vérifier au cas par cas avant
-  d'affirmer quoi que ce soit sur son contenu. **`focalclub.fr` est devenu
-  l'adresse de référence du site** dans cette documentation (choix
-  explicite de l'utilisateur, 30/08/2026, même jour) — toujours citée en
-  premier en haut de ce fichier.
-  **Mais un diagnostic du 01/09/2026 (voir la section favicon plus haut) a
-  montré que les deux domaines ne servent PAS le même contenu** : un appel
-  direct depuis un workflow GitHub Actions (le sandbox ne peut atteindre
-  ni l'un ni l'autre) a trouvé `focalclub.fr` figé sur une copie d'avant
-  le 30/08/2026 — favicon absent (404, `Last-Modified` d'avril 2025),
-  aucun des en-têtes de sécurité HTTP du 31/08/2026, ancienne feuille de
-  style — alors que `myfocal.online` reflète exactement le dernier
-  déploiement. La bascule hPanel a donc réussi à remplacer le contenu
-  Hostinger Horizons, mais **`focalclub.fr` ne reçoit plus les
-  déploiements automatiques depuis** : son document root ne pointe
-  vraisemblablement pas vers le même `~/public_html/` que
-  `myfocal.online`, contrairement à ce qui avait été supposé. **À vérifier
-  et corriger par l'utilisatrice dans hPanel** (hors de portée du
-  sandbox) ; en attendant, `myfocal.online` reste la seule adresse fiable
-  pour confirmer qu'un déploiement a pris effet, malgré son statut de
-  « seconde adresse » dans cette documentation.
+- **Le compte Hostinger (`u912253694`) héberge plusieurs sites**, chacun
+  avec son **propre dossier `public_html`** — pas un simple réglage DNS
+  par-dessus un dossier partagé, contrairement à ce qui avait longtemps été
+  supposé dans ce fichier. Jusqu'au 30/08/2026, `focalclub.fr` (et `.eu`)
+  affichait un site Hostinger Horizons sans rapport, qui renvoyait une page
+  « 200 » pour *n'importe quelle* adresse — un faux 404 (vérifié le
+  16/08/2026 en interrogeant chaque domaine ; ne surtout pas en avoir
+  conclu à une fuite de nos fichiers, ils n'y étaient pas). **`focalclub.fr`
+  a été basculé le 30/08/2026** (choix explicite de l'utilisateur, action
+  faite de sa main dans hPanel — hors de portée du sandbox, voir plus haut
+  « ne peut pas faire de SSH ») : l'ancien contenu Hostinger Horizons a
+  disparu, remplacé par une copie de notre site à ce moment-là — mais
+  **cette bascule a créé un second site hPanel indépendant** (« Sites
+  web » dans hPanel affiche `focalclub.fr` et `myfocal.online` comme deux
+  entrées séparées, chacune avec son propre tableau de bord, sa propre
+  page « Accès SSH », son propre dossier), pas un alias du site existant.
+  `.eu` n'a pas été concerné par ce changement, toujours à vérifier au cas
+  par cas avant d'affirmer quoi que ce soit sur son contenu.
+  **`focalclub.fr` est devenu l'adresse de référence du site** dans cette
+  documentation (choix explicite de l'utilisateur, 30/08/2026, même jour)
+  — toujours citée en premier en haut de ce fichier.
+
+  **Un diagnostic du 01/09/2026 (voir la section favicon plus haut) a
+  montré que les deux sites ne recevaient PAS les mêmes déploiements** :
+  un appel direct depuis un workflow GitHub Actions (le sandbox ne peut
+  atteindre ni l'un ni l'autre) a trouvé `focalclub.fr` figé sur une copie
+  d'avant le 30/08/2026 — favicon absent (404, `Last-Modified` d'avril
+  2025), aucun des en-têtes de sécurité HTTP du 31/08/2026, ancienne
+  feuille de style — alors que `myfocal.online` reflétait exactement le
+  dernier déploiement. **Cause identifiée avec l'utilisatrice, via des
+  captures d'écran de hPanel** : les deux sites partagent le même compte
+  (`u912253694`), les mêmes identifiants SSH (même IP, port, utilisateur,
+  et même clé déjà autorisée sur les deux — vérifié dans « Avancé → Accès
+  SSH » de chaque site), mais ont chacun leur **propre dossier
+  `public_html`**, à des chemins distincts (confirmé par deux ouvertures
+  côte à côte du gestionnaire de fichiers hPanel, donnant deux URLs
+  différentes, l'une avec `favicon.ico`, l'autre sans). Le chemin exact de
+  `focalclub.fr` (trouvé via « Fichiers → Comptes FTP », champ
+  « Répertoire ») est `/home/u912253694/domains/focalclub.fr/public_html/`
+  — alors que `HOSTINGER_TARGET_DIR` pointait jusque-là vers
+  `/home/u912253694/public_html/` (le dossier du compte par défaut, celui
+  de `myfocal.online`).
+
+  **Décision de l'utilisatrice (01/09/2026)** : plutôt que de faire
+  pointer les deux domaines vers le même dossier, elle a choisi de garder
+  les deux sites séparés et de **rediriger le déploiement automatique vers
+  `focalclub.fr`** — `myfocal.online` devient un **site de test
+  indépendant**, modifiable à la main sans jamais affecter le site en
+  ligne. Correctif : mise à jour du secret GitHub `HOSTINGER_TARGET_DIR`
+  vers `/home/u912253694/domains/focalclub.fr/public_html/` (seul secret
+  changé — host/port/utilisateur/clé SSH restent identiques, le compte
+  étant le même). Un déploiement de test (`workflow_dispatch`) suivi d'un
+  nouveau diagnostic externe a confirmé le succès :
+  `focalclub.fr/favicon.ico` répond désormais `200`, avec le bon
+  `Content-Type` et un `Last-Modified` correspondant exactement à ce
+  déploiement de test. **`focalclub.fr` est donc maintenant à jour et
+  reçoit les futurs déploiements automatiques ; `myfocal.online` n'en
+  reçoit plus depuis cette date** — ne pas le remettre en cible sans
+  qu'on le redemande explicitement, et ne pas s'étonner qu'il diverge
+  progressivement du contenu déployé.
 - Dans `css/style.css`, les chemins d'images sont relatifs à `css/`, donc
   `url("../images/...")`.
 - **Hostinger sert le CSS avec `cache-control: max-age=604800`** — sept jours.
