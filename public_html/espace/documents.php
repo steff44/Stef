@@ -128,29 +128,6 @@ foreach ($documents as $document) {
     }
 }
 
-// Rubriques/catégories effectivement peuplées, dans l'ordre de
-// rubriques_documents() — une catégorie ou une rubrique entièrement vide
-// (aucun document jamais déposé) n'apparaît nulle part sur la page tant
-// qu'elle n'a pas reçu son premier fichier (choix explicite de
-// l'utilisateur, 01/09/2026 : revient sur le choix inverse du 23/08/2026,
-// qui affichait systématiquement « Aucun document pour l'instant » —
-// avec plusieurs rubriques/catégories encore vides, la page devenait
-// trop longue avant d'atteindre un document réel). Le formulaire de
-// dépôt, lui, continue de lister TOUTES les catégories ($rubriques) —
-// il faut bien pouvoir choisir une catégorie encore vide pour y déposer
-// son premier document.
-$rubriques_peuplees = [];
-foreach ($rubriques as $rubrique_id => $rubrique) {
-    $categories_peuplees = array_filter(
-        $rubrique['categories'],
-        fn($nom_categorie, $categorie_id) => !empty($groupes[$rubrique_id][$categorie_id]),
-        ARRAY_FILTER_USE_BOTH
-    );
-    if ($categories_peuplees) {
-        $rubriques_peuplees[$rubrique_id] = ['nom' => $rubrique['nom'], 'categories' => $categories_peuplees];
-    }
-}
-
 debut_page("Documents", 'documents');
 titre_page("Documents du club", "Comptes rendus, statuts, bulletins et ressources, réservés aux adhérents.");
 ?>
@@ -205,7 +182,7 @@ titre_page("Documents du club", "Comptes rendus, statuts, bulletins et ressource
     </details>
   <?php endif; ?>
 
-  <?php if ($rubriques_peuplees || $autres): ?>
+  <?php if ($rubriques): ?>
     <div class="field documents-recherche">
       <label for="recherche-documents">Rechercher un document par son nom</label>
       <input type="search" id="recherche-documents" placeholder="Ex. : compte rendu, tarifs, portrait…"
@@ -225,10 +202,15 @@ titre_page("Documents du club", "Comptes rendus, statuts, bulletins et ressource
     <?php
       // Sommaire cliquable : chaque catégorie (le niveau « final » d'une
       // rubrique) renvoie directement vers sa section plus bas sur la page —
-      // seules les catégories peuplées y figurent (voir $rubriques_peuplees).
+      // toujours affichée, même sans document pour l'instant (choix
+      // explicite de l'utilisatrice, 01/09/2026 — sert de répertoire
+      // complet des catégories existantes, indépendamment de la
+      // recherche), pour que le sommaire ne pointe jamais vers une ancre
+      // absente.
     ?>
     <nav class="documents-index" aria-label="Sommaire des documents">
-      <?php foreach ($rubriques_peuplees as $rubrique_id => $rubrique): ?>
+      <?php foreach ($rubriques as $rubrique_id => $rubrique): ?>
+        <?php if (!$rubrique['categories']) continue; ?>
         <div class="documents-index-rubrique">
           <h2><?= e($rubrique['nom']) ?></h2>
           <ul class="documents-index-categories">
@@ -240,17 +222,22 @@ titre_page("Documents du club", "Comptes rendus, statuts, bulletins et ressource
       <?php endforeach; ?>
     </nav>
 
-    <?php foreach ($rubriques_peuplees as $rubrique_id => $rubrique): ?>
+    <?php foreach ($rubriques as $rubrique_id => $rubrique): ?>
+      <?php if (!$rubrique['categories']) continue; ?>
       <div class="rubrique-documents">
         <h2><?= e($rubrique['nom']) ?></h2>
         <?php foreach ($rubrique['categories'] as $categorie_id => $nom_categorie): ?>
           <div class="sous-categorie-documents" id="categorie-<?= $categorie_id ?>">
             <h3><?= e($nom_categorie) ?></h3>
-            <ul class="liste-documents">
-              <?php foreach ($groupes[$rubrique_id][$categorie_id] as $document): ?>
-                <?php include __DIR__ . '/inc/document-ligne.php'; ?>
-              <?php endforeach; ?>
-            </ul>
+            <?php if (empty($groupes[$rubrique_id][$categorie_id])): ?>
+              <p class="categorie-vide">Aucun document pour l'instant dans cette catégorie.</p>
+            <?php else: ?>
+              <ul class="liste-documents">
+                <?php foreach ($groupes[$rubrique_id][$categorie_id] as $document): ?>
+                  <?php include __DIR__ . '/inc/document-ligne.php'; ?>
+                <?php endforeach; ?>
+              </ul>
+            <?php endif; ?>
           </div>
         <?php endforeach; ?>
       </div>
@@ -266,8 +253,6 @@ titre_page("Documents du club", "Comptes rendus, statuts, bulletins et ressource
         </ul>
       </div>
     <?php endif; ?>
-  <?php elseif ($rubriques): ?>
-    <div class="empty-state"><p>Aucun document n'a encore été déposé.</p></div>
   <?php endif; ?>
 </div></section>
 <script>

@@ -1827,6 +1827,23 @@ frappe) — ne correspondait donc jamais au titre réel du document déposé
 (dérivé du nom de fichier). Corrigé pour reprendre l'espace exact, à la
 fois dans le texte du lien et dans le terme de recherche envoyé.
 
+**Le masquage des rubriques/catégories entièrement vides (voir plus haut,
+01/09/2026) est annulé le jour même** — l'utilisatrice a signalé que le
+sommaire ne montrait plus « toutes les catégories, même celles où il n'y
+a pas de photos », ce qui contredisait le service qu'elle attendait de
+cette liste : un répertoire complet de ce qui existe, pour naviguer,
+indépendamment de la recherche. Avec le passage aux résultats de
+recherche à plat (paragraphe ci-dessus), masquer les catégories vides
+n'était de toute façon plus nécessaire pour rapprocher un résultat du
+champ — c'est désormais le nouveau mode recherche qui s'en charge, en
+masquant sommaire et listing en bloc pendant une recherche active, quel
+que soit leur contenu. Le calcul `$rubriques_peuplees` est retiré ;
+sommaire et liste détaillée reprennent `$rubriques` (toutes les
+rubriques/catégories, y compris vides) exactement comme avant le
+01/09/2026 — placeholder « Aucun document pour l'instant dans cette
+catégorie » compris. Seul le nouveau conteneur `#resultats-recherche`
+(voir ci-dessus) reste du changement de ce jour.
+
 **Connexion et inscription vivent sur deux pages séparées**,
 `connexion.php` et `inscription.php` (choix explicite de l'utilisateur,
 20/08/2026, d'après sa maquette Word — revient sur une tentative du
