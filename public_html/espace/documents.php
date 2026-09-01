@@ -227,18 +227,26 @@ titre_page("Documents du club", "Comptes rendus, statuts, bulletins et ressource
       <div class="rubrique-documents">
         <h2><?= e($rubrique['nom']) ?></h2>
         <?php foreach ($rubrique['categories'] as $categorie_id => $nom_categorie): ?>
-          <div class="sous-categorie-documents" id="categorie-<?= $categorie_id ?>">
-            <h3><?= e($nom_categorie) ?></h3>
-            <?php if (empty($groupes[$rubrique_id][$categorie_id])): ?>
-              <p class="categorie-vide">Aucun document pour l'instant dans cette catégorie.</p>
-            <?php else: ?>
+          <?php if (empty($groupes[$rubrique_id][$categorie_id])): ?>
+            <?php
+              // Catégorie encore vide : aucun bloc « Aucun document pour
+              // l'instant » affiché ici (choix explicite de l'utilisatrice,
+              // 01/09/2026, capture d'écran à l'appui — le sommaire ci-dessus
+              // reste le seul endroit où toutes les catégories apparaissent).
+              // Un simple marqueur d'ancre invisible garde le lien du
+              // sommaire fonctionnel malgré tout, plutôt qu'un lien mort.
+            ?>
+            <span id="categorie-<?= $categorie_id ?>"></span>
+          <?php else: ?>
+            <div class="sous-categorie-documents" id="categorie-<?= $categorie_id ?>">
+              <h3><?= e($nom_categorie) ?></h3>
               <ul class="liste-documents">
                 <?php foreach ($groupes[$rubrique_id][$categorie_id] as $document): ?>
                   <?php include __DIR__ . '/inc/document-ligne.php'; ?>
                 <?php endforeach; ?>
               </ul>
-            <?php endif; ?>
-          </div>
+            </div>
+          <?php endif; ?>
         <?php endforeach; ?>
       </div>
     <?php endforeach; ?>
