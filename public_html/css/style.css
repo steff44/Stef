@@ -1528,6 +1528,18 @@ button.lien-retour {
   border-color: rgba(239, 68, 68, 0.45);
   color: #fecaca;
 }
+.alerte-avertissement {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.45);
+  color: #fde68a;
+}
+.alerte-avertissement a {
+  color: var(--accent-3);
+  text-decoration: underline;
+}
+.alerte-avertissement a:hover {
+  color: var(--accent);
+}
 
 /* Bloc dépliant « Ajouter … » */
 .depot-bloc {

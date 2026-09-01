@@ -631,6 +631,23 @@ libellés faisaient double emploi sur la page Galerie publique jusqu'au
 'Macro'` — dans `appliquer_migrations()`, qui ne perd aucune photo déjà
 classée puisque seul le nom change, jamais l'identifiant).
 
+**Deux cadres d'avertissement au-dessus de « Ajouter une photo »**, choix
+explicite de l'utilisateur, 01/09/2026 : le premier rappelle que les
+photos doivent être au format JPEG et ne pas dépasser
+`taille_lisible(TAILLE_MAX_PHOTO_ADHERENT)` (valeur dynamique, jamais
+« 1000 Ko » écrit en dur, pour rester juste si la limite change) ; le
+second renvoie vers trois fiches d'aide au redimensionnement —
+Fiche_Export_darktable_1000Ko, Fiche_Export_Lightroom_1000Ko et
+Fiche_Export_XnConvert — à déposer par un responsable dans les Documents
+du Club (`documents.php`, lien direct depuis le second cadre : « voir les
+fichiers »). Nouvelle classe CSS `.alerte-avertissement` (fond ambré,
+même famille que `.alerte-succes`/`.alerte-erreur` déjà utilisées pour
+les messages de `afficher_message()`), avec un lien en `--accent-3`
+souligné — même correctif que `.blog-contenu a`/`.sortie-description a`
+pour qu'un lien à l'intérieur ne se fonde pas dans le texte coloré.
+L'ordre demandé (limite de taille en premier, fiches d'aide ensuite) est
+respecté dans le HTML.
+
 **Les pastilles de filtre de la page publique et celles de la Galerie du
 Club affichaient deux listes de catégories différentes** (signalé par
 l'utilisateur le 26/08/2026, capture d'écran à l'appui : « Marais salants »,
