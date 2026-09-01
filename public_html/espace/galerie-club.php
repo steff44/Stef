@@ -167,8 +167,10 @@ debut_page("Galerie du Club", 'galerie-club');
     </div>
     <div class="alerte alerte-avertissement">
       Si vous avez des difficultés pour redimensionner une photo, vous pouvez consulter les fiches
-      Fiche_Export_darktable_1000Ko, Fiche_Export_Lightroom_1000Ko et Fiche_Export_XnConvert,
-      disponibles dans les Documents du Club — <a href="documents.php">voir les fichiers</a>.
+      <a href="documents.php?recherche=<?= urlencode('Fiche_Export_darktable_1000Ko') ?>">Fiche_Export_darktable_1000Ko</a>,
+      <a href="documents.php?recherche=<?= urlencode('Fiche_Export_Lightroom_1000Ko') ?>">Fiche_Export_Lightroom_1000Ko</a> et
+      <a href="documents.php?recherche=<?= urlencode('Fiche_Export_XnConvert') ?>">Fiche_Export_XnConvert</a>,
+      disponibles dans les Documents du Club.
     </div>
     <details class="depot-bloc">
       <summary>Ajouter une photo</summary>
