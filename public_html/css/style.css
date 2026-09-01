@@ -2737,6 +2737,11 @@ button.lien-retour {
 .blog-meta a {
   color: var(--accent-3);
 }
+.blog-article-ligne .blog-meta {
+  padding-bottom: 14px;
+  margin-bottom: 28px;
+  border-bottom: 1px solid var(--border);
+}
 
 /* Extrait et vignette côte à côte, comme sur la page de référence — la
    vignette garde une taille fixe (object-fit: cover), l'extrait occupe le
