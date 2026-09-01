@@ -639,14 +639,36 @@ photos doivent être au format JPEG et ne pas dépasser
 second renvoie vers trois fiches d'aide au redimensionnement —
 Fiche_Export_darktable_1000Ko, Fiche_Export_Lightroom_1000Ko et
 Fiche_Export_XnConvert — à déposer par un responsable dans les Documents
-du Club (`documents.php`, lien direct depuis le second cadre : « voir les
-fichiers »). Nouvelle classe CSS `.alerte-avertissement` (fond ambré,
-même famille que `.alerte-succes`/`.alerte-erreur` déjà utilisées pour
-les messages de `afficher_message()`), avec un lien en `--accent-3`
-souligné — même correctif que `.blog-contenu a`/`.sortie-description a`
-pour qu'un lien à l'intérieur ne se fonde pas dans le texte coloré.
-L'ordre demandé (limite de taille en premier, fiches d'aide ensuite) est
+du Club. Nouvelle classe CSS `.alerte-avertissement` (fond ambré, même
+famille que `.alerte-succes`/`.alerte-erreur` déjà utilisées pour les
+messages de `afficher_message()`), avec un lien en `--accent-3` souligné
+— même correctif que `.blog-contenu a`/`.sortie-description a` pour
+qu'un lien à l'intérieur ne se fonde pas dans le texte coloré. L'ordre
+demandé (limite de taille en premier, fiches d'aide ensuite) est
 respecté dans le HTML.
+
+**Chacune des trois fiches a son propre lien** (choix explicite de
+l'utilisateur, 01/09/2026, même jour, en remplacement du lien unique
+« voir les fichiers » du premier essai) — un problème concret s'est posé
+pour les construire : `telecharger.php?type=document&id=…` exige
+l'identifiant en base du document, que ce cadre ne peut pas connaître à
+l'avance (les fiches n'existent pas encore, un responsable doit encore
+les déposer, et leur identifiant dépendra de l'ordre et du moment du
+dépôt). Plutôt qu'un lien de téléchargement direct, chaque fiche pointe
+vers `documents.php?recherche=NOM_DE_LA_FICHE` : `documents.php` relit
+ce paramètre côté serveur pour pré-remplir le champ de recherche
+existant (`value=` sur `#recherche-documents`), et son script inline
+applique désormais le même filtre au chargement de la page si ce champ
+n'est pas vide (fonction `appliquerRecherche()`, extraite de l'ancien
+gestionnaire d'évènement `input` pour être appelable aussi bien au
+chargement qu'à la frappe) — la page s'ouvre donc directement filtrée
+sur la bonne fiche, sans jamais coder en dur un identifiant fragile.
+Cette approche reste robuste même si les fiches sont déposées dans un
+ordre différent de celui du texte, ou redéposées plus tard. Vérifié hors
+ligne (page HTML isolée reproduisant exactement le script de
+`documents.php`, Playwright) : avec le champ pré-rempli, seul le
+document dont le titre correspond reste visible au chargement, les
+autres sont masqués.
 
 **Les pastilles de filtre de la page publique et celles de la Galerie du
 Club affichaient deux listes de catégories différentes** (signalé par

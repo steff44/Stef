@@ -185,7 +185,8 @@ titre_page("Documents du club", "Comptes rendus, statuts, bulletins et ressource
   <?php if ($rubriques): ?>
     <div class="field documents-recherche">
       <label for="recherche-documents">Rechercher un document par son nom</label>
-      <input type="search" id="recherche-documents" placeholder="Ex. : compte rendu, tarifs, portrait…">
+      <input type="search" id="recherche-documents" placeholder="Ex. : compte rendu, tarifs, portrait…"
+             value="<?= e($_GET['recherche'] ?? '') ?>">
     </div>
     <div id="documents-recherche-vide" class="empty-state" hidden><p>Aucun document ne correspond à cette recherche.</p></div>
 
@@ -251,7 +252,7 @@ titre_page("Documents du club", "Comptes rendus, statuts, bulletins et ressource
   var groupes   = document.querySelectorAll(".sous-categorie-documents, .rubrique-documents");
   var messageVide = document.getElementById("documents-recherche-vide");
 
-  champ.addEventListener("input", function () {
+  function appliquerRecherche() {
     var recherche = champ.value.trim().toLowerCase();
 
     lignes.forEach(function (ligne) {
@@ -266,7 +267,16 @@ titre_page("Documents du club", "Comptes rendus, statuts, bulletins et ressource
 
     var toutMasque = document.querySelectorAll(".document-ligne:not([hidden])").length === 0;
     messageVide.hidden = !(recherche !== "" && toutMasque);
-  });
+  }
+
+  champ.addEventListener("input", appliquerRecherche);
+
+  // Un lien externe (ex. depuis la Galerie du Club) peut arriver avec
+  // ?recherche=... déjà rempli côté serveur dans value="" : on applique le
+  // filtre une première fois au chargement pour aller droit au document.
+  if (champ.value.trim() !== "") {
+    appliquerRecherche();
+  }
 })();
 </script>
 <?php
