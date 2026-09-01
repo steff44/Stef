@@ -25,7 +25,7 @@ public_html/        ← racine du site (déployée telle quelle sur Hostinger)
 
 ## Déploiement automatique vers Hostinger
 
-Le déploiement se fait via GitHub Actions (`.github/workflows/deploy.yml`), qui synchronise `public_html/` vers le serveur par SSH/rsync à chaque push. **Aucun fichier existant sur le serveur n'est supprimé** (pas d'option `--delete`) — seuls les fichiers nouveaux ou modifiés sont envoyés.
+Le déploiement se fait via GitHub Actions (`.github/workflows/deploy.yml`), qui synchronise `public_html/` par SSH/rsync **vers les deux sites** (`focalclub.fr` puis `myfocal.online`) à chaque push sur `main` — pour qu'un test validé et fusionné remette immédiatement le site de test au même niveau que le site en ligne. **Aucun fichier existant sur le serveur n'est supprimé** (pas d'option `--delete`) — seuls les fichiers nouveaux ou modifiés sont envoyés.
 
 ### Configuration requise (une seule fois)
 
@@ -37,7 +37,8 @@ Dans le dépôt GitHub : **Settings → Secrets and variables → Actions → Ne
 | `HOSTINGER_PORT` | `65002` |
 | `HOSTINGER_USER` | `u912253694` |
 | `HOSTINGER_SSH_KEY` | Clé privée SSH (format PEM, voir ci-dessous) |
-| `HOSTINGER_TARGET_DIR` | `/home/u912253694/domains/focalclub.fr/public_html/` (chemin exact à vérifier dans hPanel — chaque site du compte a son propre dossier `public_html`, même avec les mêmes identifiants SSH) |
+| `HOSTINGER_TARGET_DIR` | `/home/u912253694/domains/focalclub.fr/public_html/` (dossier de `focalclub.fr` — chaque site du compte a le sien, même avec les mêmes identifiants SSH) |
+| `HOSTINGER_TEST_TARGET_DIR` | `/home/u912253694/public_html/` (dossier de `myfocal.online`, mis à jour par ce même workflow) |
 
 ### Générer une clé SSH pour le déploiement
 
@@ -47,14 +48,13 @@ Dans le dépôt GitHub : **Settings → Secrets and variables → Actions → Ne
 
 Une fois les secrets renseignés, tout push sur la branche de déploiement déclenche automatiquement la mise à jour du site. Le workflow peut aussi être lancé manuellement depuis l'onglet **Actions** du dépôt (bouton "Run workflow").
 
-## Déployer sur le site de test (myfocal.online)
+## Tester une branche sur myfocal.online avant de la mettre en ligne
 
-`.github/workflows/deploy-test.yml` déploie `public_html/` vers `myfocal.online`, **uniquement à la demande** (jamais sur un push) — utile pour voir une branche fonctionner réellement (base de données, espace adhérents compris) avant de la fusionner sur `main` et donc de la mettre en ligne sur `focalclub.fr`.
+`.github/workflows/deploy-test.yml` déploie `public_html/` vers `myfocal.online` **uniquement à la demande** (jamais sur un push) — utile pour voir une branche **pas encore fusionnée** fonctionner réellement (base de données, espace adhérents compris) avant de la mettre en ligne sur `focalclub.fr`.
 
-1. Ajoutez le secret `HOSTINGER_TEST_TARGET_DIR` avec la valeur `/home/u912253694/public_html/` (les autres secrets — hôte, port, utilisateur, clé SSH — sont déjà partagés avec le déploiement principal, le compte Hostinger étant le même).
-2. Onglet **Actions** du dépôt → **Déploiement test (myfocal.online)** → bouton **Run workflow** → choisissez la branche à tester (par exemple une branche `claude/**` pas encore fusionnée) → **Run workflow**.
+Onglet **Actions** du dépôt → **Déploiement test (myfocal.online)** → bouton **Run workflow** → choisissez la branche à tester (par exemple une branche `claude/**` pas encore fusionnée) → **Run workflow**. Ce déploiement ne touche jamais `focalclub.fr`.
 
-Ce déploiement ne touche jamais `focalclub.fr`.
+Une fois le test concluant, fusionnez la branche sur `main` comme d'habitude : le déploiement automatique (ci-dessus) met alors à jour **les deux sites**, qui redeviennent identiques.
 
 ## Espace adhérents (connexion)
 

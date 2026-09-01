@@ -17,7 +17,7 @@ jobs:
 
       # Envoie uniquement les fichiers nouveaux/modifiés vers public_html.
       # Pas de --delete : rien n'est jamais supprimé côté serveur.
-      - name: Déploiement via rsync/SSH
+      - name: Déploiement via rsync/SSH (focalclub.fr)
         uses: easingthemes/ssh-deploy@v5.1.0
         with:
           SSH_PRIVATE_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
@@ -26,4 +26,18 @@ jobs:
           REMOTE_USER: ${{ secrets.HOSTINGER_USER }}
           SOURCE: "public_html/"
           TARGET: ${{ secrets.HOSTINGER_TARGET_DIR }}
+          ARGS: "-avzr --exclude='.git*'"
+
+      # Réaligne myfocal.online (site de test) sur main dès qu'un test est
+      # validé et fusionné, pour que les deux sites restent au même niveau
+      # après chaque mise en ligne — même dossier que deploy-test.yml.
+      - name: Déploiement via rsync/SSH (myfocal.online)
+        uses: easingthemes/ssh-deploy@v5.1.0
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
+          REMOTE_HOST: ${{ secrets.HOSTINGER_HOST }}
+          REMOTE_PORT: ${{ secrets.HOSTINGER_PORT }}
+          REMOTE_USER: ${{ secrets.HOSTINGER_USER }}
+          SOURCE: "public_html/"
+          TARGET: ${{ secrets.HOSTINGER_TEST_TARGET_DIR }}
           ARGS: "-avzr --exclude='.git*'"

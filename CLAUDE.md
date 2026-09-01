@@ -8,18 +8,20 @@ Il résume l'état du projet pour repartir sans avoir à tout réexpliquer.
 Site vitrine statique (HTML/CSS/JS, sans framework ni build) pour le **Focal
 Club Turballais**, club photo associatif de La Turballe (44).
 
-- **En ligne :** https://focalclub.fr — **adresse de référence du site**,
-  et depuis le 01/09/2026 la **seule à recevoir les déploiements
-  automatiques** (voir « Déploiement » et « Pièges déjà rencontrés » plus
-  bas pour l'historique de la panne et son diagnostic). Espace adhérents
-  sur https://focalclub.fr/espace/connexion.php.
+- **En ligne :** https://focalclub.fr — **adresse de référence du site**
+  (voir « Déploiement » et « Pièges déjà rencontrés » plus bas pour
+  l'historique de la panne du 01/09/2026 et son diagnostic). Espace
+  adhérents sur https://focalclub.fr/espace/connexion.php.
 - **`myfocal.online`** (et `www.myfocal.online`) est un **second site
   Hostinger indépendant**, choisi par l'utilisatrice comme **site de
-  test** (01/09/2026) : il ne reçoit plus les déploiements automatiques
-  depuis ce jour-là, et peut donc être modifié à la main (dépôt de
-  fichiers via hPanel, essais…) sans jamais affecter `focalclub.fr`. Ne
-  pas le remettre en cible de déploiement sans qu'on le redemande
-  explicitement.
+  test** (01/09/2026) : une branche pas encore fusionnée peut y être
+  déployée à la demande (`deploy-test.yml`, voir « Déploiement ») pour
+  l'essayer en conditions réelles sans toucher au site en ligne. **Une
+  fois la branche fusionnée sur `main`, en revanche, les deux sites sont
+  remis au même niveau automatiquement** (choix explicite de
+  l'utilisatrice, 01/09/2026, même jour — `deploy.yml` déploie désormais
+  vers les deux) : `myfocal.online` n'est donc « en avance » sur
+  `focalclub.fr` que le temps d'un test, jamais durablement.
 - **Branche de référence :** `main` — c'est elle, et elle seule, qui met le
   site en ligne. Le travail se fait sur une branche `claude/**`, se relit sur
   la préversion (voir « Déploiement »), puis se fusionne sur `main`.
@@ -2126,32 +2128,40 @@ compte, les trois renvoient le même code 302 vers `connexion.php`.
 ## Déploiement
 
 Automatique via GitHub Actions (`.github/workflows/deploy.yml`) : tout push sur
-`main` touchant `public_html/**` synchronise le site par SSH/rsync.
-**Jamais de `--delete`** — aucun fichier n'est supprimé côté serveur.
+`main` touchant `public_html/**` synchronise **les deux sites** par SSH/rsync
+— `focalclub.fr` d'abord, puis `myfocal.online` (deux étapes du même job,
+ajoutée le 01/09/2026, choix explicite de l'utilisatrice : « il faut qu'après
+le test et la mise à jour de focalclub.fr les deux sites soient au même
+niveau »). **Jamais de `--delete`** — aucun fichier n'est supprimé côté
+serveur.
 
-Les 5 secrets (`HOSTINGER_HOST`, `HOSTINGER_PORT`, `HOSTINGER_USER`,
-`HOSTINGER_SSH_KEY`, `HOSTINGER_TARGET_DIR`) sont **déjà configurés** dans
-Settings → Secrets and variables → Actions. Voir le README pour le détail.
+Les 6 secrets (`HOSTINGER_HOST`, `HOSTINGER_PORT`, `HOSTINGER_USER`,
+`HOSTINGER_SSH_KEY`, `HOSTINGER_TARGET_DIR`, `HOSTINGER_TEST_TARGET_DIR`)
+sont **déjà configurés** dans Settings → Secrets and variables → Actions.
+Voir le README pour le détail.
 
 Le workflow peut aussi être lancé à la main : onglet Actions → « Déploiement
 Hostinger » → Run workflow.
 
-### Déploiement vers le site de test (myfocal.online)
+### Tester une branche avant fusion (myfocal.online)
 
 `.github/workflows/deploy-test.yml` (ajouté le 01/09/2026), **manuel
 uniquement** (jamais déclenché par un push) : déploie `public_html/` vers
-`myfocal.online` plutôt que `focalclub.fr`, pour tester une branche pas
-encore fusionnée (y compris l'espace adhérents PHP+MySQL, impossible à
-essayer sur la préversion GitHub Pages ci-dessous) sans jamais toucher au
-site en ligne. Réutilise les 4 mêmes secrets `HOSTINGER_HOST`/`PORT`/
-`USER`/`SSH_KEY` que le déploiement principal (même compte Hostinger),
-plus un 5ᵉ secret dédié, `HOSTINGER_TEST_TARGET_DIR` =
-`/home/u912253694/public_html/` (le dossier de `myfocal.online`,
-confirmé par tout l'historique de déploiement d'avant le 01/09/2026 —
-voir « Pièges déjà rencontrés » plus bas pour le détail des deux dossiers
-séparés). Se lance depuis l'onglet Actions → « Déploiement test
-(myfocal.online) » → Run workflow → en choisissant la branche à tester
-dans le sélecteur.
+`myfocal.online`, pour tester une branche **pas encore fusionnée** sur
+`main` (y compris l'espace adhérents PHP+MySQL, impossible à essayer sur
+la préversion GitHub Pages ci-dessous) sans jamais toucher au site en
+ligne. Réutilise les 4 mêmes secrets `HOSTINGER_HOST`/`PORT`/`USER`/
+`SSH_KEY` que le déploiement principal (même compte Hostinger), plus
+`HOSTINGER_TEST_TARGET_DIR` = `/home/u912253694/public_html/` (le dossier
+de `myfocal.online`, confirmé par tout l'historique de déploiement
+d'avant le 01/09/2026 — voir « Pièges déjà rencontrés » plus bas pour le
+détail des deux dossiers séparés ; même secret que la seconde étape de
+`deploy.yml` ci-dessus). Se lance depuis l'onglet Actions → « Déploiement
+test (myfocal.online) » → Run workflow → en choisissant la branche à
+tester dans le sélecteur. Le cycle complet est donc : tester la branche
+sur `myfocal.online` via ce workflow → si concluant, fusionner sur `main`
+comme d'habitude → `deploy.yml` remet alors automatiquement les deux
+sites au même niveau.
 
 ### Préversion avant publication
 
