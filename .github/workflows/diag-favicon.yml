@@ -1,0 +1,19 @@
+name: Diagnostic favicon (temporaire)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: En-têtes favicon.ico exact (focalclub.fr, sans cache-busting)
+        run: |
+          echo "=== focalclub.fr/favicon.ico?v=202608311412 (URL EXACTE du site) ==="
+          curl -sSI --max-time 15 "https://focalclub.fr/favicon.ico?v=202608311412" || echo "(échec/délai dépassé)"
+          echo
+          echo "=== focalclub.fr/favicon.ico (sans aucun paramètre) ==="
+          curl -sSI --max-time 15 "https://focalclub.fr/favicon.ico" || echo "(échec/délai dépassé)"
+          echo
+          echo "=== focalclub.fr/index.html (sans cache-busting, réponse complète des en-têtes) ==="
+          curl -sSI --max-time 15 "https://focalclub.fr/index.html" || echo "(échec/délai dépassé)"
