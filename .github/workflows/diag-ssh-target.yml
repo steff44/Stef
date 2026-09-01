@@ -1,0 +1,39 @@
+name: Diagnostic SSH cibles Hostinger (temporaire)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Écrire la clé SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.HOSTINGER_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+      - name: Comparer les deux dossiers cibles sur le serveur
+        run: |
+          ssh -p ${{ secrets.HOSTINGER_PORT }} -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+            ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} '
+            echo "=== HOSTINGER_TARGET_DIR (focalclub.fr) ==="
+            echo "${{ secrets.HOSTINGER_TARGET_DIR }}"
+            ls -ld "${{ secrets.HOSTINGER_TARGET_DIR }}" 2>&1
+            readlink -f "${{ secrets.HOSTINGER_TARGET_DIR }}" 2>&1
+            stat -c "inode=%i device=%d mtime=%y" "${{ secrets.HOSTINGER_TARGET_DIR }}/.htaccess" 2>&1
+            grep -o "googleusercontent[^;]*" "${{ secrets.HOSTINGER_TARGET_DIR }}/.htaccess" 2>&1
+
+            echo ""
+            echo "=== HOSTINGER_TEST_TARGET_DIR (myfocal.online) ==="
+            echo "${{ secrets.HOSTINGER_TEST_TARGET_DIR }}"
+            ls -ld "${{ secrets.HOSTINGER_TEST_TARGET_DIR }}" 2>&1
+            readlink -f "${{ secrets.HOSTINGER_TEST_TARGET_DIR }}" 2>&1
+            stat -c "inode=%i device=%d mtime=%y" "${{ secrets.HOSTINGER_TEST_TARGET_DIR }}/.htaccess" 2>&1
+            grep -o "googleusercontent[^;]*" "${{ secrets.HOSTINGER_TEST_TARGET_DIR }}/.htaccess" 2>&1
+
+            echo ""
+            echo "=== whoami / pwd / disk ==="
+            whoami
+            echo "home: $HOME"
+          '
