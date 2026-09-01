@@ -1844,6 +1844,28 @@ rubriques/catégories, y compris vides) exactement comme avant le
 catégorie » compris. Seul le nouveau conteneur `#resultats-recherche`
 (voir ci-dessus) reste du changement de ce jour.
 
+**Nuance apportée dans la foulée, captures d'écran à l'appui** : le
+sommaire doit bien lister *toutes* les catégories (y compris vides,
+comme ci-dessus), mais le placeholder « Aucun document pour l'instant
+dans cette catégorie » ne doit lui **plus apparaître nulle part** dans
+la liste détaillée en dessous — seules les catégories qui contiennent
+au moins un document y montrent leur titre (`<h3>`) et leur liste.
+Problème à résoudre : le sommaire pointe vers `#categorie-{id}` pour
+*chaque* catégorie, y compris les vides — ne plus rien rendre du tout
+pour celles-ci aurait rendu ces liens morts (principe déjà établi le
+23/08/2026 : « le sommaire ne doit jamais pointer vers une ancre
+absente »). Solution : une catégorie vide n'affiche plus qu'un simple
+marqueur d'ancre invisible (`<span id="categorie-{id}"></span>`, sans
+titre ni texte) à la place du bloc `.sous-categorie-documents` complet
+— le lien du sommaire reste donc fonctionnel (il amène au bon
+emplacement dans la bonne rubrique), sans plus jamais afficher le
+moindre texte « Aucun document ». La classe CSS `.categorie-vide`,
+devenue inutilisée, est supprimée. Vérifié hors ligne (page HTML
+isolée, Playwright) : le sommaire montre toujours les trois catégories
+d'une rubrique test, la liste détaillée n'affiche que celle qui a un
+document, et les deux ancres vides restent bien présentes dans le DOM
+(donc atteignables) malgré leur absence visuelle.
+
 **Connexion et inscription vivent sur deux pages séparées**,
 `connexion.php` et `inscription.php` (choix explicite de l'utilisateur,
 20/08/2026, d'après sa maquette Word — revient sur une tentative du

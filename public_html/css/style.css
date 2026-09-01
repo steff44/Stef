@@ -1657,11 +1657,6 @@ button.lien-retour {
   border-color: var(--accent-3);
   color: var(--text);
 }
-.categorie-vide {
-  color: var(--text-muted);
-  font-size: 0.88rem;
-  margin: 0;
-}
 .rubrique-documents,
 .groupe-galerie {
   margin: 0 0 36px;
