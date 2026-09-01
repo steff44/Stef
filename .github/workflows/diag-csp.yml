@@ -1,0 +1,25 @@
+name: Diagnostic CSP (temporaire)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Vérifier les en-têtes CSP réels sur les deux domaines
+        run: |
+          echo "=== focalclub.fr (sans cache-busting) ==="
+          curl -sS -D - -o /dev/null "https://focalclub.fr/nos-sorties.html" || true
+          echo ""
+          echo "=== focalclub.fr (avec cache-busting) ==="
+          curl -sS -D - -o /dev/null "https://focalclub.fr/nos-sorties.html?diag=$(date +%s)" || true
+          echo ""
+          echo "=== myfocal.online (sans cache-busting) ==="
+          curl -sS -D - -o /dev/null "https://myfocal.online/nos-sorties.html" || true
+          echo ""
+          echo "=== myfocal.online (avec cache-busting) ==="
+          curl -sS -D - -o /dev/null "https://myfocal.online/nos-sorties.html?diag=$(date +%s)" || true
+          echo ""
+          echo "=== myfocal.online/.htaccess accessible ? (doit être 403) ==="
+          curl -sS -o /dev/null -w "%{http_code}\n" "https://myfocal.online/.htaccess" || true
