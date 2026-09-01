@@ -2266,7 +2266,31 @@ joker) — la vérification exhaustive faite le 31/08/2026 avant d'écrire
 la CSP avait cherché les domaines *appelés directement* par le code,
 sans pouvoir prévoir qu'un domaine autorisé redirigerait lui-même vers
 un autre. À garder en tête pour toute future exception CSP touchant un
-service tiers qui pourrait rediriger en coulisses.
+service tiers qui pourrait rediriger en coulisses. Corrigé sur
+`focalclub.fr`, confirmé par l'utilisatrice (« oui ça marche, c'est bon »)
+après un rechargement forcé (le premier test, en navigation normale,
+montrait encore l'ancienne CSP — la page était restée en cache dans le
+navigateur).
+
+**Diagnostic ultérieur, sans lien avec le code : `myfocal.online` accuse un
+retard de propagation après un déploiement**, constaté en creusant un
+signalement où les vignettes ne s'affichaient toujours pas, cette fois
+avec `myfocal.online` dans la barre d'adresse (repéré grâce à la capture
+d'écran de la console, qui inclut l'URL de la page en bas à droite de
+chaque ligne). Vérifié par SSH direct (workflow GitHub Actions temporaire,
+supprimé une fois la cause trouvée — le sandbox ne peut pas faire de SSH) :
+le fichier `.htaccess` sur le disque de `myfocal.online` contenait déjà
+`googleusercontent.com`, avec une date de modification correspondant
+exactement au tout dernier déploiement — mais une requête HTTP faite dans
+la minute suivante servait encore l'ancienne CSP (`x-hcdn-cache-status:
+DYNAMIC`, donc pas un cache d'edge hcdn classique). Propagation qui prend
+un certain temps sur l'infrastructure Hostinger avant qu'un changement de
+`.htaccess` ne se reflète dans les réponses HTTP — déjà probablement vrai
+pour `focalclub.fr` aussi (son premier contrôle n'avait eu lieu qu'une
+heure après son déploiement, donc rien ne prouve qu'il ait été plus rapide).
+Rien à corriger côté code ; si un futur changement de `.htaccess` semble
+« ne pas prendre » sur l'un des deux domaines immédiatement après un
+déploiement, réessayer plus tard avant de chercher une autre cause.
 
 **Anti-spam sur l'inscription** (`espace/inscription.php`, seul point
 d'écriture public du site sans protection — le formulaire de contact,
