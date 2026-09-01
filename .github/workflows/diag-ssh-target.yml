@@ -14,8 +14,10 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
 
       - name: Comparer les deux dossiers cibles sur le serveur
+        timeout-minutes: 2
         run: |
-          ssh -p ${{ secrets.HOSTINGER_PORT }} -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+          ssh -p ${{ secrets.HOSTINGER_PORT }} -i ~/.ssh/deploy_key \
+            -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=15 \
             ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} '
             echo "=== HOSTINGER_TARGET_DIR (focalclub.fr) ==="
             echo "${{ secrets.HOSTINGER_TARGET_DIR }}"
@@ -36,4 +38,4 @@ jobs:
             echo "=== whoami / pwd / disk ==="
             whoami
             echo "home: $HOME"
-          '
+          ' < /dev/null
