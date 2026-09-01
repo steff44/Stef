@@ -1509,11 +1509,20 @@ deux paragraphes (`<p>`). Même principe minimal que `corps_html()` dans
 `inc/mail.php` pour les e-mails de notification, réécrit séparément ici
 (paragraphes en plus, pas seulement `nl2br`) plutôt que partagé, les deux
 usages étant assez différents (e-mail vs longue page HTML). Le champ
-« Résumé » (extrait) reste du texte brut affiché sans mise en forme (`e()`
-simple, pas de gras ni de lien) — laissé vide, il est calculé
-automatiquement par `extrait_auto()` : premier paragraphe du contenu,
-`**` retirées (elles n'ont sinon aucun sens hors mise en forme), coupé à
-220 caractères au dernier espace pour ne jamais trancher un mot.
+« Résumé » (extrait) reste du texte brut sans le gras `**...**` (il n'a
+sinon aucun sens hors mise en forme) — laissé vide, il est calculé
+automatiquement par `extrait_auto()` : premier paragraphe du contenu, coupé
+à 220 caractères au dernier espace pour ne jamais trancher un mot.
+**Depuis le 01/09/2026** (choix explicite de l'utilisatrice, après avoir
+constaté qu'un lien collé dans un extrait — l'annonce d'une expo d'un club
+voisin — restait en texte brut sur la page de liste `blog.php`, alors qu'il
+était bien cliquable une fois l'article ouvert), l'extrait passe par
+`texte_avec_liens_html()` (`inc/page.php`, déjà utilisée pour les
+précisions d'une sortie) plutôt que `e()` simple : une adresse
+`http(s)://` y devient donc, elle aussi, un lien cliquable (nouvel onglet).
+`.blog-extrait a` (même traitement que `.blog-contenu a`/`.sortie-description
+a`) le rend visuellement reconnaissable, sans quoi il se fondrait dans le
+texte grisé de l'extrait.
 
 **Le lien détecté restait invisible** (piège signalé par l'utilisateur le
 25/08/2026, corrigé le jour même) : la règle CSS générale du site
@@ -1532,7 +1541,10 @@ aucun recadrage serveur, stockée dans `espace/photos_blog/` (fermé par
 `type=photo`/`document` qui exigent une connexion. À la modification d'un
 article, la photo n'est remplacée que si un nouveau fichier est envoyé
 (même logique que la photo de sortie dans `sorties-a-venir.php`) ; à la
-suppression, le fichier est retiré du disque.
+suppression, le fichier est retiré du disque. **Vignette agrandie sur la
+page de liste** (`blog.php`, choix explicite de l'utilisatrice, 01/09/2026) :
+`.blog-vignette` passe de 140×105 à 180×135 (même ratio 4:3, `object-fit:
+cover` inchangé) — seule cette règle CSS change, rien dans le HTML.
 
 **Remplacer une photo de couverture restait invisible côté navigateur**
 (piège signalé par l'utilisateur le 25/08/2026, corrigé le jour même) :
