@@ -211,6 +211,15 @@ titre_page("Documents du club", "Comptes rendus, statuts, bulletins et ressource
       <input type="search" id="recherche-documents" placeholder="Ex. : compte rendu, tarifs, portrait…"
              value="<?= e($_GET['recherche'] ?? '') ?>">
     </div>
+    <?php
+      // Résultats d'une recherche : liste à plat, juste sous le champ,
+      // sans les intitulés de rubrique/catégorie (choix explicite de
+      // l'utilisatrice, 01/09/2026 — ces intitulés ne servent plus qu'au
+      // sommaire ci-dessous, pour naviguer hors recherche). Rempli en
+      // JavaScript par déplacement des <li> correspondants, remis à leur
+      // place quand le champ est vidé — voir le script en bas de page.
+    ?>
+    <ul id="resultats-recherche" class="liste-documents" hidden></ul>
     <div id="documents-recherche-vide" class="empty-state" hidden><p>Aucun document ne correspond à cette recherche.</p></div>
 
     <?php
@@ -266,25 +275,44 @@ titre_page("Documents du club", "Comptes rendus, statuts, bulletins et ressource
   var champ = document.getElementById("recherche-documents");
   if (!champ) return;
 
-  var lignes    = document.querySelectorAll(".document-ligne");
-  var groupes   = document.querySelectorAll(".sous-categorie-documents, .rubrique-documents");
+  var lignes      = document.querySelectorAll(".document-ligne");
+  var resultats   = document.getElementById("resultats-recherche");
+  var sommaire    = document.querySelector(".documents-index");
+  var rubriques   = document.querySelectorAll(".rubrique-documents");
   var messageVide = document.getElementById("documents-recherche-vide");
+
+  // Chaque ligne garde le souvenir de son parent d'origine, pour l'y
+  // remettre quand la recherche est vidée — plutôt qu'un nouveau rendu
+  // complet, un simple déplacement du même élément dans le DOM (aucune
+  // duplication, les actions Télécharger/Supprimer restent
+  // fonctionnelles). `lignes` est une NodeList statique, figée dans
+  // l'ordre du document au chargement de la page : remettre chaque ligne
+  // en dernier enfant de son parent, dans cet ordre-là, reconstruit
+  // exactement l'ordre d'origine (chaque `<ul class="liste-documents">`
+  // ne contient jamais que des lignes de document, rien d'autre).
+  lignes.forEach(function (ligne) {
+    ligne._parent = ligne.parentElement;
+  });
 
   function appliquerRecherche() {
     var recherche = champ.value.trim().toLowerCase();
+    var enRecherche = recherche !== "";
+    var trouve = 0;
 
     lignes.forEach(function (ligne) {
       var titre = (ligne.dataset.titre || "").toLowerCase();
-      ligne.hidden = recherche !== "" && titre.indexOf(recherche) === -1;
+      if (enRecherche && titre.indexOf(recherche) !== -1) {
+        resultats.appendChild(ligne);
+        trouve++;
+      } else if (!enRecherche) {
+        ligne._parent.appendChild(ligne);
+      }
     });
 
-    groupes.forEach(function (groupe) {
-      var visibles = groupe.querySelectorAll(".document-ligne:not([hidden])");
-      groupe.hidden = recherche !== "" && visibles.length === 0;
-    });
-
-    var toutMasque = document.querySelectorAll(".document-ligne:not([hidden])").length === 0;
-    messageVide.hidden = !(recherche !== "" && toutMasque);
+    sommaire.hidden = enRecherche;
+    rubriques.forEach(function (rubrique) { rubrique.hidden = enRecherche; });
+    resultats.hidden = !enRecherche || trouve === 0;
+    messageVide.hidden = !(enRecherche && trouve === 0);
   }
 
   champ.addEventListener("input", appliquerRecherche);
