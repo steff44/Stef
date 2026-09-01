@@ -2250,6 +2250,24 @@ scripts et des attributs `style=""` en ligne un peu partout. Pas testable
 avec le serveur PHP intégré (voir plus bas, « Les `.htaccess` ne peuvent
 pas se tester ainsi ») — à vérifier en ligne après déploiement.
 
+**Cette CSP a cassé les vignettes de « Nos Sorties » (Google Drive)**,
+signalé par l'utilisatrice le 01/09/2026 : « la vignette Expo 2026 ne
+pointe plus sur Google Drive comme précédemment ». Diagnostic via la
+console du navigateur (même principe que pour le favicon — demander à
+l'utilisatrice le message d'erreur exact plutôt que deviner) : les
+adresses générées par `infos-albums.php`
+(`https://drive.google.com/thumbnail?id=...`) sont bien autorisées par
+la CSP, mais **Google redirige lui-même** cette adresse vers
+`https://lh3.googleusercontent.com/d/...` pour l'image réelle — la CSP
+s'applique à l'adresse **finale**, après redirection, pas à l'adresse de
+départ. `img-src` corrigé pour ajouter `https://*.googleusercontent.com`
+(plusieurs sous-domaines lh1-lh6 possibles côté Google, d'où le
+joker) — la vérification exhaustive faite le 31/08/2026 avant d'écrire
+la CSP avait cherché les domaines *appelés directement* par le code,
+sans pouvoir prévoir qu'un domaine autorisé redirigerait lui-même vers
+un autre. À garder en tête pour toute future exception CSP touchant un
+service tiers qui pourrait rediriger en coulisses.
+
 **Anti-spam sur l'inscription** (`espace/inscription.php`, seul point
 d'écriture public du site sans protection — le formulaire de contact,
 `contact.html`, n'a lui aucun traitement serveur : c'est un formulaire

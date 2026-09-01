@@ -43,5 +43,16 @@
   # Google Drive (Nos Sorties, voir infos-albums.php). 'unsafe-inline' reste
   # nécessaire pour script-src/style-src : le site n'a pas de build, il
   # utilise des scripts et attributs style="" en ligne un peu partout.
-  Header always set Content-Security-Policy "default-src 'self'; img-src 'self' data: https://drive.google.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; frame-ancestors 'self'; form-action 'self' mailto:; base-uri 'self'; object-src 'none'"
+  #
+  # Piège rencontré le 01/09/2026 : les vignettes Nos Sorties ont cessé de
+  # s'afficher après l'ajout de cette CSP, alors que https://drive.google.com
+  # était bien autorisé. Cause, trouvée via la console du navigateur
+  # (message CSP explicite, domaine bloqué nommé) : les adresses générées
+  # par infos-albums.php (https://drive.google.com/thumbnail?id=...)
+  # redirigent Google lui-même vers https://lh3.googleusercontent.com/d/...
+  # pour l'image réelle — et la CSP s'applique à l'adresse finale après
+  # redirection, pas à l'adresse de départ. https://*.googleusercontent.com
+  # (plusieurs sous-domaines lh1-lh6 possibles côté Google) ajouté en
+  # conséquence.
+  Header always set Content-Security-Policy "default-src 'self'; img-src 'self' data: https://drive.google.com https://*.googleusercontent.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; frame-ancestors 'self'; form-action 'self' mailto:; base-uri 'self'; object-src 'none'"
 </IfModule>
