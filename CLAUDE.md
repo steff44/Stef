@@ -2311,6 +2311,17 @@ Rien à corriger côté code ; si un futur changement de `.htaccess` semble
 « ne pas prendre » sur l'un des deux domaines immédiatement après un
 déploiement, réessayer plus tard avant de chercher une autre cause.
 
+**Un trait fin sépare la méta (date/auteur/catégorie) du reste de
+l'article** (`blog-article.php`, choix explicite de l'utilisatrice,
+01/09/2026) : `.blog-article-complet .blog-meta` (déjà une règle scindée
+de `.blog-meta` de base, propre à la page d'un article) gagne
+`padding-bottom: 16px; border-bottom: 1px solid var(--border)` — même
+couleur de trait que les séparateurs déjà utilisés ailleurs sur le site
+(cartes de sortie, pied de page…). Scindé volontairement de `.blog-meta`
+de base pour ne pas ajouter ce trait sur la page de liste `blog.php`, où
+chaque ligne d'article a déjà sa propre séparation (`.blog-article-ligne {
+border-bottom }`).
+
 **Anti-spam sur l'inscription** (`espace/inscription.php`, seul point
 d'écriture public du site sans protection — le formulaire de contact,
 `contact.html`, n'a lui aucun traitement serveur : c'est un formulaire
