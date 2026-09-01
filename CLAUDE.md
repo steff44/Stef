@@ -1760,6 +1760,33 @@ dans `main.js`) ; il masque aussi une catégorie entière (donc sa pastille
 chaque ligne est factorisé dans `inc/document-ligne.php`, inclus une fois
 par sous-catégorie non vide.
 
+**Depuis le 01/09/2026, revient sur le paragraphe précédent** (choix
+explicite de l'utilisatrice, après avoir déposé les trois fiches
+d'export photo — voir « Galerie du Club » plus bas — et remarqué que le
+résultat de recherche se retrouvait loin sous le cadre de recherche) :
+une catégorie ou une rubrique **entièrement vide** (aucun document
+jamais déposé) **n'apparaît plus nulle part** — ni dans le sommaire, ni
+dans la liste détaillée, ni comme placeholder « Aucun document pour
+l'instant » — tant qu'elle n'a pas reçu son premier fichier. Calculé une
+seule fois (`$rubriques_peuplees`, juste après le groupement `$groupes`),
+réutilisé par le sommaire et la liste détaillée, qui n'itèrent plus sur
+`$rubriques` mais sur cette version filtrée. Avec de nombreuses
+rubriques/catégories encore vides (le cas courant en pratique, une
+catégorie n'étant réellement utilisée qu'après son premier dépôt), la
+page devenait longue avant d'atteindre un document réel — ce correctif
+la raccourcit d'autant, ce qui rapproche mécaniquement un résultat de
+recherche du champ, sans logique de positionnement dédiée. Le champ de
+recherche et le sommaire eux-mêmes ne s'affichent plus que s'il existe
+au moins un document quelque part (`$rubriques_peuplees || $autres`) ;
+si des rubriques existent mais qu'aucune n'a encore de document, un
+simple message « Aucun document n'a encore été déposé. » les remplace.
+**Le formulaire de dépôt continue de lister toutes les catégories**, y
+compris vides (`$rubriques`, inchangé) — il faut bien pouvoir choisir une
+catégorie encore vide pour y déposer un premier document. Testé hors
+ligne (logique de filtrage rejouée isolément en PHP, sans DB) : une seule
+rubrique/catégorie peuplée sur trois retenue, cas limite « aucun document
+nulle part » donnant bien un tableau vide.
+
 **Connexion et inscription vivent sur deux pages séparées**,
 `connexion.php` et `inscription.php` (choix explicite de l'utilisateur,
 20/08/2026, d'après sa maquette Word — revient sur une tentative du
