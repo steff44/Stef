@@ -2136,6 +2136,23 @@ Settings → Secrets and variables → Actions. Voir le README pour le détail.
 Le workflow peut aussi être lancé à la main : onglet Actions → « Déploiement
 Hostinger » → Run workflow.
 
+### Déploiement vers le site de test (myfocal.online)
+
+`.github/workflows/deploy-test.yml` (ajouté le 01/09/2026), **manuel
+uniquement** (jamais déclenché par un push) : déploie `public_html/` vers
+`myfocal.online` plutôt que `focalclub.fr`, pour tester une branche pas
+encore fusionnée (y compris l'espace adhérents PHP+MySQL, impossible à
+essayer sur la préversion GitHub Pages ci-dessous) sans jamais toucher au
+site en ligne. Réutilise les 4 mêmes secrets `HOSTINGER_HOST`/`PORT`/
+`USER`/`SSH_KEY` que le déploiement principal (même compte Hostinger),
+plus un 5ᵉ secret dédié, `HOSTINGER_TEST_TARGET_DIR` =
+`/home/u912253694/public_html/` (le dossier de `myfocal.online`,
+confirmé par tout l'historique de déploiement d'avant le 01/09/2026 —
+voir « Pièges déjà rencontrés » plus bas pour le détail des deux dossiers
+séparés). Se lance depuis l'onglet Actions → « Déploiement test
+(myfocal.online) » → Run workflow → en choisissant la branche à tester
+dans le sélecteur.
+
 ### Préversion avant publication
 
 `.github/workflows/preview.yml` publie `public_html/` sur GitHub Pages à
