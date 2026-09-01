@@ -2752,9 +2752,16 @@ button.lien-retour {
   color: var(--text-muted);
   line-height: 1.6;
 }
+.blog-extrait a {
+  color: var(--accent-3);
+  text-decoration: underline;
+}
+.blog-extrait a:hover {
+  color: var(--accent);
+}
 .blog-vignette {
-  width: 140px;
-  height: 105px;
+  width: 180px;
+  height: 135px;
   object-fit: cover;
   border-radius: var(--radius);
   border: 1px solid var(--border);
