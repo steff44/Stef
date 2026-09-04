@@ -95,6 +95,12 @@ titre_page("Bonjour " . $adherent['nom'], "Bienvenue dans l'espace réservé aux
     <?php endif; ?>
     <?php if (est_administrateur()): ?>
       <article class="feature-card">
+        <div class="feature-icon" aria-hidden="true">📊</div>
+        <h3>Statistiques</h3>
+        <p>Fréquentation du site : pages vues, provenance, pays et villes des visiteurs.</p>
+        <a class="btn btn-ghost" href="statistiques.php">Ouvrir</a>
+      </article>
+      <article class="feature-card">
         <div class="feature-icon" aria-hidden="true">⚙️</div>
         <h3>Réglages du site</h3>
         <p>Coordonnées du club affichées sur les pages publiques.</p>

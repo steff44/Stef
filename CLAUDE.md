@@ -44,6 +44,7 @@ public_html/          ← racine du site, déployée telle quelle
   infos-galerie-club.php ← API publique en lecture seule (photos de la Galerie du Club, voir plus bas)
   infos-albums.php    ← API publique en lecture seule (albums Google Drive par sortie, voir plus bas)
   infos-prochaine-sortie.php ← API publique en lecture seule (bandeau de l'accueil, voir plus bas)
+  enregistrer-visite.php ← API publique en écriture seule (statistiques de fréquentation, voir plus bas)
   espace/             ← ESPACE ADHÉRENTS en PHP + MySQL (voir plus bas)
   css/style.css       ← tout le style, variables CSS en haut du fichier
   js/data.js          ← DONNÉES : adhérents + leurs photos
@@ -2127,6 +2128,92 @@ Revalidé avec `openpyxl` : alignement centré et bordure fine sur toutes les
 cellules testées (bandeau, en-tête, données normales et zébrées), largeurs
 de colonnes inchangées ailleurs.
 
+**Statistiques de fréquentation** (`espace/statistiques.php`, choix
+explicite de l'utilisatrice, 01/09/2026 : « je voudrais connaître
+l'activité de mon site », puis « connaître l'origine des connexions » —
+pays/ville plutôt que la source du clic seule, précisé par question
+explicite). Réservée au responsable (`exige_administrateur()`, jamais un
+éditeur — même règle que `export-adherents.php`), accessible depuis une
+carte du tableau de bord et depuis le menu déroulant « {pseudo} connecté ».
+
+**Une ligne par page vue, dans une nouvelle table `visites`** (`page`,
+`referent`, `ip`, `pays`, `ville`, `cree_le`) — alimentée par
+`enregistrer-visite.php`, un nouveau point d'accès **public** à la racine
+du site (hors de `espace/`, même principe d'autonomie qu'`infos-club.php` :
+sa propre connexion PDO, ses propres fonctions, pour continuer à fonctionner
+même si `espace/inc/db.php` est en panne). `js/main.js` l'appelle en
+arrière-plan sur **toute page**, statique ou de l'espace adhérents
+(`fetch` avec `keepalive: true`, chemin absolu `/enregistrer-visite.php`
+pour fonctionner identiquement depuis la racine et depuis `espace/`,
+réponse jamais attendue, échec ignoré en silence) — générique, comme les
+autres comportements globaux du site (œil du mot de passe, boutons
+`.retour-nav`…), aucune page n'a eu besoin d'être modifiée une par une.
+Comptage sans cookie ni compte : un visiteur non connecté est compté
+comme n'importe quel autre.
+
+**Aucune adresse IP complète n'est jamais stockée ni transmise à
+quiconque** — choix explicite pour rester cohérent avec la position du
+site sur la vie privée (`confidentialite.html`, déjà mise à jour en
+conséquence). `anonymiser_ip()` met à zéro le dernier octet (IPv4) ou les
+80 derniers bits (IPv6) de l'adresse **avant tout autre usage**, y compris
+avant l'appel au service de géolocalisation — donc ni la base, ni le
+service tiers, ne voient jamais l'adresse précise d'un visiteur.
+`ip_visiteur()` lit `X-Forwarded-For` en priorité (posé par le CDN
+Hostinger, `hcdn`, déjà repéré dans les en-têtes de réponse du site — voir
+plus bas « Pièges déjà rencontrés »), avec repli sur `REMOTE_ADDR` si
+absent — à vérifier en ligne une fois déployé : si tous les pays remontent
+identiques ou manquants, c'est que Hostinger utilise un autre nom d'en-tête
+pour transmettre l'adresse réelle, à ajuster à ce moment-là.
+
+**Géolocalisation via le service gratuit [ipapi.co](https://ipapi.co)**
+(aucune clé requise pour ce volume de trafic), appelée avec l'adresse déjà
+anonymisée — jamais l'adresse complète. Pour limiter les appels sortants
+(rapidité, quota, robustesse en cas d'abus de ce point d'accès public),
+`enregistrer-visite.php` réutilise d'abord la dernière géolocalisation déjà
+connue pour cette même adresse anonymisée en base, et n'appelle le service
+que si elle est inédite. Un échec (service injoignable, quota dépassé,
+adresse non résolue) laisse `pays`/`ville` à `NULL` — la visite est comptée
+quand même.
+
+**Purge automatique après 13 mois** (durée usuelle recommandée par la CNIL
+pour une mesure d'audience, reprise dans `confidentialite.html`) : pas de
+cron sur cet hébergement, donc `enregistrer-visite.php` lance la purge
+aléatoirement (environ 1 requête sur 200) plutôt qu'à chaque visite, pour
+rester sans effet notable sur le temps de réponse.
+
+`espace/statistiques.php` affiche, sur les 30 derniers jours (sauf les
+quatre chiffres de la vue d'ensemble, qui couvrent aussi 7 jours/aujourd'hui/
+depuis toujours) : les pages les plus vues, la provenance des visiteurs
+(« Direct / lien interne » regroupe navigation directe et interne au
+site — le domaine du referrer est mis à `NULL` par `referent_visite()`
+dans ces deux cas), les pays et les villes — chaque liste en barres
+proportionnelles au plus haut total (CSS pur, aucune bibliothèque de
+graphiques, cohérent avec un site sans build). Piège rencontré et corrigé
+avant mise en ligne (Playwright) : `.stat-barre` est un `<span>` imbriqué
+dans un autre `<span>` non flex — un élément inline ignore `width`/`height`
+en pourcentage, les barres restaient invisibles malgré la bonne valeur de
+largeur calculée en PHP. Corrigé par `display: block` sur `.stat-barre`.
+
+**hPanel propose probablement déjà des statistiques basiques** (AWStats ou
+équivalent, gratuit, sans rien coder) — suggéré à l'utilisatrice avant de
+construire cette page, non vérifiable depuis ce sandbox (accès hPanel hors
+de portée). Les deux ne s'excluent pas : hPanel donne une vue brute côté
+serveur, `statistiques.php` ajoute pays/ville par visite et s'intègre à
+l'espace adhérents.
+
+Testé hors ligne (01/09/2026) : `anonymiser_ip()`
+(IPv4/IPv6), `referent_visite()` (domaines du site reconnus et mis à
+`NULL`, `www.` retiré, autres domaines conservés), `ip_visiteur()`
+(priorité à `X-Forwarded-For` valide, repli sur `REMOTE_ADDR`), et le
+rendu HTML de la liste de statistiques (échappement contre l'injection,
+classement par ordre décroissant, largeur de barre proportionnelle,
+message dédié si aucune donnée) — assertions unitaires en PHP pur.
+Agrégations SQL (`GROUP BY`/`COUNT`/filtre sur 30 jours/regroupement des
+`referent` `NULL`) rejouées sur SQLite avec un jeu de données couvrant
+plusieurs pages, plusieurs provenances et une visite volontairement hors
+fenêtre de 30 jours. Rendu Playwright (desktop et 390px, aucun débordement
+horizontal) après correction du piège `.stat-barre`.
+
 ```
 espace/
   connexion.php  deconnexion.php  inscription.php  index.php    ← tableau de bord
@@ -2135,6 +2222,7 @@ espace/
   album.php          ← dépôt de photos pour un album « Nos Sorties » hébergé sur ce site (type=local, voir plus haut)
   adherents.php      ← gestion des comptes, responsables et éditeurs
   export-adherents.php ← liste des adhérents en .xlsx, responsables uniquement (voir plus haut)
+  statistiques.php   ← fréquentation du site, responsables uniquement (voir plus haut)
   parametres.php     ← coordonnées du club affichées sur le site public, responsables uniquement
   installation.php   ← à jouer UNE fois, se verrouille ensuite tout seul
   telecharger.php    ← seule porte d'accès aux fichiers privés (+ types publics : sortie, galerie_club, blog, sortie_album)
