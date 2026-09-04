@@ -50,7 +50,8 @@ function debut_page(string $titre, string $page_active = ''): void
         $onglets['adherents']   = ['Adhérents', 'adherents.php'];
     }
     if (est_administrateur()) {
-        $onglets['parametres']  = ['Réglages du site', 'parametres.php'];
+        $onglets['statistiques'] = ['Statistiques', 'statistiques.php'];
+        $onglets['parametres']   = ['Réglages du site', 'parametres.php'];
     }
     ?>
 <!DOCTYPE html>

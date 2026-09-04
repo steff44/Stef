@@ -236,3 +236,27 @@ CREATE TABLE IF NOT EXISTS parametres_site (
   cle    VARCHAR(60) PRIMARY KEY,
   valeur TEXT NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Statistiques de fréquentation (choix explicite de l'utilisatrice,
+-- 01/09/2026) : une ligne par page vue, posée par le point d'accès public
+-- enregistrer-visite.php (racine, hors de espace/, appelé en arrière-plan par
+-- js/main.js sur chaque page). `ip` est l'adresse IPv4/IPv6 du visiteur avec
+-- les derniers bits mis à zéro (anonymiser_ip() dans enregistrer-visite.php)
+-- avant tout usage, y compris pour la géolocalisation — jamais l'adresse
+-- complète, ni stockée ni transmise au service de géolocalisation tiers.
+-- `pays`/`ville` restent NULL si la géolocalisation échoue ou n'a pas de
+-- réponse ; la visite est comptée quand même. `referent` est le domaine
+-- d'où vient le clic (moteur de recherche, réseau social, autre site) —
+-- NULL si navigation directe ou interne au site. Consultée depuis
+-- espace/statistiques.php, réservée au responsable (voir
+-- exige_administrateur()).
+CREATE TABLE IF NOT EXISTS visites (
+  id       INT AUTO_INCREMENT PRIMARY KEY,
+  page     VARCHAR(190) NOT NULL,
+  referent VARCHAR(190) DEFAULT NULL,
+  ip       VARCHAR(45)  DEFAULT NULL,
+  pays     VARCHAR(80)  DEFAULT NULL,
+  ville    VARCHAR(120) DEFAULT NULL,
+  cree_le  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_visites_cree_le (cree_le)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

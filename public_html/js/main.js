@@ -10,6 +10,19 @@
     return span.innerHTML;
   }
 
+  /* ---------- Statistiques de fréquentation ----------
+     Signale la visite en arrière-plan, sur toute page (statique ou de
+     l'espace adhérents) — chemin absolu, pour fonctionner identiquement
+     depuis la racine et depuis espace/. keepalive laisse la requête partir
+     même si la page est aussitôt quittée ; aucune réponse n'est attendue,
+     l'échec (hors ligne, préversion GitHub Pages) est ignoré en silence. */
+  try {
+    fetch("/enregistrer-visite.php?page=" + encodeURIComponent(location.pathname), {
+      method: "GET",
+      keepalive: true,
+    }).catch(function () {});
+  } catch (e) {}
+
   /* ---------- Navigation mobile ---------- */
   const toggle = document.querySelector(".nav-toggle");
   const links = document.querySelector(".nav-links");

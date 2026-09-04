@@ -486,6 +486,26 @@ function appliquer_migrations(PDO $pdo): void
     }
 
     try {
+        // Statistiques de fréquentation (choix explicite de l'utilisatrice,
+        // 01/09/2026) — voir schema.sql pour le détail des colonnes.
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS visites (
+                id       INT AUTO_INCREMENT PRIMARY KEY,
+                page     VARCHAR(190) NOT NULL,
+                referent VARCHAR(190) DEFAULT NULL,
+                ip       VARCHAR(45)  DEFAULT NULL,
+                pays     VARCHAR(80)  DEFAULT NULL,
+                ville    VARCHAR(120) DEFAULT NULL,
+                cree_le  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_visites_cree_le (cree_le)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+    } catch (PDOException $e) {
+        error_log('Espace adhérents — migration visites : ' . $e->getMessage());
+        $reussi = false;
+    }
+
+    try {
         // Photos d'un album hébergé sur Hostinger (type='local' sur
         // albums_sorties, voir plus haut) — déposées directement par les
         // adhérents, sur le même principe que photos_club. `description` est
@@ -565,7 +585,8 @@ function signature_schema(): string
         'categories_blog_v1' . '||' .
         'articles_blog_v1' . '||' .
         'albums_sorties_v3' . '||' .
-        'photos_sorties_v1'
+        'photos_sorties_v1' . '||' .
+        'visites_v1'
     );
 }
 
