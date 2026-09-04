@@ -1731,51 +1731,52 @@ button.lien-retour {
   color: var(--text-muted);
   font-size: 0.85rem;
 }
-.stat-liste {
-  list-style: none;
-  margin: 16px 0 0;
-  padding: 0;
+/* Tableau détaillé (remplace l'ancien affichage en barres, jugé pas assez
+   précis) : reprend .tableau-adherents telle quelle, sauf sa largeur
+   minimale de 940px — pensée pour un tableau de 6 colonnes très large, elle
+   forcerait un défilement horizontal inutile sur ce tableau à 4 colonnes,
+   y compris sur mobile. */
+.tableau-adherents.tableau-stats {
+  min-width: 0;
+}
+.tableau-stats td:first-child,
+.tableau-stats th:first-child {
+  width: 3em;
+}
+
+/* Raccourcis de période (pastilles cliquables) et formulaire de dates
+   personnalisées, au-dessus des tableaux détaillés. */
+.stat-periodes {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
 }
-.stat-ligne {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.stat-libelle {
-  flex: 0 0 42%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 0.9rem;
-}
-.stat-barre-fond {
-  flex: 1;
-  height: 8px;
-  background: var(--bg-alt);
-  border-radius: 4px;
-  overflow: hidden;
-}
-.stat-barre {
-  display: block;
-  height: 100%;
-  background: var(--accent-gradient);
-  border-radius: 4px;
-}
-.stat-valeur {
-  flex: 0 0 auto;
-  font-variant-numeric: tabular-nums;
+.stat-periode-lien {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
   color: var(--text-muted);
   font-size: 0.85rem;
-  min-width: 2.5em;
-  text-align: right;
 }
-@media (max-width: 560px) {
-  .stat-libelle {
-    flex-basis: 55%;
-  }
+.stat-periode-lien:hover {
+  border-color: var(--accent-3);
+  color: var(--text);
+}
+.stat-periode-lien[aria-current="page"] {
+  background: var(--accent-gradient);
+  border-color: transparent;
+  color: #fff;
+}
+.stat-periode-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+}
+.stat-periode-form .field {
+  margin: 0;
 }
 
 /* Gestion des rubriques de documents (Réglages du site). */
