@@ -2181,18 +2181,61 @@ cron sur cet hébergement, donc `enregistrer-visite.php` lance la purge
 aléatoirement (environ 1 requête sur 200) plutôt qu'à chaque visite, pour
 rester sans effet notable sur le temps de réponse.
 
-`espace/statistiques.php` affiche, sur les 30 derniers jours (sauf les
-quatre chiffres de la vue d'ensemble, qui couvrent aussi 7 jours/aujourd'hui/
-depuis toujours) : les pages les plus vues, la provenance des visiteurs
-(« Direct / lien interne » regroupe navigation directe et interne au
-site — le domaine du referrer est mis à `NULL` par `referent_visite()`
-dans ces deux cas), les pays et les villes — chaque liste en barres
-proportionnelles au plus haut total (CSS pur, aucune bibliothèque de
-graphiques, cohérent avec un site sans build). Piège rencontré et corrigé
-avant mise en ligne (Playwright) : `.stat-barre` est un `<span>` imbriqué
-dans un autre `<span>` non flex — un élément inline ignore `width`/`height`
-en pourcentage, les barres restaient invisibles malgré la bonne valeur de
-largeur calculée en PHP. Corrigé par `display: block` sur `.stat-barre`.
+`espace/statistiques.php` affiche quatre chiffres fixes en vue d'ensemble
+(aujourd'hui/7 jours/30 jours/depuis toujours), puis, sur une **période
+choisie par l'utilisatrice** (voir plus bas) : les pages les plus vues, la
+provenance des visiteurs (« Direct / lien interne » regroupe navigation
+directe et interne au site — le domaine du referrer est mis à `NULL` par
+`referent_visite()` dans ces deux cas), les pays et les villes.
+
+**Choix de la période** (choix explicite de l'utilisatrice, 04/09/2026,
+même jour que la création de la page : « je voudrais pouvoir choisir les
+jours ») : `?debut=AAAA-MM-JJ&fin=AAAA-MM-JJ` dans l'URL, en rechargement
+de page classique, sans JavaScript — même philosophie que le calendrier
+d'`agenda.php` ou la pagination du blog. Six raccourcis en pastilles
+cliquables (Aujourd'hui, 7 derniers jours, 30 derniers jours, Ce mois-ci,
+Cette année, Depuis toujours — « Depuis toujours » calculé depuis une date
+fixe assez ancienne, 01/01/2000, plutôt qu'une vraie absence de borne, pour
+garder la même forme de requête que les autres raccourcis), plus un
+formulaire à deux `<input type="date">` pour une période sur mesure. Valeur
+manquante ou invalide (URL trafiquée) → repli silencieux sur les 30
+derniers jours (`DateTimeImmutable::createFromFormat()` renvoie `false` sur
+une valeur mal formée) ; dates inversées → remises dans l'ordre. Les quatre
+chiffres de la vue d'ensemble restent volontairement fixes, indépendants de
+la période choisie : ce sont des repères rapides, pas le détail.
+
+**Vraies tables HTML plutôt que des barres** (choix explicite de
+l'utilisatrice, même jour : « le tableau n'est pas assez précis je voudrais
+aussi avoir des tableaux ») — remplace l'affichage en barres proportionnelles
+du premier jet (`afficher_liste_stats()`, CSS pur) par
+`afficher_tableau_stats()` : un vrai `<table>` (rang, libellé, nombre de
+visites, pourcentage), qui reprend `.tableau-adherents` (déjà utilisée pour
+la liste des adhérents) plutôt que d'inventer un nouveau style. Le
+pourcentage est relatif au total de la liste affichée (donc 100 % sur la
+colonne Villes, qui exclut déjà les visites sans ville connue). Plafond
+relevé de 10 à 50 lignes (site à faible trafic, la limite précédente
+coupait des données utiles). L'ancien CSS des barres (`.stat-liste`,
+`.stat-ligne`, `.stat-barre`…) est supprimé, remplacé par
+`.tableau-adherents.tableau-stats` (annule le `min-width: 940px`, pensé
+pour un tableau à 6 colonnes très large, inutile ici) et les styles des
+pastilles de période/formulaire de dates.
+
+**Piège de cascade CSS rencontré et corrigé avant mise en ligne**
+(Playwright) : un premier essai déclarait `.tableau-stats { min-width: 0 }`
+seule — sans effet, car `.tableau-adherents` (qui impose `min-width: 940px`)
+est défini plus loin dans `style.css`, et deux sélecteurs à une seule classe
+ont la même spécificité : c'est l'ordre d'apparition qui tranche, pas
+l'intention. Le tableau restait donc forcé à 940px de large, largement plus
+que sa carte, écrasant les colonnes Visites/% hors du cadre visible.
+Corrigé en combinant les deux classes sur le même sélecteur
+(`.tableau-adherents.tableau-stats`), plus spécifique que `.tableau-adherents`
+seule quel que soit l'ordre dans le fichier. Repéré par mesure directe de
+la largeur réelle de la table (`offsetWidth`), pas seulement par capture
+d'écran — une capture seule aurait pu faire passer les colonnes coupées
+pour un simple defilement horizontal normal (`.tableau-defilant`), déjà le
+comportement voulu sur mobile pour un tableau plus large que sa carte
+(vérifié à 390px : chaque tableau défile dans son propre cadre, la page
+elle-même ne déborde jamais).
 
 **hPanel propose probablement déjà des statistiques basiques** (AWStats ou
 équivalent, gratuit, sans rien coder) — suggéré à l'utilisatrice avant de
@@ -2204,15 +2247,18 @@ l'espace adhérents.
 Testé hors ligne (04/09/2026) : `anonymiser_ip()`
 (IPv4/IPv6), `referent_visite()` (domaines du site reconnus et mis à
 `NULL`, `www.` retiré, autres domaines conservés), `ip_visiteur()`
-(priorité à `X-Forwarded-For` valide, repli sur `REMOTE_ADDR`), et le
-rendu HTML de la liste de statistiques (échappement contre l'injection,
-classement par ordre décroissant, largeur de barre proportionnelle,
-message dédié si aucune donnée) — assertions unitaires en PHP pur.
-Agrégations SQL (`GROUP BY`/`COUNT`/filtre sur 30 jours/regroupement des
-`referent` `NULL`) rejouées sur SQLite avec un jeu de données couvrant
-plusieurs pages, plusieurs provenances et une visite volontairement hors
-fenêtre de 30 jours. Rendu Playwright (desktop et 390px, aucun débordement
-horizontal) après correction du piège `.stat-barre`.
+(priorité à `X-Forwarded-For` valide, repli sur `REMOTE_ADDR`), le calcul
+de la période (défaut 30 jours, dates valides respectées, dates inversées
+remises dans l'ordre, valeur invalide → repli, borne haute exclusive
+couvrant bien la journée entière de la date de fin) et le rendu HTML du
+tableau (rang, pourcentage, échappement contre l'injection, message dédié
+si aucune donnée) — assertions unitaires en PHP pur. Agrégations SQL
+(`GROUP BY`/`COUNT`/filtre sur une période bornée par deux paramètres liés/
+regroupement des `referent` `NULL`) rejouées sur SQLite avec un jeu de
+données couvrant plusieurs pages, plusieurs provenances et une visite
+volontairement hors période. Rendu Playwright (desktop et 390px, largeur
+réelle des tableaux mesurée, aucun débordement horizontal de la page)
+après correction du piège de cascade CSS.
 
 ```
 espace/
