@@ -2129,7 +2129,7 @@ cellules testées (bandeau, en-tête, données normales et zébrées), largeurs
 de colonnes inchangées ailleurs.
 
 **Statistiques de fréquentation** (`espace/statistiques.php`, choix
-explicite de l'utilisatrice, 01/09/2026 : « je voudrais connaître
+explicite de l'utilisatrice, 04/09/2026 : « je voudrais connaître
 l'activité de mon site », puis « connaître l'origine des connexions » —
 pays/ville plutôt que la source du clic seule, précisé par question
 explicite). Réservée au responsable (`exige_administrateur()`, jamais un
@@ -2201,7 +2201,7 @@ de portée). Les deux ne s'excluent pas : hPanel donne une vue brute côté
 serveur, `statistiques.php` ajoute pays/ville par visite et s'intègre à
 l'espace adhérents.
 
-Testé hors ligne (01/09/2026) : `anonymiser_ip()`
+Testé hors ligne (04/09/2026) : `anonymiser_ip()`
 (IPv4/IPv6), `referent_visite()` (domaines du site reconnus et mis à
 `NULL`, `www.` retiré, autres domaines conservés), `ip_visiteur()`
 (priorité à `X-Forwarded-For` valide, repli sur `REMOTE_ADDR`), et le

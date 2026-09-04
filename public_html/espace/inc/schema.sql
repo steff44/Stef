@@ -238,7 +238,7 @@ CREATE TABLE IF NOT EXISTS parametres_site (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Statistiques de fréquentation (choix explicite de l'utilisatrice,
--- 01/09/2026) : une ligne par page vue, posée par le point d'accès public
+-- 04/09/2026) : une ligne par page vue, posée par le point d'accès public
 -- enregistrer-visite.php (racine, hors de espace/, appelé en arrière-plan par
 -- js/main.js sur chaque page). `ip` est l'adresse IPv4/IPv6 du visiteur avec
 -- les derniers bits mis à zéro (anonymiser_ip() dans enregistrer-visite.php)

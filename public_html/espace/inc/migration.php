@@ -487,7 +487,7 @@ function appliquer_migrations(PDO $pdo): void
 
     try {
         // Statistiques de fréquentation (choix explicite de l'utilisatrice,
-        // 01/09/2026) — voir schema.sql pour le détail des colonnes.
+        // 04/09/2026) — voir schema.sql pour le détail des colonnes.
         $pdo->exec(
             'CREATE TABLE IF NOT EXISTS visites (
                 id       INT AUTO_INCREMENT PRIMARY KEY,
