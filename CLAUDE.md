@@ -673,6 +673,65 @@ adaptation de texte (les fiches d'export vivent dans les mêmes Documents
 du Club, partagés par les deux galeries). Aucune nouvelle classe CSS
 nécessaire, `.alerte-avertissement` étant déjà générique.
 
+**Une photo de la Galerie privée peut être ajoutée à la Galerie du Club
+sans la retéléverser**, immédiatement à l'envoi ou plus tard depuis une
+photo déjà déposée (choix explicite de l'utilisatrice, 06/09/2026:
+« lorsqu'un adhérent mette une photo sur la galerie privée il puisse soit
+de suite soit après ajouter cette photo à la galerie du club sans à
+nouveau téléverser la photo »). Nouvelle colonne `photos_privees.copie_club_id`
+(NULL tant que la photo n'a jamais été partagée, sinon l'identifiant de la
+ligne `photos_club` créée — `ON DELETE SET NULL` si cette copie est
+supprimée, pour reproposer le partage plutôt que croire à tort qu'il a
+déjà eu lieu) — colonne posée en clair dans `schema.sql` pour une
+installation neuve, `ALTER TABLE ADD COLUMN` sans clé étrangère pour une
+base déjà en ligne (même convention que `categorie_id` juste au-dessus).
+La clé étrangère de `schema.sql` vers `photos_club(id)` est posée par un
+`ALTER TABLE` séparé, après la création de cette table plus bas dans le
+fichier : InnoDB refuse une clé étrangère vers une table qui n'existe pas
+encore au moment du `CREATE TABLE photos_privees`, qui la précède.
+
+`copier_fichier_depot()` (`inc/televersement.php`) copie le fichier déjà
+enregistré vers `photos_club/`, sous un nom neuf et aléatoire — jamais le
+même fichier physique partagé entre les deux tables, pour que supprimer
+l'une des deux copies n'affecte jamais l'autre. `galerie.php` l'utilise à
+deux endroits : une case à cocher « Ajouter aussi ces photos à la Galerie
+(Galerie du Club) » (`.case-a-cocher`, déjà utilisée par
+`sorties-a-venir.php` pour le covoiturage) sur le formulaire de dépôt, qui
+partage le fichier, le titre, la catégorie (les deux galeries partagent
+`categories_galerie`, aucune conversion nécessaire), le nom affiché et la
+note déjà saisis pour l'envoi ; et une nouvelle action POST
+`ajouter_au_club` sur une photo déjà déposée, réservée à son auteur ou à
+un responsable (même règle que la suppression) et refusée si la photo est
+déjà partagée. Dans les deux cas, `depose_par` de la copie reprend
+l'auteur d'origine de la photo privée — pas forcément la personne qui
+clique, quand c'est un responsable qui partage la photo d'un autre
+adhérent à des fins de modération.
+
+Sur chaque carte de la Galerie privée (`inc/photo-carte.php`), un rond
+`+` en incrustation en haut à gauche (coin opposé au bouton Supprimer)
+propose le partage ; une fois fait, il est remplacé par un rond `✓` vert
+non cliquable. Les deux reprennent la taille et le style du bouton
+Supprimer (30×30px, texte complet dans l'attribut `title`) plutôt qu'un
+texte en toutes lettres du genre « Ajouter à la Galerie du Club » :
+constaté et corrigé avant mise en ligne (capture d'écran Playwright à
+390px) — une carte de `.photo-grid` fait à peine ~150px de large sur
+mobile, largement trop étroite pour ce texte sans déborder ni chevaucher
+le titre en dessous.
+
+Testé hors ligne (06/09/2026) avec un vrai serveur PHP intégré branché
+sur SQLite (mêmes fonctions `NOW()`/`UNIX_TIMESTAMP()` que les autres
+bancs d'essai de ce fichier, le témoin `.schema-a-jour` pré-posé pour
+éviter de rejouer les `CREATE TABLE` MySQL de `migration.php`) : partage
+refusé pour un adhérent qui n'est ni l'auteur ni responsable (aucune ligne
+créée), partage réussi par l'auteur (fichier séparé sur le disque,
+`copie_club_id` posé, badge affiché), refus du partage en double sur une
+photo déjà partagée, partage réussi par un responsable pour la photo d'un
+autre adhérent (`depose_par` conservé), et partage immédiat via la case à
+cocher à l'envoi (message combiné « ajoutée à la galerie privée… » +
+« aussi été ajoutée à la Galerie (Galerie du Club) »). Rendu Chromium
+(desktop et 390px) sans débordement horizontal ni chevauchement, aucun
+avertissement PHP dans les journaux.
+
 **Chacune des trois fiches a son propre lien** (choix explicite de
 l'utilisateur, 01/09/2026, même jour, en remplacement du lien unique
 « voir les fichiers » du premier essai) — un problème concret s'est posé

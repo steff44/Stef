@@ -203,3 +203,36 @@ function fichiers_multiples(array $bloc): array
 
     return $fichiers;
 }
+
+/*
+ * Copie un fichier déjà déposé (ex. dans espace/photos/) vers un autre
+ * dossier de dépôt (ex. espace/photos_club/), sous un nom neuf et
+ * aléatoire — jamais le même fichier physique partagé entre deux tables,
+ * pour que supprimer l'une des deux copies (Galerie privée ou Galerie du
+ * Club) n'affecte jamais l'autre. Utilisé pour « ajouter à la Galerie du
+ * Club » une photo déjà dans la Galerie privée, sans repasser par un
+ * formulaire d'envoi (choix explicite de l'utilisatrice, 06/09/2026).
+ *
+ * Renvoie le nouveau nom de fichier, ou null si la copie a échoué (fichier
+ * source disparu, dossier de destination inaccessible…).
+ */
+function copier_fichier_depot(string $chemin_source, string $dossier_destination): ?string
+{
+    if (!is_file($chemin_source)) {
+        return null;
+    }
+    if (!is_dir($dossier_destination) && !@mkdir($dossier_destination, 0755, true)) {
+        return null;
+    }
+
+    $extension = pathinfo($chemin_source, PATHINFO_EXTENSION);
+    $nom       = bin2hex(random_bytes(16)) . ($extension !== '' ? '.' . $extension : '');
+    $chemin    = rtrim($dossier_destination, '/') . '/' . $nom;
+
+    if (!@copy($chemin_source, $chemin)) {
+        return null;
+    }
+    @chmod($chemin, 0644);
+
+    return $nom;
+}

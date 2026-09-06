@@ -75,9 +75,17 @@ const COLONNES_DOCUMENTS_ATTENDUES = [
 // `photos_club` (catégorie, nom affiché), choix explicite de l'utilisateur,
 // 21/08/2026. Les deux tables partagent la table `categories_galerie` : une
 // même liste de catégories pour la Galerie privée et la Galerie du Club.
+// `copie_club_id` (06/09/2026) référence la ligne de photos_club créée
+// quand une photo de la Galerie privée est partagée vers la Galerie du Club
+// sans la retéléverser — voir galerie.php et copier_fichier_depot()
+// (inc/televersement.php). Comme pour les autres colonnes ajoutées ici, pas
+// de clé étrangère posée sur une base déjà en ligne (contrairement à
+// schema.sql pour une installation neuve) : ALTER TABLE ADD COLUMN suffit,
+// l'intégrité référentielle reste assurée par le code applicatif.
 const COLONNES_PHOTOS_PRIVEES_ATTENDUES = [
-    'nom_affiche'  => 'VARCHAR(120) DEFAULT NULL',
-    'categorie_id' => 'INT DEFAULT NULL',
+    'nom_affiche'   => 'VARCHAR(120) DEFAULT NULL',
+    'categorie_id'  => 'INT DEFAULT NULL',
+    'copie_club_id' => 'INT DEFAULT NULL',
 ];
 
 // Colonne attendue sur `albums_sorties` — deux façons de créer un album

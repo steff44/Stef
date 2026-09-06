@@ -52,17 +52,28 @@ CREATE TABLE IF NOT EXISTS categories_galerie (
 -- dossier interdit d'accès direct : il est servi par telecharger.php.
 -- Mêmes possibilités que photos_club (catégorie, nom affiché) depuis le
 -- 21/08/2026 — voir photos_club plus bas pour le détail de ces deux champs.
+-- `copie_club_id` (06/09/2026, choix explicite de l'utilisatrice) référence
+-- la ligne de photos_club créée quand cette photo a été partagée vers la
+-- Galerie du Club, sans la retéléverser — voir galerie.php. NULL tant
+-- qu'elle n'a jamais été partagée — remis à NULL si la copie est supprimée
+-- de la Galerie du Club (ON DELETE SET NULL), pour proposer de nouveau le
+-- partage plutôt que de croire à tort qu'il a déjà eu lieu.
 CREATE TABLE IF NOT EXISTS photos_privees (
-  id           INT AUTO_INCREMENT PRIMARY KEY,
-  titre        VARCHAR(190) NOT NULL,
-  description  TEXT         DEFAULT NULL,
-  nom_affiche  VARCHAR(120) DEFAULT NULL,
-  fichier      VARCHAR(190) NOT NULL,
-  categorie_id INT          DEFAULT NULL,
-  depose_par   INT          DEFAULT NULL,
-  cree_le      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT fk_photo_categorie FOREIGN KEY (categorie_id) REFERENCES categories_galerie(id) ON DELETE SET NULL,
-  CONSTRAINT fk_photo_adherent  FOREIGN KEY (depose_par)   REFERENCES adherents(id)          ON DELETE SET NULL
+  id            INT AUTO_INCREMENT PRIMARY KEY,
+  titre         VARCHAR(190) NOT NULL,
+  description   TEXT         DEFAULT NULL,
+  nom_affiche   VARCHAR(120) DEFAULT NULL,
+  fichier       VARCHAR(190) NOT NULL,
+  categorie_id  INT          DEFAULT NULL,
+  depose_par    INT          DEFAULT NULL,
+  copie_club_id INT          DEFAULT NULL,
+  cree_le       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_photo_categorie   FOREIGN KEY (categorie_id)  REFERENCES categories_galerie(id) ON DELETE SET NULL,
+  CONSTRAINT fk_photo_adherent    FOREIGN KEY (depose_par)    REFERENCES adherents(id)          ON DELETE SET NULL
+  -- Pas de clé étrangère ici vers photos_club (copie_club_id) : cette table
+  -- est créée plus bas dans ce fichier, et InnoDB refuse une clé étrangère
+  -- vers une table qui n'existe pas encore au moment du CREATE TABLE. Voir
+  -- l'ALTER TABLE juste après la création de photos_club ci-dessous.
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Photos de la Galerie du Club (espace/galerie-club.php) : déposées par
@@ -84,6 +95,15 @@ CREATE TABLE IF NOT EXISTS photos_club (
   CONSTRAINT fk_photo_club_categorie FOREIGN KEY (categorie_id) REFERENCES categories_galerie(id) ON DELETE SET NULL,
   CONSTRAINT fk_photo_club_adherent  FOREIGN KEY (depose_par)   REFERENCES adherents(id)          ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Clé étrangère de photos_privees.copie_club_id vers photos_club(id), posée
+-- seulement maintenant que cette table existe (voir le commentaire plus haut
+-- sur photos_privees) — installation.php ignore une clé déjà présente grâce
+-- à IF NOT EXISTS sur les tables, mais ALTER TABLE n'a pas cet équivalent :
+-- sans risque malgré tout, ce fichier n'est joué qu'une seule fois par un
+-- site neuf (voir « Les migrations sont automatiques » plus haut).
+ALTER TABLE photos_privees
+  ADD CONSTRAINT fk_photo_copie_club FOREIGN KEY (copie_club_id) REFERENCES photos_club(id) ON DELETE SET NULL;
 
 -- Rubriques et catégories de classement des documents du club, modifiables
 -- par un responsable depuis parametres.php — voir inc/documents_categories.php
