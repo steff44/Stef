@@ -665,6 +665,14 @@ qu'un lien à l'intérieur ne se fonde pas dans le texte coloré. L'ordre
 demandé (limite de taille en premier, fiches d'aide ensuite) est
 respecté dans le HTML.
 
+**Les deux mêmes cadres d'avertissement sont repris à l'identique dans la
+Galerie privée** (`galerie.php`, choix explicite de l'utilisatrice,
+06/09/2026 : « le même avertissement que pour la Galerie du Club ») —
+copiés tels quels au-dessus de « Ajouter une photo », sans aucune
+adaptation de texte (les fiches d'export vivent dans les mêmes Documents
+du Club, partagés par les deux galeries). Aucune nouvelle classe CSS
+nécessaire, `.alerte-avertissement` étant déjà générique.
+
 **Chacune des trois fiches a son propre lien** (choix explicite de
 l'utilisateur, 01/09/2026, même jour, en remplacement du lien unique
 « voir les fichiers » du premier essai) — un problème concret s'est posé

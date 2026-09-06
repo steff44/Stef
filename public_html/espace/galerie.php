@@ -164,6 +164,16 @@ titre_page(
   <?php afficher_message(); ?>
 
   <?php if ($categories): ?>
+    <div class="alerte alerte-avertissement">
+      Les photos doivent être au format JPEG et ne pas dépasser <?= e(taille_lisible(TAILLE_MAX_PHOTO_ADHERENT)) ?>.
+    </div>
+    <div class="alerte alerte-avertissement">
+      Si vous avez des difficultés pour redimensionner une photo, vous pouvez consulter les fiches
+      <a href="documents.php?recherche=<?= urlencode('Fiche_Export_darktable_1000Ko') ?>">Fiche_Export_darktable_1000Ko</a>,
+      <a href="documents.php?recherche=<?= urlencode('Fiche_Export_Lightroom_1000Ko') ?>">Fiche_Export_Lightroom_1000Ko</a> et
+      <a href="documents.php?recherche=<?= urlencode('Fiche Export_XnConvert') ?>">Fiche Export_XnConvert</a>,
+      disponibles dans les Documents du Club.
+    </div>
     <details class="depot-bloc">
       <summary>Ajouter une photo</summary>
       <form method="post" enctype="multipart/form-data" class="form-card" style="margin-top:16px;">
