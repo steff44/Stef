@@ -41,7 +41,7 @@ titre_page("Le Club", "Réservé aux adhérents du Focal Club Turballais.", fals
     </article>
     <article class="feature-card">
       <div class="feature-icon" aria-hidden="true">🖼️</div>
-      <h3>Galerie du Club</h3>
+      <h3>Galerie (Galerie du Club)</h3>
       <p>Déposez vos photos par catégorie — elles apparaissent aussi sur la page Galerie, ouverte à tous.</p>
       <a class="btn btn-ghost" href="galerie-club.php">Ouvrir</a>
     </article>

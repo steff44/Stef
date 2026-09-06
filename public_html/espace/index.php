@@ -75,7 +75,7 @@ titre_page("Bonjour " . $adherent['nom'], "Bienvenue dans l'espace réservé aux
     </article>
     <article class="feature-card">
       <div class="feature-icon" aria-hidden="true">🖼️</div>
-      <h3>Galerie du Club</h3>
+      <h3>Galerie (Galerie du Club)</h3>
       <p><?= $compteurs['photos_club'] ?> photo<?= $compteurs['photos_club'] > 1 ? 's' : '' ?> partagée<?= $compteurs['photos_club'] > 1 ? 's' : '' ?>, visibles de tous.</p>
       <a class="btn btn-ghost" href="galerie-club.php">Ouvrir</a>
     </article>

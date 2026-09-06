@@ -590,6 +590,23 @@ privée et la Galerie du Club ne s'ouvrent que depuis « Le Club »
 « Galerie » depuis une page de l'espace adhérents ouvrait la galerie privée
 — piège reconnu par l'utilisateur comme non voulu, à ne pas réintroduire.
 
+**Le libellé « Galerie du Club » est devenu « Galerie (Galerie du Club) »**
+partout où il sert de nom à un bloc cliquable (choix explicite de
+l'utilisatrice, 04/09/2026) : titre de page et `<h1>` de `galerie-club.php`,
+carte du tableau de bord, carte de « Le Club », entrée du menu déroulant
+« {pseudo} connecté » — à la fois côté PHP (`$onglets` de
+`espace/inc/page.php`) et dans sa reconstruction en JavaScript pour les
+pages statiques (`js/main.js`, alimentée par `statut-connexion.php`). Les
+mentions de « Galerie du Club » dans la prose (messages de confirmation,
+commentaires de code, `parametres.php`, mentions légales) restent
+inchangées — seuls les libellés de bloc autonomes ont été renommés. Au
+passage, le menu déroulant JS (pour les pages statiques) s'est révélé ne
+jamais avoir reçu l'entrée « Statistiques » ajoutée le même jour côté PHP —
+corrigé dans le même commit. Vérifié par rendu Chromium (carte et menu
+déroulant, desktop et 390px) : le nouveau libellé tient sur une ligne
+partout sauf dans la carte étroite du tableau de bord en dessous de 390px,
+où il passe sur trois lignes sans déborder ni casser la mise en page.
+
 **Le tableau de bord (`espace/index.php`) n'affiche plus de carte
 Annuaire** depuis le 21/08/2026 (choix explicite de l'utilisateur) : la
 carte Annuaire (`.feature-card`) a été remplacée par une carte **Galerie du
