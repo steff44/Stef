@@ -141,11 +141,11 @@ foreach ($photos as $photo) {
     }
 }
 
-debut_page("Galerie du Club", 'galerie-club');
+debut_page("Galerie (Galerie du Club)", 'galerie-club');
 ?>
 <section class="gallery-hero">
   <div class="container">
-    <h1>Galerie du Club</h1>
+    <h1>Galerie (Galerie du Club)</h1>
     <p>Déposez vos photos et classez-les par catégorie — elles apparaissent aussi sur la page Galerie, ouverte à tous.</p>
 
     <?php if ($categories): ?>
