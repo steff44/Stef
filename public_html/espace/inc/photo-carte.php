@@ -23,6 +23,11 @@
  * vers la Galerie du Club sans la retéléverser (choix explicite de
  * l'utilisatrice, 06/09/2026, voir l'action ajouter_au_club de galerie.php)
  * — remplacé par un badge une fois la copie faite (copie_club_id posé).
+ *
+ * `data-auteur` (06/09/2026) porte le nom affiché brut (sans la date qui
+ * accompagne `data-meta`) — lu par le filtre « Photographe » de
+ * galerie-club.php (voir js/main.js) pour montrer/masquer une carte par
+ * photographe, indépendamment de sa catégorie.
  */
 declare(strict_types=1);
 
@@ -34,6 +39,7 @@ $image       = 'telecharger.php?type=' . $type . '&id=' . (int) $photo['id'];
                 data-titre="<?= e($photo['titre']) ?>"
                 data-description="<?= e((string) $photo['description']) ?>"
                 data-meta="<?= e($meta) ?>"
+                data-auteur="<?= e($nom_affiche) ?>"
                 data-image="<?= e($image) ?>">
           <img class="photo-frame" src="<?= e($image) ?>" alt="<?= e($photo['titre']) ?>" loading="lazy">
           <figcaption class="photo-caption">

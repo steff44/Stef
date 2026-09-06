@@ -732,6 +732,72 @@ cocher à l'envoi (message combiné « ajoutée à la galerie privée… » +
 (desktop et 390px) sans débordement horizontal ni chevauchement, aucun
 avertissement PHP dans les journaux.
 
+**Un filtre « Photographe » regroupe les photos par nom affiché**, sur la
+page publique `galerie.html` et sur `galerie-club.php` (choix explicite de
+l'utilisatrice, 06/09/2026 : « ajouter Une catégorie avec une sous
+catégorie... "Photographe"... la sous catégorie serait le nom du
+photographe entré lors de l'ajout de la photo », scope confirmé par
+question explicite — pas étendu à la Galerie privée). Ce n'est **pas** une
+ligne de `categories_galerie` : les noms ne se déclarent nulle part, ils
+sont calculés à la volée à partir du champ `nom_affiche` déjà saisi au
+dépôt de chaque photo (même repli que `inc/photo-carte.php` : `nom_affiche`,
+sinon le nom de l'adhérent, sinon « Adhérent retiré ») — aucune nouvelle
+colonne, aucun réglage à gérer depuis Réglages du site. Une pastille
+« Photographe » est **toujours ajoutée en dernier**, après toutes les
+catégories, dans une couleur à part (ambre, `.theme-filter--photographe`,
+plutôt que le dégradé rose/violet des catégories) pour bien la distinguer :
+ce n'est pas un thème. Cliquer dessus **déplie** une sous-liste de noms
+juste en dessous (`.theme-filters-photographes`, masquée par défaut) sans
+filtrer par elle-même ; cliquer un nom filtre alors la galerie à ce seul
+photographe, toutes catégories confondues (un photographe peut avoir des
+photos dans plusieurs catégories). Revenir à « Toutes » ou à une catégorie
+normale referme la sous-liste.
+
+Sur la page publique (`js/main.js`, bloc « Page galerie »), le filtrage
+reste un simple filtre de tableau (`pool`, pas de regroupement visuel) :
+`filtreActif` remplace l'ancien `currentTheme` (une chaîne) par un objet
+`{type, valeur}` — `"toutes"`, `"theme"` ou `"photographe"` — pour
+distinguer un filtre par catégorie d'un filtre par nom sans dupliquer la
+logique de rendu (`photosFiltrees()`, ex-`photosForCurrentTheme()`). La
+sous-liste de noms (`rebuildPhotographeFilter()`) est reconstruite à partir
+de `pool` à chaque fois que les vraies photos sont (re)chargées — jamais une
+simple addition par-dessus une ancienne liste, pour ne pas garder le nom
+d'un adhérent qui n'a plus aucune photo en ligne, même principe que
+`rebuildThemeFilters()` pour les catégories (piège du 27/08/2026). Le
+panneau des noms est posé en **sibling** de `[data-theme-filters]`, pas
+dedans, pour survivre à `filtersRoot.innerHTML = ""` à chaque reconstruction
+des pastilles de catégorie.
+
+Sur `galerie-club.php`, les photos sont déjà groupées côté serveur par
+catégorie (`.groupe-galerie[data-categorie-id]`, un bloc par catégorie) —
+un filtre par nom ne peut donc pas se contenter de montrer/masquer des
+blocs entiers comme le fait le filtre par catégorie, puisqu'un même
+photographe peut avoir des photos dans plusieurs blocs. Le filtrage se
+fait donc **carte par carte** : chaque carte porte désormais un attribut
+`data-auteur` (`inc/photo-carte.php`, le nom affiché brut, sans la date qui
+accompagne déjà `data-meta`) ; sélectionner un photographe masque les
+cartes dont `data-auteur` ne correspond pas, puis masque un groupe entier
+seulement si **aucune** de ses cartes ne reste visible. La liste des noms
+(`$photographes` dans `galerie-club.php`, `natcasesort()` pour un tri
+alphabétique insensible à la casse) est calculée une seule fois à partir
+des photos réellement affichées, comme les groupes par catégorie juste
+au-dessus.
+
+Testé hors ligne (06/09/2026) avec un vrai serveur PHP intégré branché sur
+SQLite et Playwright, sept photos réparties entre trois photographes dont
+deux avec des photos dans plusieurs catégories (pour vérifier justement ce
+cas) : sur la page publique, pastille « Photographe » bien en dernière
+position, panneau replié par défaut, liste de noms triée (y compris le
+repli « Adhérent retiré »/nom de l'adhérent pour une photo sans
+`nom_affiche`), filtrage correct toutes catégories confondues, fermeture du
+panneau au retour sur « Toutes » ou une catégorie normale. Sur
+`galerie-club.php` (connecté), même comportement, avec en plus la
+vérification que sélectionner un photographe affiche exactement ses
+groupes de catégories (masque les catégories où il n'a aucune photo) et
+que revenir à une catégorie normale réaffiche bien toutes les cartes du
+groupe, toutes personnes confondues. Aucun débordement horizontal ni
+avertissement JS/PHP, desktop et 390px.
+
 **Chacune des trois fiches a son propre lien** (choix explicite de
 l'utilisateur, 01/09/2026, même jour, en remplacement du lien unique
 « voir les fichiers » du premier essai) — un problème concret s'est posé

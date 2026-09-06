@@ -918,6 +918,32 @@ a {
   color: #fff;
 }
 
+/*
+ * Pastille « Photographe » — toujours en fin de liste (ajoutée après les
+ * catégories dans le HTML/JS, jamais réordonnée), avec une couleur à part
+ * (ambre plutôt que le dégradé rose/violet des catégories) pour bien la
+ * distinguer : ce n'est pas un thème mais une sous-liste de noms qui ne se
+ * déplie qu'au clic (choix explicite de l'utilisatrice, 06/09/2026). Les
+ * pastilles de noms, dans .theme-filters-photographes juste en dessous,
+ * reprennent la même teinte pour rester visuellement rattachées à elle.
+ */
+.theme-filter--photographe {
+  border-color: rgba(245, 158, 11, 0.5);
+  color: #fde68a;
+}
+.theme-filter--photographe:hover {
+  border-color: #f59e0b;
+  color: #fde68a;
+}
+.theme-filter--photographe.is-active {
+  background: #f59e0b;
+  border-color: transparent;
+  color: #1a1200;
+}
+.theme-filters-photographes {
+  margin-top: 6px;
+}
+
 /* Diaporama trigger */
 .diaporama-trigger {
   display: inline-flex;

@@ -141,6 +141,21 @@ foreach ($photos as $photo) {
     }
 }
 
+// Filtre « Photographe » (choix explicite de l'utilisatrice, 06/09/2026) :
+// une pastille à part, toujours en fin de liste, qui déplie une sous-liste
+// de noms — le nom affiché lors du dépôt de chaque photo (même repli que
+// inc/photo-carte.php : nom_affiche, sinon le nom de l'adhérent, sinon
+// « Adhérent retiré »). Calculée une seule fois ici pour rester en phase
+// avec les photos réellement affichées, plutôt qu'une liste figée.
+$photographes = [];
+foreach ($photos as $photo) {
+    $nom = $photo['nom_affiche'] ?: ($photo['auteur'] ?: 'Adhérent retiré');
+    $photographes[$nom] = true;
+}
+$photographes = array_keys($photographes);
+natcasesort($photographes);
+$photographes = array_values($photographes);
+
 debut_page("Galerie (Galerie du Club)", 'galerie-club');
 ?>
 <section class="gallery-hero">
@@ -154,7 +169,17 @@ debut_page("Galerie (Galerie du Club)", 'galerie-club');
         <?php foreach ($categories as $id_filtre => $nom_filtre): ?>
           <button type="button" class="theme-filter" data-categorie="<?= $id_filtre ?>"><?= e($nom_filtre) ?></button>
         <?php endforeach; ?>
+        <?php if ($photographes): ?>
+          <button type="button" class="theme-filter theme-filter--photographe" data-photographe-toggle aria-expanded="false">Photographe</button>
+        <?php endif; ?>
       </div>
+      <?php if ($photographes): ?>
+        <div class="theme-filters theme-filters-photographes" data-filtres-photographes hidden aria-label="Filtrer par photographe">
+          <?php foreach ($photographes as $nom_photographe): ?>
+            <button type="button" class="theme-filter theme-filter--photographe" data-photographe="<?= e($nom_photographe) ?>"><?= e($nom_photographe) ?></button>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
     <?php endif; ?>
   </div>
 </section>
