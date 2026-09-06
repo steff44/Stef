@@ -868,14 +868,20 @@
     const grid = document.querySelector("[data-photos]");
     const emptyMessage = document.querySelector("[data-gallery-empty]");
     const filtersRoot = document.querySelector("[data-theme-filters]");
-    let currentTheme = "";
+    let filtreActif = { type: "toutes", valeur: "" };
 
-    function photosForCurrentTheme() {
-      return currentTheme ? pool.filter(function (p) { return p.theme === currentTheme; }) : pool;
+    function photosFiltrees() {
+      if (filtreActif.type === "theme") {
+        return pool.filter(function (p) { return p.theme === filtreActif.valeur; });
+      }
+      if (filtreActif.type === "photographe") {
+        return pool.filter(function (p) { return p.membreNom === filtreActif.valeur; });
+      }
+      return pool;
     }
 
     function renderGrid() {
-      const filtered = photosForCurrentTheme();
+      const filtered = photosFiltrees();
       grid.innerHTML = "";
       filtered.forEach(function (photo) {
         grid.appendChild(buildPhotoCard(photo, photo.hue, photo.membreNom, photo.index, filtered));
@@ -885,6 +891,32 @@
 
     const toutesLesPhotos = "Toutes";
     let themesConnus = [];
+
+    // Sous-panneau « Photographe » (choix explicite de l'utilisatrice,
+    // 06/09/2026) : une pastille à part, toujours en fin de liste, qui
+    // déplie une sous-liste de noms — les noms viennent de photo.membreNom
+    // (le nom affiché saisi au dépôt, voir infos-galerie-club.php), pas
+    // d'une catégorie déclarée. Posé en sibling de filtersRoot (pas dedans)
+    // pour ne pas être effacé par filtersRoot.innerHTML = "" à chaque
+    // reconstruction des pastilles de thème.
+    const photographesPanel = document.createElement("div");
+    photographesPanel.className = "theme-filters theme-filters-photographes";
+    photographesPanel.setAttribute("data-filtres-photographes", "");
+    photographesPanel.setAttribute("aria-label", "Filtrer par photographe");
+    photographesPanel.hidden = true;
+    filtersRoot.insertAdjacentElement("afterend", photographesPanel);
+    let boutonPhotographe = null;
+
+    function fermerPhotographes() {
+      photographesPanel.hidden = true;
+      if (boutonPhotographe) boutonPhotographe.setAttribute("aria-expanded", "false");
+    }
+
+    function selectionnerPastille(pastille) {
+      filtersRoot.querySelectorAll(".theme-filter").forEach(function (b) { b.classList.remove("is-active"); });
+      photographesPanel.querySelectorAll(".theme-filter").forEach(function (b) { b.classList.remove("is-active"); });
+      pastille.classList.add("is-active");
+    }
 
     function addThemeFilter(theme) {
       if (themesConnus.indexOf(theme) !== -1) return;
@@ -896,14 +928,54 @@
       btn.textContent = theme;
       if (theme === toutesLesPhotos) btn.classList.add("is-active");
       btn.addEventListener("click", function () {
-        filtersRoot.querySelectorAll(".theme-filter").forEach(function (b) {
-          b.classList.remove("is-active");
-        });
-        btn.classList.add("is-active");
-        currentTheme = theme === toutesLesPhotos ? "" : theme;
+        selectionnerPastille(btn);
+        fermerPhotographes();
+        filtreActif = theme === toutesLesPhotos ? { type: "toutes" } : { type: "theme", valeur: theme };
         renderGrid();
       });
       filtersRoot.appendChild(btn);
+    }
+
+    // Reconstruit la sous-liste des photographes à partir de pool (les
+    // photos réellement chargées), en fin de liste de filtres — jamais
+    // qu'une simple addition par-dessus une ancienne liste, pour ne pas
+    // garder le nom d'un adhérent qui n'a plus aucune photo en ligne.
+    function rebuildPhotographeFilter() {
+      photographesPanel.innerHTML = "";
+      const noms = [];
+      pool.forEach(function (p) {
+        if (p.membreNom && noms.indexOf(p.membreNom) === -1) noms.push(p.membreNom);
+      });
+      noms.sort(function (a, b) { return a.localeCompare(b, "fr", { sensitivity: "base" }); });
+
+      boutonPhotographe = null;
+      fermerPhotographes();
+      if (!noms.length) return;
+
+      boutonPhotographe = document.createElement("button");
+      boutonPhotographe.type = "button";
+      boutonPhotographe.className = "theme-filter theme-filter--photographe";
+      boutonPhotographe.textContent = "Photographe";
+      boutonPhotographe.setAttribute("aria-expanded", "false");
+      boutonPhotographe.addEventListener("click", function () {
+        photographesPanel.hidden = !photographesPanel.hidden;
+        boutonPhotographe.setAttribute("aria-expanded", String(!photographesPanel.hidden));
+      });
+      filtersRoot.appendChild(boutonPhotographe);
+
+      noms.forEach(function (nom) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "theme-filter theme-filter--photographe";
+        btn.textContent = nom;
+        btn.addEventListener("click", function () {
+          selectionnerPastille(btn);
+          boutonPhotographe.classList.add("is-active");
+          filtreActif = { type: "photographe", valeur: nom };
+          renderGrid();
+        });
+        photographesPanel.appendChild(btn);
+      });
     }
 
     // Reconstruit les pastilles de filtre à partir de zéro — utilisé une
@@ -913,8 +985,9 @@
     function rebuildThemeFilters(themes) {
       filtersRoot.innerHTML = "";
       themesConnus = [];
-      currentTheme = "";
+      filtreActif = { type: "toutes" };
       [toutesLesPhotos].concat(themes).forEach(addThemeFilter);
+      rebuildPhotographeFilter();
     }
 
     rebuildThemeFilters(CLUB_DATA.themes);
@@ -955,6 +1028,7 @@
           rebuildThemeFilters(donnees.categories);
         } else {
           photosClub.forEach(function (p) { addThemeFilter(p.categorie); });
+          rebuildPhotographeFilter();
         }
         renderGrid();
       })
@@ -963,7 +1037,7 @@
     const diaporamaBtn = document.querySelector("[data-start-diaporama]");
     if (diaporamaBtn) {
       diaporamaBtn.addEventListener("click", function () {
-        const filtered = photosForCurrentTheme();
+        const filtered = photosFiltrees();
         if (!filtered.length) return;
         openLightbox(filtered, 0);
         startDiaporama();
@@ -1112,20 +1186,65 @@
     // rendues côté serveur, groupées par catégorie — une pastille ne fait
     // qu'afficher/masquer les groupes déjà présents dans le DOM, sans
     // nouvel appel réseau (contrairement au filtre de la page publique).
+    //
+    // Filtre « Photographe » (06/09/2026, choix explicite de l'utilisatrice) :
+    // une pastille à part, toujours en fin de liste, qui déplie une
+    // sous-liste de noms (voir galerie-club.php) — les noms n'apparaissent
+    // que si on clique dessus. Contrairement au filtre par catégorie, un
+    // photographe peut avoir des photos dans plusieurs catégories : le
+    // filtrage se fait donc carte par carte (data-auteur, voir
+    // inc/photo-carte.php), pas groupe par groupe — un groupe est masqué
+    // seulement si AUCUNE de ses cartes ne correspond au photographe choisi.
     const zoneFiltres = document.querySelector("[data-filtres-galerie]");
     if (zoneFiltres) {
-      const groupes   = Array.from(document.querySelectorAll(".groupe-galerie[data-categorie-id]"));
-      const pastilles = Array.from(zoneFiltres.querySelectorAll(".theme-filter"));
-      pastilles.forEach(function (pastille) {
+      const groupes             = Array.from(document.querySelectorAll(".groupe-galerie[data-categorie-id]"));
+      const pastillesCategorie  = Array.from(zoneFiltres.querySelectorAll(".theme-filter[data-categorie]"));
+      const boutonPhotographe   = zoneFiltres.querySelector("[data-photographe-toggle]");
+      const zonePhotographes    = document.querySelector("[data-filtres-photographes]");
+      const pastillesPhotographe = zonePhotographes
+        ? Array.from(zonePhotographes.querySelectorAll(".theme-filter[data-photographe]"))
+        : [];
+
+      function activerPastilles(actives) {
+        pastillesCategorie.concat(boutonPhotographe ? [boutonPhotographe] : [], pastillesPhotographe)
+          .forEach(function (p) { p.classList.toggle("is-active", actives.indexOf(p) !== -1); });
+      }
+
+      pastillesCategorie.forEach(function (pastille) {
         pastille.addEventListener("click", function () {
-          pastilles.forEach(function (p) { p.classList.remove("is-active"); });
-          pastille.classList.add("is-active");
+          activerPastilles([pastille]);
+          if (zonePhotographes) {
+            zonePhotographes.hidden = true;
+            if (boutonPhotographe) boutonPhotographe.setAttribute("aria-expanded", "false");
+          }
           const cible = pastille.dataset.categorie || "";
           groupes.forEach(function (groupe) {
             groupe.hidden = cible !== "" && groupe.dataset.categorieId !== cible;
+            groupe.querySelectorAll(".photo-card[data-auteur]").forEach(function (carte) {
+              carte.hidden = false;
+            });
           });
         });
       });
+
+      if (boutonPhotographe && zonePhotographes) {
+        boutonPhotographe.addEventListener("click", function () {
+          zonePhotographes.hidden = !zonePhotographes.hidden;
+          boutonPhotographe.setAttribute("aria-expanded", String(!zonePhotographes.hidden));
+        });
+
+        pastillesPhotographe.forEach(function (pastille) {
+          pastille.addEventListener("click", function () {
+            activerPastilles([boutonPhotographe, pastille]);
+            const nom = pastille.dataset.photographe || "";
+            groupes.forEach(function (groupe) {
+              const cartes = Array.from(groupe.querySelectorAll(".photo-card[data-auteur]"));
+              cartes.forEach(function (carte) { carte.hidden = carte.dataset.auteur !== nom; });
+              groupe.hidden = cartes.every(function (carte) { return carte.hidden; });
+            });
+          });
+        });
+      }
     }
   })();
 
