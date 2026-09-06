@@ -5,7 +5,8 @@
  * dupliquer le HTML entre les deux. Attend dans la portée appelante :
  *   - $photo : une ligne de photos_privees ou photos_club (mêmes colonnes
  *     utiles : id, titre, description, nom_affiche, auteur, cree_le,
- *     depose_par) ;
+ *     depose_par ; copie_club_id en plus pour photos_privees, voir
+ *     ci-dessous) ;
  *   - $type  : 'photo' (Galerie privée) ou 'galerie_club' (Galerie du Club),
  *     le paramètre attendu par telecharger.php ;
  *   - $adherent : l'adhérent connecté, pour savoir s'il peut supprimer.
@@ -16,6 +17,12 @@
  * carte. Le texte complet (description comprise) part dans des attributs
  * data-*, lus par le clic d'agrandissement générique (voir js/main.js) :
  * rien n'est perdu, seule la vignette est raccourcie.
+ *
+ * Sur la Galerie privée uniquement ($type === 'photo'), un bouton « Ajouter
+ * au Club » propose à l'auteur (ou un responsable) de copier cette photo
+ * vers la Galerie du Club sans la retéléverser (choix explicite de
+ * l'utilisatrice, 06/09/2026, voir l'action ajouter_au_club de galerie.php)
+ * — remplacé par un badge une fois la copie faite (copie_club_id posé).
  */
 declare(strict_types=1);
 
@@ -40,5 +47,17 @@ $image       = 'telecharger.php?type=' . $type . '&id=' . (int) $photo['id'];
               <input type="hidden" name="id" value="<?= (int) $photo['id'] ?>">
               <button type="submit" class="photo-supprimer-bouton" aria-label="Supprimer cette photo" title="Supprimer cette photo">✕</button>
             </form>
+            <?php if ($type === 'photo'): ?>
+              <?php if (!empty($photo['copie_club_id'])): ?>
+                <span class="photo-partagee" aria-label="Déjà dans la Galerie du Club" title="Cette photo est aussi dans la Galerie du Club">✓</span>
+              <?php else: ?>
+                <form method="post" class="photo-partager" onsubmit="return confirm('Ajouter cette photo à la Galerie (Galerie du Club) ? Elle deviendra publique.');">
+                  <?= champ_csrf() ?>
+                  <input type="hidden" name="action" value="ajouter_au_club">
+                  <input type="hidden" name="id" value="<?= (int) $photo['id'] ?>">
+                  <button type="submit" class="photo-partager-bouton" aria-label="Ajouter à la Galerie du Club" title="Ajouter à la Galerie du Club">+</button>
+                </form>
+              <?php endif; ?>
+            <?php endif; ?>
           <?php endif; ?>
         </figure>

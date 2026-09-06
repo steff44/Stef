@@ -49,6 +49,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             definir_message('erreur', "Vous ne pouvez supprimer que vos propres photos.");
         }
+    } elseif (($_POST['action'] ?? '') === 'ajouter_au_club') {
+        // Partage une photo déjà déposée vers la Galerie du Club, sans la
+        // retéléverser — choix explicite de l'utilisatrice, 06/09/2026. Même
+        // règle d'auteur que la suppression : son propre dépôt, ou un
+        // responsable pour n'importe lequel (utile en modération).
+        $id      = (int) ($_POST['id'] ?? 0);
+        $requete = $pdo->prepare(
+            'SELECT titre, description, nom_affiche, categorie_id, fichier, depose_par, copie_club_id
+               FROM photos_privees WHERE id = ?'
+        );
+        $requete->execute([$id]);
+        $photo = $requete->fetch();
+
+        if (!$photo || ((int) $photo['depose_par'] !== $adherent['id'] && !est_administrateur())) {
+            definir_message('erreur', "Vous ne pouvez partager que vos propres photos.");
+        } elseif ($photo['copie_club_id'] !== null) {
+            definir_message('erreur', "Cette photo est déjà dans la Galerie du Club.");
+        } else {
+            $nom_fichier_club = copier_fichier_depot(
+                __DIR__ . '/photos/' . basename((string) $photo['fichier']),
+                __DIR__ . '/photos_club'
+            );
+
+            if ($nom_fichier_club === null) {
+                definir_message('erreur', "Impossible de copier la photo vers la Galerie du Club.");
+            } else {
+                $pdo->prepare(
+                    'INSERT INTO photos_club (titre, description, nom_affiche, fichier, categorie_id, depose_par)
+                     VALUES (?, ?, ?, ?, ?, ?)'
+                )->execute([
+                    $photo['titre'],
+                    $photo['description'],
+                    $photo['nom_affiche'],
+                    $nom_fichier_club,
+                    $photo['categorie_id'],
+                    $photo['depose_par'],
+                ]);
+                $nouvel_id = (int) $pdo->lastInsertId();
+                $pdo->prepare('UPDATE photos_privees SET copie_club_id = ? WHERE id = ?')->execute([$nouvel_id, $id]);
+                definir_message('succes', "Photo ajoutée à la Galerie (Galerie du Club). Elle apparaît aussi sur la page Galerie, ouverte à tous.");
+            }
+        }
     } else {
         $titre        = trim((string) ($_POST['titre'] ?? ''));
         $categorie_id = (int) ($_POST['categorie_id'] ?? 0);
@@ -56,6 +98,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $nom_affiche  = trim((string) ($_POST['nom_affiche'] ?? '')) ?: null;
         $description  = trim((string) ($_POST['description'] ?? '')) ?: null;
         $fichiers     = fichiers_multiples($_FILES['photos'] ?? ['name' => []]);
+        // Partage immédiat vers la Galerie du Club, sans repasser par un
+        // second dépôt (choix explicite de l'utilisatrice, 06/09/2026) —
+        // même copie de fichier que le partage a posteriori, voir plus haut.
+        $aussi_club   = isset($_POST['aussi_club']);
 
         if ($titre === '') {
             definir_message('erreur', "Donnez un titre à la photo.");
@@ -64,8 +110,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif (!$fichiers) {
             definir_message('erreur', "Sélectionnez au moins une photo.");
         } else {
-            $reussis = 0;
-            $erreurs = [];
+            $reussis       = 0;
+            $ajoutees_club = 0;
+            $erreurs       = [];
 
             foreach ($fichiers as $fichier) {
                 $resultat = enregistrer_fichier_envoye(
@@ -92,7 +139,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $categorie_id,
                     $adherent['id'],
                 ]);
+                $nouvel_id_prive = (int) $pdo->lastInsertId();
                 $reussis++;
+
+                if ($aussi_club) {
+                    $nom_fichier_club = copier_fichier_depot(__DIR__ . '/photos/' . $resultat['nom'], __DIR__ . '/photos_club');
+
+                    if ($nom_fichier_club !== null) {
+                        $pdo->prepare(
+                            'INSERT INTO photos_club (titre, description, nom_affiche, fichier, categorie_id, depose_par)
+                             VALUES (?, ?, ?, ?, ?, ?)'
+                        )->execute([
+                            $titre,
+                            $description,
+                            $nom_affiche,
+                            $nom_fichier_club,
+                            $categorie_id,
+                            $adherent['id'],
+                        ]);
+                        $nouvel_id_club = (int) $pdo->lastInsertId();
+                        $pdo->prepare('UPDATE photos_privees SET copie_club_id = ? WHERE id = ?')
+                            ->execute([$nouvel_id_club, $nouvel_id_prive]);
+                        $ajoutees_club++;
+                    }
+                }
             }
 
             if ($reussis > 0) {
@@ -106,6 +176,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($reussis > 0) {
                 $parts[] = "{$reussis} photo" . ($reussis > 1 ? 's' : '') . " ajoutée" . ($reussis > 1 ? 's' : '')
                     . " à la galerie privée, dans « {$categories[$categorie_id]} ».";
+                if ($aussi_club && $ajoutees_club > 0) {
+                    $parts[] = ($ajoutees_club > 1 ? 'Elles ont' : 'Elle a')
+                        . " aussi été ajoutée" . ($ajoutees_club > 1 ? 's' : '') . " à la Galerie (Galerie du Club).";
+                }
             }
             array_push($parts, ...$erreurs);
             definir_message($erreurs ? 'erreur' : 'succes', implode(' ', $parts));
@@ -122,14 +196,14 @@ $categories = categories_galerie($pdo);
 // Chacun ne voit que ses propres photos ; un responsable les voit toutes.
 if (est_administrateur()) {
     $photos = $pdo->query(
-        'SELECT p.id, p.titre, p.description, p.nom_affiche, p.categorie_id, p.depose_par, p.cree_le, a.nom AS auteur
+        'SELECT p.id, p.titre, p.description, p.nom_affiche, p.categorie_id, p.depose_par, p.copie_club_id, p.cree_le, a.nom AS auteur
            FROM photos_privees p
            LEFT JOIN adherents a ON a.id = p.depose_par
           ORDER BY p.cree_le DESC'
     )->fetchAll();
 } else {
     $requete_photos = $pdo->prepare(
-        'SELECT p.id, p.titre, p.description, p.nom_affiche, p.categorie_id, p.depose_par, p.cree_le, a.nom AS auteur
+        'SELECT p.id, p.titre, p.description, p.nom_affiche, p.categorie_id, p.depose_par, p.copie_club_id, p.cree_le, a.nom AS auteur
            FROM photos_privees p
            LEFT JOIN adherents a ON a.id = p.depose_par
           WHERE p.depose_par = ?
@@ -211,7 +285,11 @@ titre_page(
           </p>
           <p class="form-avertissement" data-avertissement-taille hidden></p>
         </div>
-        <button type="submit" class="btn btn-primary">Envoyer les photos</button>
+        <label class="case-a-cocher">
+          <input type="checkbox" name="aussi_club" value="1">
+          Ajouter aussi ces photos à la Galerie (Galerie du Club) — elles deviendront alors publiques
+        </label>
+        <button type="submit" class="btn btn-primary" style="margin-top:16px;">Envoyer les photos</button>
       </form>
     </details>
   <?php else: ?>

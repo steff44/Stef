@@ -722,6 +722,56 @@ a {
   border-color: transparent;
 }
 
+/*
+ * Bouton « Ajouter à la Galerie du Club » / badge « déjà partagée », en
+ * incrustation en haut à gauche (Galerie privée uniquement, voir
+ * inc/photo-carte.php) — coin opposé au bouton Supprimer, choix explicite
+ * de l'utilisatrice, 06/09/2026. Un simple rond avec une icône (comme
+ * .photo-supprimer-bouton), le texte complet vivant dans l'attribut title :
+ * une carte fait à peine 150px de large sur mobile (grille .photo-grid),
+ * bien trop étroite pour un texte du genre « Ajouter à la Galerie du Club »
+ * en toutes lettres sans déborder ni chevaucher le titre — constaté et
+ * corrigé avant mise en ligne, capture d'écran Playwright à 390px.
+ */
+.photo-partager {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  pointer-events: auto;
+}
+.photo-partager-bouton,
+.photo-partagee {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1;
+}
+.photo-partager-bouton {
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(10, 9, 16, 0.65);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.photo-partager-bouton:hover {
+  background: var(--accent-gradient);
+  border-color: transparent;
+}
+.photo-partagee {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(10, 9, 16, 0.65);
+  color: #8fe3a8;
+  pointer-events: none;
+}
+
 /* Member cards */
 .members-grid {
   display: grid;
