@@ -9,7 +9,7 @@ declare(strict_types=1);
 ?>
         <li class="document-ligne" data-titre="<?= e(mb_strtolower($document['titre'])) ?>">
           <div class="document-infos">
-            <a class="document-titre" href="telecharger.php?type=document&amp;id=<?= (int) $document['id'] ?>">
+            <a class="document-titre" href="telecharger.php?type=document&amp;id=<?= (int) $document['id'] ?>" target="_blank" rel="noopener">
               <?= e($document['titre']) ?>
             </a>
             <?php if ($document['description']): ?>
@@ -22,7 +22,7 @@ declare(strict_types=1);
             </p>
           </div>
           <div class="document-actions">
-            <a class="btn btn-ghost" href="telecharger.php?type=document&amp;id=<?= (int) $document['id'] ?>">Télécharger</a>
+            <a class="btn btn-ghost" href="telecharger.php?type=document&amp;id=<?= (int) $document['id'] ?>&amp;telecharger=1">Télécharger</a>
             <?php if (est_gestionnaire()): ?>
               <form method="post" onsubmit="return confirm('Supprimer ce document ?');">
                 <?= champ_csrf() ?>

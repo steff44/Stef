@@ -80,8 +80,11 @@ if (!is_file($chemin)) {
 
 $mime = mime_content_type($chemin) ?: 'application/octet-stream';
 
-// Les photos s'affichent dans la page ; les documents se téléchargent.
-$disposition = $type === 'document' ? 'attachment' : 'inline';
+// Les photos s'affichent toujours dans la page. Un document s'affiche par
+// défaut (clic sur son nom, choix explicite de l'utilisatrice, 08/09/2026 —
+// avant cette date, cliquer sur le nom forçait aussi le téléchargement) ; le
+// bouton « Télécharger » ajoute &telecharger=1 pour forcer l'enregistrement.
+$disposition = ($type === 'document' && isset($_GET['telecharger'])) ? 'attachment' : 'inline';
 $nom_affiche = $type === 'document' ? (string) $ligne['titre'] : basename($chemin);
 
 header('Content-Type: ' . $mime);
