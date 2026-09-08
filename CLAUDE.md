@@ -2911,6 +2911,65 @@ texte gris de `.footer-bottom` (même piège que celui déjà rencontré et
 corrigé sur les liens du blog, voir plus haut) puisque `.footer-bottom`
 n'a pas de couleur de lien dédiée à la différence de `.footer-links`.
 
+## Fiches Pratiques (formation débutant)
+
+**`public_html/fiches-pratiques.html`** (ajoutée le 08/09/2026, choix
+explicite de l'utilisatrice) publie les 52 fiches Word de la formation
+débutant — produites plus tôt, module par module — en PDF téléchargeables,
+groupées sous leurs 7 modules numérotés. Page **publique**, comme
+`nos-sorties.html` ou `espace/blog.php` : accessible sans connexion,
+l'utilisatrice ayant explicitement demandé qu'elle soit « à la racine »
+(un lien de menu principal, pas un contenu réservé aux adhérents).
+
+**Entrée de menu « Fiches Pratiques »**, ajoutée juste après « Blog »
+(même position que Blog vis-à-vis de Nos Sorties à sa création) dans les
+7 endroits habituels : les 6 pages statiques qui portent le menu complet
+(`index.html`, `galerie.html`, `nos-sorties.html`, `contact.html`,
+`mentions-legales.html`, `confidentialite.html`) et `espace/inc/page.php`
+(`debut_page()`). Ordre du menu désormais : Accueil, Galerie, Nos Sorties,
+Blog, **Fiches Pratiques**, Agenda, Le Club, Nous Contacter, Espace
+Adhérent. Lien également ajouté à la liste « Liens rapides » du pied de
+page des 6 pages statiques (absent du pied de page minimal de
+`espace/inc/page.php`, comme les autres liens de cette liste).
+
+**Page 100 % statique, aucun PHP ni base de données** — contrairement à
+« Documents du Club » (`espace/documents.php`), pensé pour des dépôts
+continus par les adhérents, ce contenu est un ensemble fixe (le
+programme de formation ne change pas au quotidien) : les 52 PDF sont de
+simples fichiers déposés dans le dépôt Git, sous
+`public_html/fiches/module-N-{slug}/`, un dossier par module. Ajouter ou
+remplacer une fiche se fait donc par un déploiement (remplacer/ajouter le
+fichier PDF puis, si besoin, la ligne correspondante dans
+`fiches-pratiques.html`), jamais depuis une page d'administration.
+
+Réutilise **telles quelles** les classes CSS déjà écrites pour Documents
+du Club (`.documents-index`, `.documents-index-rubrique`,
+`.documents-index-categories`, `.rubrique-documents`, `.liste-documents`,
+`.document-ligne`, `.document-titre`, `.document-meta`,
+`.document-actions`) — aucune nouvelle règle CSS nécessaire. Un sommaire
+cliquable en haut (« Sommaire des modules ») renvoie vers chaque module
+via une ancre `#module-N` ; chaque module est un bloc `.rubrique-documents`
+contenant la liste plate de ses fiches, numérotées Fiche 1, Fiche 2…
+(ordre pédagogique de chaque module, pas l'ordre alphabétique des
+fichiers). Chaque fiche a un lien de titre et un bouton « Télécharger »,
+tous deux avec l'attribut `download` (téléchargement direct plutôt
+qu'un aperçu dans un nouvel onglet, conformément à la demande explicite
+« téléchargeables »).
+
+**Recherche par titre**, calquée sur celle de `espace/documents.php`
+(même principe de déplacement des `<li>` vers `#resultats-recherche`
+plutôt qu'une duplication du DOM, sommaire et modules masqués pendant
+une recherche active) mais réécrite en JavaScript inline propre à cette
+page plutôt que partagée : cette page est statique et n'a pas accès à
+`$_GET['recherche']` côté serveur, un `URLSearchParams` sur
+`window.location.search` fait le même office pour un lien externe du
+type `fiches-pratiques.html?recherche=histogramme`.
+
+Vérifié par rendu Chromium (desktop et 390px) avant déploiement : les 52
+liens de téléchargement correspondent exactement aux 52 PDF présents sur
+le disque (aucun manquant, aucun fichier orphelin), recherche fonctionnelle,
+aucun débordement horizontal sur mobile.
+
 ## Conventions
 
 - Tout le contenu visible est en **français**.
