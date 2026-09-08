@@ -294,17 +294,30 @@ titre_page("Documents du club", "Comptes rendus, statuts, bulletins et ressource
     ligne._parent = ligne.parentElement;
   });
 
+  // Recherche insensible aux accents (choix explicite de l'utilisatrice,
+  // 08/09/2026) : "ecran" doit trouver "écran". normalize("NFD") décompose
+  // chaque lettre accentuée en lettre de base + accent séparé, que la
+  // plage Unicode U+0300–U+036F (les diacritiques combinants) retire ensuite.
+  function normaliser(texte) {
+    return texte.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  }
+
   function appliquerRecherche() {
-    var recherche = champ.value.trim().toLowerCase();
+    var recherche = normaliser(champ.value.trim());
     var enRecherche = recherche !== "";
     var trouve = 0;
 
     lignes.forEach(function (ligne) {
-      var titre = (ligne.dataset.titre || "").toLowerCase();
+      var titre = normaliser(ligne.dataset.titre || "");
       if (enRecherche && titre.indexOf(recherche) !== -1) {
         resultats.appendChild(ligne);
         trouve++;
-      } else if (!enRecherche) {
+      } else {
+        // Remet la ligne à sa place d'origine dès qu'elle ne correspond
+        // plus à la recherche en cours — pas seulement quand le champ est
+        // entièrement vidé (piège corrigé le 08/09/2026 : affiner une
+        // recherche laissait sinon les résultats d'une frappe précédente
+        // affichés en plus des nouveaux, jamais retirés de #resultats-recherche).
         ligne._parent.appendChild(ligne);
       }
     });
