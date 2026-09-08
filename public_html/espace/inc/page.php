@@ -79,6 +79,7 @@ function debut_page(string $titre, string $page_active = ''): void
       <li><a href="../galerie.html">Galerie</a></li>
       <li><a href="../nos-sorties.html">Nos Sorties</a></li>
       <li><a href="blog.php"<?= $page_active === 'blog' ? ' aria-current="page"' : '' ?>>Blog</a></li>
+      <li><a href="../fiches-pratiques.html">Fiches Pratiques</a></li>
       <li class="nav-dropdown">
         <button type="button" class="nav-dropdown-trigger" aria-expanded="false">
           Agenda
