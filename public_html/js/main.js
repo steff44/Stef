@@ -1085,7 +1085,20 @@
     document.body.appendChild(nav);
 
     nav.querySelector(".retour-precedente").addEventListener("click", function () {
-      history.back();
+      // document.referrer donne la page d'où l'on vient, que la page
+      // actuelle ait été ouverte dans le même onglet ou dans un nouvel
+      // onglet (ex. lien target="_blank", comme les liens vers
+      // fiches-pratiques.html) — plus fiable que history.back(), qui ne
+      // ramène nulle part dans un onglet neuf sans historique. Repli sur
+      // history.back() puis sur l'accueil si le navigateur ne transmet
+      // aucun referrer (accès direct, favori, vie privée).
+      if (document.referrer) {
+        window.location.href = document.referrer;
+      } else if (history.length > 1) {
+        history.back();
+      } else {
+        window.location.href = "/";
+      }
     });
 
     // Index de la section dont le haut est déjà dépassé (ou en vue) — la
