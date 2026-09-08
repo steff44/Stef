@@ -128,6 +128,25 @@ foreach ($documents as $document) {
     }
 }
 
+// Uniquement les catégories qui contiennent déjà au moins un document
+// (choix explicite de l'utilisatrice, 08/09/2026, pour la lisibilité de la
+// page) — le formulaire de dépôt continue lui de lister $rubriques en
+// entier (voir plus bas) : il faut bien pouvoir choisir une catégorie
+// encore vide pour y déposer un premier document. Une rubrique dont
+// aucune catégorie n'a de document disparaît entièrement, sommaire compris.
+$rubriques_peuplees = [];
+foreach ($rubriques as $rubrique_id => $rubrique) {
+    $categories_peuplees = [];
+    foreach ($rubrique['categories'] as $categorie_id => $nom_categorie) {
+        if (!empty($groupes[$rubrique_id][$categorie_id])) {
+            $categories_peuplees[$categorie_id] = $nom_categorie;
+        }
+    }
+    if ($categories_peuplees) {
+        $rubriques_peuplees[$rubrique_id] = ['nom' => $rubrique['nom'], 'categories' => $categories_peuplees];
+    }
+}
+
 debut_page("Documents", 'documents');
 titre_page("Documents du club", "Comptes rendus, statuts, bulletins et ressources, réservés aux adhérents.");
 ?>
@@ -183,61 +202,49 @@ titre_page("Documents du club", "Comptes rendus, statuts, bulletins et ressource
   <?php endif; ?>
 
   <?php if ($rubriques): ?>
-    <div class="field documents-recherche">
-      <label for="recherche-documents">Rechercher un document par son nom</label>
-      <input type="search" id="recherche-documents" placeholder="Ex. : compte rendu, tarifs, portrait…"
-             value="<?= e($_GET['recherche'] ?? '') ?>">
-    </div>
-    <?php
-      // Résultats d'une recherche : liste à plat, juste sous le champ,
-      // sans les intitulés de rubrique/catégorie (choix explicite de
-      // l'utilisatrice, 01/09/2026 — ces intitulés ne servent plus qu'au
-      // sommaire ci-dessous, pour naviguer hors recherche). Rempli en
-      // JavaScript par déplacement des <li> correspondants, remis à leur
-      // place quand le champ est vidé — voir le script en bas de page.
-    ?>
-    <ul id="resultats-recherche" class="liste-documents" hidden></ul>
-    <div id="documents-recherche-vide" class="empty-state" hidden><p>Aucun document ne correspond à cette recherche.</p></div>
+    <?php if (!$rubriques_peuplees && !$autres): ?>
+      <p class="empty-state">Aucun document n'a encore été déposé.</p>
+    <?php else: ?>
+      <div class="field documents-recherche">
+        <label for="recherche-documents">Rechercher un document par son nom</label>
+        <input type="search" id="recherche-documents" placeholder="Ex. : compte rendu, tarifs, portrait…"
+               value="<?= e($_GET['recherche'] ?? '') ?>">
+      </div>
+      <?php
+        // Résultats d'une recherche : liste à plat, juste sous le champ,
+        // sans les intitulés de rubrique/catégorie (choix explicite de
+        // l'utilisatrice, 01/09/2026 — ces intitulés ne servent plus qu'au
+        // sommaire ci-dessous, pour naviguer hors recherche). Rempli en
+        // JavaScript par déplacement des <li> correspondants, remis à leur
+        // place quand le champ est vidé — voir le script en bas de page.
+      ?>
+      <ul id="resultats-recherche" class="liste-documents" hidden></ul>
+      <div id="documents-recherche-vide" class="empty-state" hidden><p>Aucun document ne correspond à cette recherche.</p></div>
 
-    <?php
-      // Sommaire cliquable : chaque catégorie (le niveau « final » d'une
-      // rubrique) renvoie directement vers sa section plus bas sur la page —
-      // toujours affichée, même sans document pour l'instant (choix
-      // explicite de l'utilisatrice, 01/09/2026 — sert de répertoire
-      // complet des catégories existantes, indépendamment de la
-      // recherche), pour que le sommaire ne pointe jamais vers une ancre
-      // absente.
-    ?>
-    <nav class="documents-index" aria-label="Sommaire des documents">
-      <?php foreach ($rubriques as $rubrique_id => $rubrique): ?>
-        <?php if (!$rubrique['categories']) continue; ?>
-        <div class="documents-index-rubrique">
+      <?php
+        // Sommaire cliquable : seules les catégories peuplées apparaissent
+        // (voir $rubriques_peuplees ci-dessus, choix explicite de
+        // l'utilisatrice, 08/09/2026, pour la lisibilité — revient sur le
+        // choix du 01/09/2026 qui gardait toutes les catégories visibles
+        // même vides).
+      ?>
+      <nav class="documents-index" aria-label="Sommaire des documents">
+        <?php foreach ($rubriques_peuplees as $rubrique_id => $rubrique): ?>
+          <div class="documents-index-rubrique">
+            <h2><?= e($rubrique['nom']) ?></h2>
+            <ul class="documents-index-categories">
+              <?php foreach ($rubrique['categories'] as $categorie_id => $nom_categorie): ?>
+                <li><a href="#categorie-<?= $categorie_id ?>"><?= e($nom_categorie) ?></a></li>
+              <?php endforeach; ?>
+            </ul>
+          </div>
+        <?php endforeach; ?>
+      </nav>
+
+      <?php foreach ($rubriques_peuplees as $rubrique_id => $rubrique): ?>
+        <div class="rubrique-documents">
           <h2><?= e($rubrique['nom']) ?></h2>
-          <ul class="documents-index-categories">
-            <?php foreach ($rubrique['categories'] as $categorie_id => $nom_categorie): ?>
-              <li><a href="#categorie-<?= $categorie_id ?>"><?= e($nom_categorie) ?></a></li>
-            <?php endforeach; ?>
-          </ul>
-        </div>
-      <?php endforeach; ?>
-    </nav>
-
-    <?php foreach ($rubriques as $rubrique_id => $rubrique): ?>
-      <?php if (!$rubrique['categories']) continue; ?>
-      <div class="rubrique-documents">
-        <h2><?= e($rubrique['nom']) ?></h2>
-        <?php foreach ($rubrique['categories'] as $categorie_id => $nom_categorie): ?>
-          <?php if (empty($groupes[$rubrique_id][$categorie_id])): ?>
-            <?php
-              // Catégorie encore vide : aucun bloc « Aucun document pour
-              // l'instant » affiché ici (choix explicite de l'utilisatrice,
-              // 01/09/2026, capture d'écran à l'appui — le sommaire ci-dessus
-              // reste le seul endroit où toutes les catégories apparaissent).
-              // Un simple marqueur d'ancre invisible garde le lien du
-              // sommaire fonctionnel malgré tout, plutôt qu'un lien mort.
-            ?>
-            <span id="categorie-<?= $categorie_id ?>"></span>
-          <?php else: ?>
+          <?php foreach ($rubrique['categories'] as $categorie_id => $nom_categorie): ?>
             <div class="sous-categorie-documents" id="categorie-<?= $categorie_id ?>">
               <h3><?= e($nom_categorie) ?></h3>
               <ul class="liste-documents">
@@ -246,20 +253,20 @@ titre_page("Documents du club", "Comptes rendus, statuts, bulletins et ressource
                 <?php endforeach; ?>
               </ul>
             </div>
-          <?php endif; ?>
-        <?php endforeach; ?>
-      </div>
-    <?php endforeach; ?>
-
-    <?php if ($autres): ?>
-      <div class="rubrique-documents">
-        <h2>Autres documents</h2>
-        <ul class="liste-documents">
-          <?php foreach ($autres as $document): ?>
-            <?php include __DIR__ . '/inc/document-ligne.php'; ?>
           <?php endforeach; ?>
-        </ul>
-      </div>
+        </div>
+      <?php endforeach; ?>
+
+      <?php if ($autres): ?>
+        <div class="rubrique-documents">
+          <h2>Autres documents</h2>
+          <ul class="liste-documents">
+            <?php foreach ($autres as $document): ?>
+              <?php include __DIR__ . '/inc/document-ligne.php'; ?>
+            <?php endforeach; ?>
+          </ul>
+        </div>
+      <?php endif; ?>
     <?php endif; ?>
   <?php endif; ?>
 </div></section>

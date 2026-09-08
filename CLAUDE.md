@@ -2970,6 +2970,54 @@ liens de téléchargement correspondent exactement aux 52 PDF présents sur
 le disque (aucun manquant, aucun fichier orphelin), recherche fonctionnelle,
 aucun débordement horizontal sur mobile.
 
+**Carte dédiée sur « Le Club », juste après « Documents du Club »**
+(choix explicite de l'utilisatrice, 08/09/2026, après avoir vu la page en
+ligne) : `espace/le-club.php` gagne une 4ᵉ carte « Fiches Pratiques »
+(icône 📚), insérée entre « Documents du Club » et « Galerie Privée » dans
+`.cards-grid` — en colonne unique sur mobile, elle apparaît donc
+visuellement juste en dessous de « Documents du Club », comme demandé.
+Son bouton « Ouvrir » porte `target="_blank" rel="noopener noreferrer"`
+(elle a aussi demandé que la page « s'ouvre sur une nouvelle page ») ; ce
+même attribut a été ajouté par cohérence sur les 7 autres liens
+« Fiches Pratiques » du site (menu principal des 6 pages statiques et
+`espace/inc/page.php`) — seuls les deux liens internes à
+`fiches-pratiques.html` elle-même (son propre lien de menu actif et son
+lien de pied de page) restent normaux, rouvrir la page depuis elle-même
+n'aurait aucun sens. Le lien du menu principal n'a pas été retiré : la
+page reste donc accessible aux deux endroits, contrairement à une
+relecture possible du message qui aurait pu suggérer un déplacement plutôt
+qu'un ajout — à corriger si ce n'est pas ce qui était voulu.
+
+## Documents du club : catégories vides masquées (retour en arrière)
+
+**Une catégorie sans aucun document n'apparaît plus nulle part**, sommaire
+compris (choix explicite de l'utilisatrice, 08/09/2026, pour la
+lisibilité — capture d'écran à l'appui montrant de nombreuses pastilles
+vides comme « Street », « Architecture », « Noir & Blanc »...). Ce
+choix **annule** la « nuance » du 01/09/2026 documentée plus haut (« le
+sommaire doit bien lister *toutes* les catégories, y compris vides ») —
+l'utilisatrice est revenue sur sa position après avoir vu le résultat en
+conditions réelles. `espace/documents.php` calcule désormais
+`$rubriques_peuplees` (une version filtrée de `$rubriques` ne gardant que
+les catégories où `$groupes[$rubrique_id][$categorie_id]` n'est pas vide ;
+une rubrique sans aucune catégorie peuplée disparaît entièrement) et
+l'utilise à la fois pour le sommaire et pour la liste détaillée — les deux
+anciens gardes-fous devenus inutiles (le marqueur d'ancre invisible
+`<span id="categorie-...">` pour une catégorie vide, et le filtre
+`if (!$rubrique['categories']) continue;` du sommaire) ont été retirés.
+**Le formulaire de dépôt continue de lister `$rubriques` en entier**, non
+filtré : il faut bien pouvoir choisir une catégorie encore vide pour y
+déposer un premier document. Si un club n'a encore aucun document nulle
+part, un message dédié (« Aucun document n'a encore été déposé. »)
+remplace recherche et sommaire plutôt que de montrer un sommaire
+vide — même principe que le message affiché en amont quand aucune
+rubrique n'est même définie. Vérifié par un test PHP isolé (catégorie
+peuplée conservée, catégorie et rubrique entièrement vides disparues,
+cas limite « tout est vide » sans erreur) et par relecture du gabarit
+généré (imbrication des blocs `if`/`foreach` inchangée). Cette page
+n'affecte ni `galerie.php` ni `galerie-club.php` (catégories partagées
+mais logique d'affichage différente, non concernées par ce changement).
+
 ## Conventions
 
 - Tout le contenu visible est en **français**.

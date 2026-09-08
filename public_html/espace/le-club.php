@@ -34,6 +34,12 @@ titre_page("Le Club", "Réservé aux adhérents du Focal Club Turballais.", fals
       <a class="btn btn-ghost" href="documents.php">Ouvrir</a>
     </article>
     <article class="feature-card">
+      <div class="feature-icon" aria-hidden="true">📚</div>
+      <h3>Fiches Pratiques</h3>
+      <p>Les 52 fiches de la formation débutant, en PDF, réparties en 7 modules.</p>
+      <a class="btn btn-ghost" href="../fiches-pratiques.html" target="_blank" rel="noopener noreferrer">Ouvrir</a>
+    </article>
+    <article class="feature-card">
       <div class="feature-icon" aria-hidden="true">📷</div>
       <h3>Galerie Privée</h3>
       <p>Les photos réservées aux adhérents connectés.</p>
