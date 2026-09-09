@@ -33,14 +33,31 @@ jobs:
 
             const resultats = { url };
 
-            // 1. Vérifie que main.js servi contient bien le correctif (elementPhoto)
-            const reponseJs = await page.goto(url + '/js/main.js', { waitUntil: 'load' });
+            // 0. Lit galerie.html brut pour connaître le ?v= réellement servi
+            const reponseHtml = await page.goto(url + '/galerie.html?diag=' + Date.now(), { waitUntil: 'load' });
+            const corpsHtml = await reponseHtml.text();
+            const matchJs = /js\/main\.js\?v=(\d+)/.exec(corpsHtml);
+            const matchCss = /css\/style\.css\?v=(\d+)/.exec(corpsHtml);
+            resultats.versionMainJsDansHtml = matchJs ? matchJs[1] : null;
+            resultats.versionStyleCssDansHtml = matchCss ? matchCss[1] : null;
+
+            // 1. Vérifie le contenu de main.js sur l'URL exacte que le navigateur charge
+            const urlJsVersionne = matchJs ? url + '/js/main.js?v=' + matchJs[1] : url + '/js/main.js';
+            const reponseJs = await page.goto(urlJsVersionne + '&diag=' + Date.now(), { waitUntil: 'load' });
             const corpsJs = await reponseJs.text();
             resultats.mainJsStatus = reponseJs.status();
+            resultats.cacheHeaders = {
+              cacheControl: reponseJs.headers()['cache-control'] || null,
+              hcdnStatus: reponseJs.headers()['x-hcdn-cache-status'] || null,
+              lastModified: reponseJs.headers()['last-modified'] || null,
+              age: reponseJs.headers()['age'] || null,
+              server: reponseJs.headers()['server'] || null,
+            };
             resultats.contientCorrectif = corpsJs.includes('function elementPhoto');
             resultats.contientUrlPhoto = corpsJs.includes('function urlPhoto');
+            resultats.tailleMainJs = corpsJs.length;
 
-            // 2. Ouvre la page Galerie publique et teste le clic droit sur une vignette
+            // 2. Recharge la page Galerie publique normalement et teste le clic droit
             await page.goto(url + '/galerie.html', { waitUntil: 'networkidle' });
             await page.waitForTimeout(1500); // laisse le temps à infos-galerie-club.php de répondre
 
