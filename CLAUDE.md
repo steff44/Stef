@@ -2769,6 +2769,64 @@ faut regarder.
   reçoit plus depuis cette date** — ne pas le remettre en cible sans
   qu'on le redemande explicitement, et ne pas s'étonner qu'il diverge
   progressivement du contenu déployé.
+
+  **Corrigé le même jour, plus tard** (voir « Déploiement » plus haut) :
+  l'utilisatrice a redemandé que les deux sites restent synchronisés après
+  chaque fusion sur `main` — `deploy.yml` a donc gagné une seconde étape
+  qui déploie aussi vers `HOSTINGER_TEST_TARGET_DIR`
+  (`myfocal.online`), en plus de la première vers `focalclub.fr`. Ce
+  paragraphe ci-dessus (« n'en reçoit plus depuis cette date ») ne
+  reflète donc plus la configuration actuelle — gardé tel quel pour
+  l'historique, mais voir le diagnostic du 09/09/2026 juste en dessous,
+  qui montre que cette seconde étape, bien que présente dans le workflow,
+  **ne met en réalité rien à jour sur `myfocal.online` depuis le
+  31/08/2026**.
+
+  **Diagnostic du 09/09/2026** : l'utilisatrice a signalé que
+  `myfocal.online` ne semblait « pas mis à jour depuis un certain
+  temps ». Vérifié par un workflow GitHub Actions temporaire + Playwright
+  (le sandbox ne peut atteindre aucun des deux domaines) qui compare les
+  deux sites côte à côte, avec un paramètre inédit dans chaque requête
+  pour forcer un passage jusqu'à l'origine (contourner tout cache
+  intermédiaire) :
+  - `focalclub.fr` : `js/main.js` référencé dans `galerie.html` avec
+    `?v=202609091900` (la version du jour), `Last-Modified: 09 Sep 2026
+    15:36:29 GMT` (exactement l'horodatage du dernier déploiement),
+    `X-Hcdn-Cache-Status: MISS` (donc bien lu à l'origine, pas depuis un
+    cache) — **à jour**.
+  - `myfocal.online` : `galerie.html` référence encore `js/main.js
+    ?v=202608271500` et `css/style.css?v=202608271516` — des versions du
+    **27/08/2026**, treize jours avant ce diagnostic et bien avant la
+    plupart des changements documentés dans ce fichier depuis. Le fichier
+    `js/main.js` lui-même, interrogé directement à l'origine (`X-Hcdn-
+    Cache-Status: MISS`, donc pas un cache non plus), porte un
+    `Last-Modified: 31 Aug 2026 17:17:22 GMT` — soit tout juste après la
+    dernière fois où quelqu'un avait vérifié `myfocal.online` avec succès
+    (le test du favicon, voir plus haut, daté du même jour à la même
+    heure). **Rien n'a donc atteint le disque servi par `myfocal.online`
+    depuis cette date**, alors que de nombreux déploiements réussis
+    (rapportés comme tels par GitHub Actions, `myfocal.online` compris)
+    ont eu lieu depuis.
+  - **Cause probable, non confirmée** (hors de portée du sandbox, qui ne
+    peut pas se connecter à hPanel) : `HOSTINGER_TEST_TARGET_DIR`
+    (`/home/u912253694/public_html/`) ne pointe peut-être plus vers le
+    vrai document root de `myfocal.online` — exactement le même genre de
+    piège que celui découvert et corrigé pour `focalclub.fr` le
+    01/09/2026 (voir plus haut) : le rsync réussit bel et bien (d'où le
+    « succès » systématique du step GitHub Actions), mais écrit dans un
+    dossier que le site ne sert plus, si sa configuration hPanel a changé
+    depuis. **À vérifier par l'utilisatrice dans hPanel** (« Fichiers →
+    Comptes FTP », champ « Répertoire », pour le site `myfocal.online` —
+    même méthode qui avait révélé le bon chemin de `focalclub.fr`) : si
+    le chemin réel diffère de `/home/u912253694/public_html/`, mettre à
+    jour le secret GitHub `HOSTINGER_TEST_TARGET_DIR` en conséquence.
+    Alternative à écarter en premier, plus simple à vérifier : que le
+    secret ait pu être modifié par erreur entre-temps — à comparer avec
+    la valeur attendue ci-dessus avant de chercher plus loin côté
+    hPanel. En attendant cette vérification, **`myfocal.online` ne doit
+    plus être considéré comme un reflet fiable de `main`** : seul
+    `focalclub.fr` (ou un déploiement de test manuel fraîchement relancé
+    et revérifié) fait foi.
 - Dans `css/style.css`, les chemins d'images sont relatifs à `css/`, donc
   `url("../images/...")`.
 - **Hostinger sert le CSS avec `cache-control: max-age=604800`** — sept jours.
