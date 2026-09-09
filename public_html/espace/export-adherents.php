@@ -27,21 +27,40 @@ $membres = $pdo->query(
 )->fetchAll();
 
 $entetes = [
-    'Identifiant', 'Nom', 'E-mail', 'Téléphone', 'Adresse', 'Code postal', 'Ville',
-    'Nom du boîtier', 'Rôle', 'Statut', 'Validé', 'Inscrit le', 'Dernière connexion',
+    'N°', 'Prénom', 'Nom', 'Identifiant', 'E-mail', 'Téléphone', 'Adresse', 'Code postal',
+    'Ville', 'Nom du boîtier', 'Rôle', 'Statut', 'Validé', 'Inscrit le', 'Dernière connexion',
 ];
 // Largeur de chaque colonne (en caractères) : sans elle, Excel retombe sur
 // sa largeur par défaut (8-9 caractères), bien trop étroite pour la
 // plupart de ces champs — choix explicite de l'utilisateur, 28/08/2026
 // (« formate le fichier Excel de façon à ce qu'il soit plus lisible »).
-$largeurs = [14, 20, 26, 14, 26, 12, 16, 18, 16, 12, 10, 13, 20];
+$largeurs = [5, 16, 18, 14, 26, 14, 26, 12, 16, 18, 16, 12, 10, 13, 20];
 
 // « Inscrit le » et « Dernière connexion » en date courte (ex. 26-06-2026),
 // pas la formulation longue utilisée ailleurs sur le site — choix explicite
 // de l'utilisateur, 28/08/2026.
 $date_courte = static fn(?string $date_sql): string => $date_sql ? date('d-m-Y', strtotime($date_sql)) : '';
 
+// `nom` est enregistré à l'inscription comme "Prénom Nom" en un seul champ
+// (voir inscription.php : trim($prenom . ' ' . $nom)) — il n'existe pas de
+// colonne `prenom` séparée en base. On sépare donc sur le premier espace :
+// le prénom est presque toujours un seul mot, alors qu'un nom de famille
+// composé ("de la Fontaine", "Le Gall") en contient parfois plusieurs —
+// séparer sur le premier espace place ainsi le nom complet du bon côté.
+$diviser_nom = static function (string $nom_complet): array {
+    $nom_complet = trim($nom_complet);
+    if ($nom_complet === '') {
+        return ['', ''];
+    }
+    $position = strpos($nom_complet, ' ');
+    if ($position === false) {
+        return ['', $nom_complet];
+    }
+    return [substr($nom_complet, 0, $position), substr($nom_complet, $position + 1)];
+};
+
 $lignes = [];
+$numero = 1;
 foreach ($membres as $membre) {
     $roles = [];
     if ($membre['administrateur']) {
@@ -54,9 +73,13 @@ foreach ($membres as $membre) {
         $roles[] = 'Adhérent';
     }
 
+    [$prenom, $nom] = $diviser_nom($membre['nom']);
+
     $lignes[] = [
+        $numero,
+        $prenom,
+        $nom,
         $membre['identifiant'],
-        $membre['nom'],
         $membre['email'] ?? '',
         $membre['telephone'] ?? '',
         $membre['adresse'] ?? '',
@@ -69,6 +92,7 @@ foreach ($membres as $membre) {
         $date_courte($membre['cree_le']),
         $membre['derniere_connexion'] ? $date_courte($membre['derniere_connexion']) : 'Jamais',
     ];
+    $numero++;
 }
 
 $contenu = generer_xlsx(
