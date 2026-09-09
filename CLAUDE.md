@@ -3210,6 +3210,42 @@ directement, et le `<span>` cliqué via sa légende en surimpression
 (`pointer-events: none`) — et modale EXIF fonctionnelle depuis la carte
 `<span>`, aucune erreur JavaScript.
 
+## Galerie publique : pastilles de catégorie vides masquées
+
+**Sur `galerie.html`, une catégorie sans aucune photo n'affiche plus sa
+pastille de filtre** (choix explicite de l'utilisatrice, 09/09/2026,
+même principe que le retour en arrière du 08/09/2026 sur les catégories
+de Documents du Club — voir plus haut). Jusqu'ici, `rebuildThemeFilters()`
+(`js/main.js`) recevait telle quelle la liste complète de
+`categories_galerie` renvoyée par `infos-galerie-club.php`
+(`donnees.categories`), y compris les catégories sans aucune photo
+encore déposée — comportement voulu à l'origine (voir plus haut, piège
+du 27/08/2026 : « CLUB_DATA.themes reste la liste des filtres... même
+sans aucune photo »), mais que l'utilisatrice a inversé pour cette page.
+
+Le filtrage se fait juste avant l'appel à `rebuildThemeFilters()`, dans
+le bloc `fetch("infos-galerie-club.php")` : `donnees.categories` est
+réduit aux seules catégories présentes dans au moins une photo de
+`pool` (`categorie => pool.some(p => p.themes.indexOf(categorie) !== -1)`)
+— l'ordre de la table (`categories_galerie`) est conservé, seules les
+catégories sans photo sont retirées. Portée volontairement limitée à
+cette page : ni la Galerie du Club (`espace/galerie-club.php`, qui
+affiche déjà chaque catégorie comme un groupe séparé — voir plus haut,
+« reprend la présentation de la page publique », hors périmètre demandé
+ici) ni la sélection de photos récentes de l'accueil (qui ne construit
+pas de pastilles de filtre) ne sont concernées. Le premier affichage
+instantané à partir de `CLUB_DATA.themes` (avant que
+`infos-galerie-club.php` ne réponde) reste lui aussi inchangé — un
+simple repli hors ligne/préversion GitHub Pages, remplacé presque
+aussitôt par la vraie liste filtrée dès que l'appel réussit.
+
+Testé hors ligne (09/09/2026) avec un faux `infos-galerie-club.php` et
+Playwright : deux catégories peuplées (« Portrait », « Paysage »)
+gardées dans l'ordre, deux catégories vides (« Vide », « Aussi vide »)
+absentes des pastilles ; cas limite sans aucune photo → seule la
+pastille « Toutes » reste, message « Aucune photo » affiché. Aucune
+erreur JavaScript.
+
 ## Conventions
 
 - Tout le contenu visible est en **français**.

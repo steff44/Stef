@@ -1220,7 +1220,16 @@
         });
 
         if (Array.isArray(donnees.categories) && donnees.categories.length) {
-          rebuildThemeFilters(donnees.categories);
+          // Seules les catégories qui ont au moins une photo réelle gardent
+          // leur pastille (choix explicite de l'utilisatrice, 09/09/2026) —
+          // categories_galerie() renvoie la table entière, y compris les
+          // catégories encore vides, que rebuildThemeFilters() affichait
+          // jusqu'ici telles quelles. L'ordre de la table est conservé,
+          // seules les catégories sans photo sont retirées.
+          const categoriesAvecPhotos = donnees.categories.filter(function (categorie) {
+            return pool.some(function (p) { return p.themes.indexOf(categorie) !== -1; });
+          });
+          rebuildThemeFilters(categoriesAvecPhotos);
         } else {
           photosClub.forEach(function (p) {
             (Array.isArray(p.categories) ? p.categories : []).forEach(addThemeFilter);
