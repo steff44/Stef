@@ -1,0 +1,85 @@
+name: Diagnostic clic droit (temporaire)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Installer Playwright
+        run: |
+          npm init -y >/dev/null
+          npm install playwright@1.47.0 >/dev/null
+          npx playwright install --with-deps chromium
+
+      - name: Écrire le script de diagnostic
+        run: |
+          cat > script.js <<'EOF'
+          const { chromium } = require('playwright');
+
+          async function verifierSite(url, browser) {
+            const page = await browser.newPage();
+            const erreurs = [];
+            page.on('pageerror', (e) => erreurs.push('pageerror: ' + e.message));
+
+            const resultats = { url };
+
+            // 1. Vérifie que main.js servi contient bien le correctif (elementPhoto)
+            const reponseJs = await page.goto(url + '/js/main.js', { waitUntil: 'load' });
+            const corpsJs = await reponseJs.text();
+            resultats.mainJsStatus = reponseJs.status();
+            resultats.contientCorrectif = corpsJs.includes('function elementPhoto');
+            resultats.contientUrlPhoto = corpsJs.includes('function urlPhoto');
+
+            // 2. Ouvre la page Galerie publique et teste le clic droit sur une vignette
+            await page.goto(url + '/galerie.html', { waitUntil: 'networkidle' });
+            await page.waitForTimeout(1500); // laisse le temps à infos-galerie-club.php de répondre
+
+            const nbVignettes = await page.locator('.photo-frame').count();
+            resultats.nbVignettes = nbVignettes;
+
+            if (nbVignettes > 0) {
+              const premiere = page.locator('.photo-frame').first();
+              const balise = await premiere.evaluate((el) => el.tagName);
+              resultats.typeVignette = balise;
+
+              const box = await premiere.boundingBox();
+              if (box) {
+                await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2, { button: 'right' });
+                await page.waitForTimeout(300);
+                resultats.menuPersonnaliseAffiche = await page.locator('.menu-photo').isVisible().catch(() => false);
+              }
+            }
+
+            resultats.erreursJs = erreurs;
+            await page.close();
+            return resultats;
+          }
+
+          (async () => {
+            const browser = await chromium.launch();
+            const url = process.env.SITE_URL;
+            const resultats = await verifierSite(url, browser);
+            console.log(JSON.stringify(resultats, null, 2));
+            await browser.close();
+          })();
+          EOF
+
+      - name: Vérifier myfocal.online
+        run: node script.js
+        env:
+          SITE_URL: https://myfocal.online
+
+      - name: Vérifier focalclub.fr
+        run: node script.js
+        env:
+          SITE_URL: https://focalclub.fr
