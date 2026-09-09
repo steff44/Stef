@@ -693,6 +693,11 @@ a {
   object-fit: cover;
   display: block;
   transition: transform 0.4s ease;
+  /* Frein léger au glissé-déposé/sélection d'une photo (choix explicite de
+     l'utilisatrice, 09/09/2026) — voir aussi le menu contextuel personnalisé
+     plus bas, qui remplace le clic droit natif du navigateur. */
+  -webkit-user-drag: none;
+  user-select: none;
 }
 .photo-card:hover .photo-frame {
   transform: scale(1.05);
@@ -1064,6 +1069,8 @@ a {
   border-radius: var(--radius);
   border: 1px solid var(--border);
   box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.75), 0 8px 20px rgba(0, 0, 0, 0.5);
+  -webkit-user-drag: none;
+  user-select: none;
 }
 /* Repli quand une photo n'a pas de fichier image : un dégradé, qui a besoin
    qu'on lui donne une taille puisqu'il n'y a pas d'image pour la déduire. */
@@ -1215,11 +1222,28 @@ button.lien-retour {
      voir plus bas) — sans effet sur les champs qui n'en ont pas. */
   position: relative;
 }
-.field label {
+.field label,
+.field .label-comme {
   display: block;
   font-size: 0.85rem;
   margin-bottom: 8px;
   color: var(--text-muted);
+}
+/* Cases à cocher des catégories d'une photo (choix explicite de
+   l'utilisatrice, 09/09/2026 : une photo peut appartenir à plusieurs
+   catégories) — remplace le menu à choix unique d'avant sur galerie.php et
+   galerie-club.php. */
+.categories-a-cocher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  padding: 12px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.categories-a-cocher .case-a-cocher {
+  flex: 0 0 auto;
 }
 .field input,
 .field select,
@@ -3056,4 +3080,95 @@ button.lien-retour {
   margin-top: 32px;
   padding-top: 24px;
   border-top: 1px solid var(--border);
+}
+
+/* Menu contextuel personnalisé sur une photo (choix explicite de
+   l'utilisatrice, 09/09/2026) : remplace le clic droit natif du navigateur
+   (qui proposerait « Enregistrer l'image sous ») par un mini-menu à une
+   seule action, voir js/main.js. Générique, toutes galeries confondues. */
+.menu-photo {
+  position: fixed;
+  z-index: 300;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  padding: 6px;
+  min-width: 230px;
+}
+.menu-photo button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: none;
+  background: none;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.9rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.menu-photo button:hover {
+  background: var(--bg);
+}
+
+/* Modale des informations techniques (EXIF) d'une photo, ouverte depuis le
+   menu contextuel ci-dessus. */
+.modale-exif {
+  position: fixed;
+  inset: 0;
+  z-index: 301;
+  background: rgba(5, 6, 15, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modale-exif-contenu {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px;
+  max-width: 420px;
+  width: 100%;
+  position: relative;
+}
+.modale-exif-fermer {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  cursor: pointer;
+  line-height: 1;
+}
+.modale-exif-contenu h3 {
+  margin: 0 0 16px;
+  font-family: var(--font-heading);
+  padding-right: 24px;
+}
+.modale-exif-chargement {
+  color: var(--text-muted);
+  margin: 0;
+}
+.modale-exif-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.modale-exif-table td {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+  vertical-align: top;
+}
+.modale-exif-table tr:last-child td {
+  border-bottom: none;
+}
+.modale-exif-table td:first-child {
+  color: var(--text-muted);
+  width: 42%;
+  padding-right: 12px;
 }

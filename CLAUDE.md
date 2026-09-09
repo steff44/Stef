@@ -3018,6 +3018,116 @@ généré (imbrication des blocs `if`/`foreach` inchangée). Cette page
 n'affecte ni `galerie.php` ni `galerie-club.php` (catégories partagées
 mais logique d'affichage différente, non concernées par ce changement).
 
+## Photos : plusieurs catégories, protection du clic droit, métadonnées EXIF
+
+Trois demandes de l'utilisatrice, 09/09/2026, traitées ensemble.
+
+**Une photo peut appartenir à plusieurs catégories à la fois**, dans la
+Galerie du Club (`espace/galerie-club.php`) et la Galerie privée
+(`espace/galerie.php`) — auparavant une seule (`categorie_id`). Choix
+non destructif : deux nouvelles tables de liaison,
+`photos_club_categories` et `photos_privees_categories` (clé primaire
+composite `photo_id`+`categorie_id`, `ON DELETE CASCADE` dans les deux
+sens — `inc/schema.sql`), deviennent la seule source de vérité pour
+l'appartenance aux catégories ; la colonne `categorie_id` sur
+`photos_club`/`photos_privees` reste en place mais devient **vestige**
+(posée à la première catégorie choisie, à l'insertion seulement, plus
+jamais lue pour l'affichage ou le filtrage). `appliquer_migrations()`
+crée les deux tables puis fait un **transfert unique** de l'ancien
+`categorie_id` vers la table de liaison, gardé par un `COUNT(*) = 0` sur
+la table de liaison elle-même (jamais rejoué, même si un responsable
+retire ensuite toutes les catégories d'une photo) — même principe que
+les autres semis `PAR_DEFAUT` de `migration.php`. Témoin de
+`signature_schema()` passé à `photos_categories_v1`.
+
+`inc/galerie_categories.php` porte trois nouvelles fonctions génériques
+(paramétrées par le nom de table, comme `photo-carte.php` par `$type`) :
+`categories_par_photo()` (toutes les liaisons en un seul aller-retour, pour
+grouper l'affichage), `categories_dune_photo()` (les catégories d'une
+seule photo, utilisée pour recopier celles d'une photo privée partagée
+vers la Galerie du Club) et `definir_categories_photo()` (`INSERT IGNORE`
+une ligne par catégorie choisie).
+
+Le formulaire de dépôt remplace le `<select>` à choix unique par des
+cases à cocher (`.categories-a-cocher`, nouvelle classe CSS, un
+`<label class="case-a-cocher">` par catégorie) — au moins une catégorie
+reste obligatoire. Sur la page d'affichage, une photo dans plusieurs
+catégories apparaît **dans chacun** de ses groupes `.groupe-galerie`
+(duplication volontaire de sa carte à l'affichage, jamais du fichier ni
+de la ligne en base) : le filtre par pastille de catégorie, qui
+affiche/masque des groupes entiers, fonctionne alors sans aucun
+changement JavaScript. Le partage d'une photo privée vers la Galerie du
+Club (`ajouter_au_club`) recopie désormais toutes ses catégories, pas
+une seule. `parametres.php` (suppression d'une catégorie encore utilisée)
+compte désormais les photos via les tables de liaison plutôt que sur
+`categorie_id` directement.
+
+Côté public, `infos-galerie-club.php` renvoie un tableau `categories`
+par photo (au lieu d'une chaîne `categorie` unique) ; `js/main.js`
+distingue `photo.theme` (chaîne jointe par « , », affichée en légende) de
+`photo.themes` (tableau, utilisé par `photosFiltrees()` pour le filtrage
+— `indexOf` plutôt qu'une égalité stricte). Répercuté sur la sélection de
+photos récentes de l'accueil, seule autre consommatrice de ce point
+d'accès.
+
+**Clic droit désactivé sur une vraie photo, remplacé par un mini-menu**
+(`js/main.js`, bloc générique en fin de fichier, délégation d'évènement
+sur `document` — aucune page ni aucun gabarit de carte à modifier).
+Cible uniquement `<img class="photo-frame">`/`<img class="lightbox-image">`
+(vérifié via `e.target.tagName === "IMG"`) : les vignettes des pages
+publiques, qui sont des `<span>` à fond CSS (`buildPhotoCard()`), n'ont
+rien à protéger et gardent leur clic droit normal. `e.preventDefault()`
+sur `contextmenu` supprime le menu natif du navigateur (« Enregistrer
+l'image sous… ») ; un `.menu-photo` flottant, positionné à la souris
+(`positionnerMenu()`, calé pour ne jamais déborder de l'écran), propose
+une seule action : « Voir les informations de la photo ». `dragstart`
+est également neutralisé (glisser une photo vers le bureau contournerait
+sinon la protection), ainsi que `-webkit-user-drag`/`user-select: none`
+en CSS sur `.photo-frame`/`.lightbox-image`. Protection de confort, pas
+de sécurité réelle (l'image reste accessible via les outils de
+développement) — cohérent avec l'absence de DRM ailleurs sur le site.
+
+**Métadonnées EXIF, si elles existent, via ce même menu** — nouveau
+point d'accès `espace/photo-exif.php`, qui reprend la même logique
+type→table→dossier et les mêmes règles d'accès que `telecharger.php`
+(dupliquée plutôt que factorisée, pour que les deux scripts restent
+indépendants l'un de l'autre) : `photo` exige la connexion et
+l'appartenance (même vérification `depose_par`), `sortie`/`galerie_club`/
+`blog`/`sortie_album` sont publics — `document` est délibérément exclu,
+l'EXIF n'ayant aucun sens pour un fichier non image. `inc/exif.php`
+(fonctions pures, sans base de données) lit le fichier avec
+`exif_read_data()` (extension `exif`) et renvoie un tableau déjà formaté
+en français (Appareil, Objectif — étiquette non standard `UndefinedTag:
+0xA434` —, Date, Vitesse, Ouverture, ISO, Focale), vide sans exception si
+le fichier n'a pas d'EXIF (PNG/WebP, retouche qui les a retirées,
+extension absente du serveur). Le bouton du menu retrouve l'URL EXIF en
+remplaçant simplement `telecharger.php` par `photo-exif.php` dans le
+`src` de l'image déjà affichée (`img.currentSrc || img.src`) : aucun
+attribut `data-*` supplémentaire nécessaire nulle part. La modale
+(`.modale-exif`) affiche un tableau clé/valeur si l'appel réussit et
+trouve des métadonnées, sinon « Aucune métadonnée disponible pour cette
+photo. » — jamais une erreur.
+
+**Limite connue, non demandée à corriger** : les photos de « Nos
+Sorties » hébergées sur Google Drive n'ont pas d'URL `telecharger.php`
+— le remplacement de chaîne est alors sans effet
+(`urlExif === urlPhoto`), détecté explicitement pour afficher directement
+« Aucune métadonnée disponible » sans tenter d'appel réseau inutile. Le
+clic droit reste lui aussi désactivé sur ces vignettes puisqu'elles sont
+de vraies `<img>` (contrairement aux vignettes de la page Galerie
+publique).
+
+Testé hors ligne (09/09/2026) : migrations rejouées sur SQLite
+(création des deux tables de liaison, transfert unique depuis
+`categorie_id`, non-répétition à un second passage) ; `inc/exif.php`
+validé sur une vraie photo du dépôt (Nikon D500, toutes les valeurs
+correctement formatées) et sur un PNG (tableau vide, sans erreur) ;
+comportement du menu contextuel et de la modale vérifié par Playwright
+(clic droit → menu personnalisé, menu natif bien supprimé, clic sur
+« Voir les informations » → modale avec tableau EXIF ou message d'échec
+selon la photo, fermeture par la croix/Échap/clic extérieur, `dragstart`
+neutralisé) — aucune erreur JavaScript dans la console.
+
 ## Conventions
 
 - Tout le contenu visible est en **français**.

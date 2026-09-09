@@ -58,14 +58,25 @@ try {
 
     $lignes = $pdo->query(
         "SELECT p.id, p.titre, p.description, p.nom_affiche, p.cree_le,
-                a.nom AS auteur, c.nom AS categorie
+                a.nom AS auteur
            FROM photos_club p
            LEFT JOIN adherents a ON a.id = p.depose_par
-           LEFT JOIN categories_galerie c ON c.id = p.categorie_id
           ORDER BY p.cree_le DESC"
     )->fetchAll();
 
     $categories = array_values(categories_galerie($pdo));
+
+    // Une photo peut appartenir à plusieurs catégories (choix explicite de
+    // l'utilisatrice, 09/09/2026) : [photo_id => [nom_categorie, ...]], un
+    // seul aller-retour plutôt qu'une requête par photo.
+    $nomsCategories = categories_galerie($pdo);
+    $categoriesParPhoto = [];
+    foreach ($pdo->query('SELECT photo_id, categorie_id FROM photos_club_categories')->fetchAll() as $liaison) {
+        $nom = $nomsCategories[(int) $liaison['categorie_id']] ?? null;
+        if ($nom !== null) {
+            $categoriesParPhoto[(int) $liaison['photo_id']][] = $nom;
+        }
+    }
 } catch (PDOException $e) {
     error_log('infos-galerie-club.php — base injoignable : ' . $e->getMessage());
     http_response_code(503);
@@ -75,15 +86,16 @@ try {
 
 $photos = [];
 foreach ($lignes as $ligne) {
+    // « Autres » plutôt qu'un tableau vide si toutes les catégories de la
+    // photo ont été supprimées depuis son dépôt.
+    $categoriesPhoto = $categoriesParPhoto[(int) $ligne['id']] ?? ['Autres'];
     $photos[] = [
-        'id'         => (int) $ligne['id'],
-        'titre'      => $ligne['titre'],
+        'id'          => (int) $ligne['id'],
+        'titre'       => $ligne['titre'],
         'description' => $ligne['description'],
-        'auteur'     => $ligne['nom_affiche'] ?: ($ligne['auteur'] ?: 'Adhérent retiré'),
-        // « Autres » plutôt qu'une chaîne vide si la catégorie a été
-        // supprimée depuis le dépôt de la photo (categorie_id repassé NULL).
-        'categorie'  => $ligne['categorie'] ?: 'Autres',
-        'image'      => 'espace/telecharger.php?type=galerie_club&id=' . (int) $ligne['id'],
+        'auteur'      => $ligne['nom_affiche'] ?: ($ligne['auteur'] ?: 'Adhérent retiré'),
+        'categories'  => $categoriesPhoto,
+        'image'       => 'espace/telecharger.php?type=galerie_club&id=' . (int) $ligne['id'],
     ];
 }
 

@@ -75,6 +75,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($nom_fichier_club === null) {
                 definir_message('erreur', "Impossible de copier la photo vers la Galerie du Club.");
             } else {
+                // Reprend TOUTES les catégories d'origine (choix explicite de
+                // l'utilisatrice, 09/09/2026), pas seulement la première.
+                $categorie_ids = categories_dune_photo($pdo, 'photos_privees_categories', $id);
                 $pdo->prepare(
                     'INSERT INTO photos_club (titre, description, nom_affiche, fichier, categorie_id, depose_par)
                      VALUES (?, ?, ?, ?, ?, ?)'
@@ -83,21 +86,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $photo['description'],
                     $photo['nom_affiche'],
                     $nom_fichier_club,
-                    $photo['categorie_id'],
+                    $categorie_ids[0] ?? $photo['categorie_id'],
                     $photo['depose_par'],
                 ]);
                 $nouvel_id = (int) $pdo->lastInsertId();
+                if ($categorie_ids) {
+                    definir_categories_photo($pdo, 'photos_club_categories', $nouvel_id, $categorie_ids);
+                }
                 $pdo->prepare('UPDATE photos_privees SET copie_club_id = ? WHERE id = ?')->execute([$nouvel_id, $id]);
                 definir_message('succes', "Photo ajoutée à la Galerie (Galerie du Club). Elle apparaît aussi sur la page Galerie, ouverte à tous.");
             }
         }
     } else {
-        $titre        = trim((string) ($_POST['titre'] ?? ''));
-        $categorie_id = (int) ($_POST['categorie_id'] ?? 0);
-        $categories   = categories_galerie($pdo);
-        $nom_affiche  = trim((string) ($_POST['nom_affiche'] ?? '')) ?: null;
-        $description  = trim((string) ($_POST['description'] ?? '')) ?: null;
-        $fichiers     = fichiers_multiples($_FILES['photos'] ?? ['name' => []]);
+        $titre         = trim((string) ($_POST['titre'] ?? ''));
+        $categories    = categories_galerie($pdo);
+        // Plusieurs catégories possibles par photo (choix explicite de
+        // l'utilisatrice, 09/09/2026) : cases à cocher plutôt qu'un menu à
+        // choix unique — voir schema.sql / inc/galerie_categories.php.
+        $categorie_ids = array_values(array_intersect(
+            array_map('intval', (array) ($_POST['categorie_ids'] ?? [])),
+            array_keys($categories)
+        ));
+        $nom_affiche   = trim((string) ($_POST['nom_affiche'] ?? '')) ?: null;
+        $description   = trim((string) ($_POST['description'] ?? '')) ?: null;
+        $fichiers      = fichiers_multiples($_FILES['photos'] ?? ['name' => []]);
         // Partage immédiat vers la Galerie du Club, sans repasser par un
         // second dépôt (choix explicite de l'utilisatrice, 06/09/2026) —
         // même copie de fichier que le partage a posteriori, voir plus haut.
@@ -105,8 +117,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($titre === '') {
             definir_message('erreur', "Donnez un titre à la photo.");
-        } elseif (!isset($categories[$categorie_id])) {
-            definir_message('erreur', "Choisissez une catégorie — créez-en une dans Réglages du site si aucune ne convient.");
+        } elseif (!$categorie_ids) {
+            definir_message('erreur', "Choisissez au moins une catégorie — créez-en une dans Réglages du site si aucune ne convient.");
         } elseif (!$fichiers) {
             definir_message('erreur', "Sélectionnez au moins une photo.");
         } else {
@@ -136,10 +148,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $description,
                     $nom_affiche,
                     $resultat['nom'],
-                    $categorie_id,
+                    $categorie_ids[0],
                     $adherent['id'],
                 ]);
                 $nouvel_id_prive = (int) $pdo->lastInsertId();
+                definir_categories_photo($pdo, 'photos_privees_categories', $nouvel_id_prive, $categorie_ids);
                 $reussis++;
 
                 if ($aussi_club) {
@@ -154,10 +167,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $description,
                             $nom_affiche,
                             $nom_fichier_club,
-                            $categorie_id,
+                            $categorie_ids[0],
                             $adherent['id'],
                         ]);
                         $nouvel_id_club = (int) $pdo->lastInsertId();
+                        definir_categories_photo($pdo, 'photos_club_categories', $nouvel_id_club, $categorie_ids);
                         $pdo->prepare('UPDATE photos_privees SET copie_club_id = ? WHERE id = ?')
                             ->execute([$nouvel_id_club, $nouvel_id_prive]);
                         $ajoutees_club++;
@@ -172,10 +186,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['dernier_titre_galerie_privee'] = $titre;
             }
 
+            $noms_categories = array_map(function ($id) use ($categories) { return $categories[$id]; }, $categorie_ids);
             $parts = [];
             if ($reussis > 0) {
                 $parts[] = "{$reussis} photo" . ($reussis > 1 ? 's' : '') . " ajoutée" . ($reussis > 1 ? 's' : '')
-                    . " à la galerie privée, dans « {$categories[$categorie_id]} ».";
+                    . " à la galerie privée, dans « " . implode(' », « ', $noms_categories) . " ».";
                 if ($aussi_club && $ajoutees_club > 0) {
                     $parts[] = ($ajoutees_club > 1 ? 'Elles ont' : 'Elle a')
                         . " aussi été ajoutée" . ($ajoutees_club > 1 ? 's' : '') . " à la Galerie (Galerie du Club).";
@@ -214,13 +229,17 @@ if (est_administrateur()) {
 }
 
 // Même rangement par catégorie que galerie-club.php — voir ce fichier pour
-// le détail du raisonnement (ordre stable, « Sans catégorie » en repli).
+// le détail du raisonnement (ordre stable, « Sans catégorie » en repli, une
+// photo dans plusieurs catégories apparaît dans chacun de ses groupes).
+$categoriesParPhoto = categories_par_photo($pdo, 'photos_privees_categories');
 $groupes        = [];
 $sans_categorie = [];
 foreach ($photos as $photo) {
-    $categorie_id = $photo['categorie_id'] !== null ? (int) $photo['categorie_id'] : null;
-    if ($categorie_id !== null && isset($categories[$categorie_id])) {
-        $groupes[$categorie_id][] = $photo;
+    $ids_categories = array_intersect($categoriesParPhoto[(int) $photo['id']] ?? [], array_keys($categories));
+    if ($ids_categories) {
+        foreach ($ids_categories as $categorie_id) {
+            $groupes[$categorie_id][] = $photo;
+        }
     } else {
         $sans_categorie[] = $photo;
     }
@@ -258,12 +277,15 @@ titre_page(
                  value="<?= e($_SESSION['dernier_titre_galerie_privee'] ?? '') ?>">
         </div>
         <div class="field">
-          <label for="categorie_id">Catégorie</label>
-          <select id="categorie_id" name="categorie_id">
+          <span class="label-comme">Catégories (une ou plusieurs, s'applique à toutes les photos déposées ici)</span>
+          <div class="categories-a-cocher">
             <?php foreach ($categories as $categorie_id => $nom_categorie): ?>
-              <option value="<?= $categorie_id ?>"><?= e($nom_categorie) ?></option>
+              <label class="case-a-cocher">
+                <input type="checkbox" name="categorie_ids[]" value="<?= $categorie_id ?>">
+                <?= e($nom_categorie) ?>
+              </label>
             <?php endforeach; ?>
-          </select>
+          </div>
         </div>
         <div class="field">
           <label for="nom_affiche">Nom affiché (facultatif, s'applique à toutes les photos déposées ici)</label>

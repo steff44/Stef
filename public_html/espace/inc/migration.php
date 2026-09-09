@@ -414,6 +414,55 @@ function appliquer_migrations(PDO $pdo): void
     }
 
     try {
+        // Une photo peut appartenir à plusieurs catégories (choix explicite
+        // de l'utilisatrice, 09/09/2026) — voir schema.sql pour le détail de
+        // ces deux tables de jointure, une par galerie. `categorie_id` sur
+        // photos_club/photos_privees reste en place mais n'est plus la
+        // source de vérité une fois cette table peuplée.
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS photos_club_categories (
+                photo_id     INT NOT NULL,
+                categorie_id INT NOT NULL,
+                PRIMARY KEY (photo_id, categorie_id),
+                CONSTRAINT fk_pcc_photo     FOREIGN KEY (photo_id)     REFERENCES photos_club(id)       ON DELETE CASCADE,
+                CONSTRAINT fk_pcc_categorie FOREIGN KEY (categorie_id) REFERENCES categories_galerie(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS photos_privees_categories (
+                photo_id     INT NOT NULL,
+                categorie_id INT NOT NULL,
+                PRIMARY KEY (photo_id, categorie_id),
+                CONSTRAINT fk_ppc_photo     FOREIGN KEY (photo_id)     REFERENCES photos_privees(id)    ON DELETE CASCADE,
+                CONSTRAINT fk_ppc_categorie FOREIGN KEY (categorie_id) REFERENCES categories_galerie(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+
+        // Reprise unique de l'ancien classement à catégorie unique : chaque
+        // photo déjà pourvue d'un categorie_id devient membre de cette seule
+        // catégorie dans la table de jointure. Ne se joue qu'une fois — tant
+        // que la table de jointure correspondante est vide — pour ne jamais
+        // réintroduire une catégorie qu'un adhérent aurait depuis retirée
+        // d'une photo (la colonne categorie_id, elle, ne bouge plus après
+        // l'envoi et resterait donc trompeuse si on la relisait à chaque fois).
+        if ((int) $pdo->query('SELECT COUNT(*) FROM photos_club_categories')->fetchColumn() === 0) {
+            $pdo->exec(
+                'INSERT IGNORE INTO photos_club_categories (photo_id, categorie_id)
+                 SELECT id, categorie_id FROM photos_club WHERE categorie_id IS NOT NULL'
+            );
+        }
+        if ((int) $pdo->query('SELECT COUNT(*) FROM photos_privees_categories')->fetchColumn() === 0) {
+            $pdo->exec(
+                'INSERT IGNORE INTO photos_privees_categories (photo_id, categorie_id)
+                 SELECT id, categorie_id FROM photos_privees WHERE categorie_id IS NOT NULL'
+            );
+        }
+    } catch (PDOException $e) {
+        error_log('Espace adhérents — migration photos_categories : ' . $e->getMessage());
+        $reussi = false;
+    }
+
+    try {
         $pdo->exec(
             'CREATE TABLE IF NOT EXISTS categories_blog (
                 id    INT AUTO_INCREMENT PRIMARY KEY,
@@ -594,7 +643,8 @@ function signature_schema(): string
         'articles_blog_v1' . '||' .
         'albums_sorties_v3' . '||' .
         'photos_sorties_v1' . '||' .
-        'visites_v1'
+        'visites_v1' . '||' .
+        'photos_categories_v1'
     );
 }
 

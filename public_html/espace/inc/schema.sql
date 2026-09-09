@@ -105,6 +105,31 @@ CREATE TABLE IF NOT EXISTS photos_club (
 ALTER TABLE photos_privees
   ADD CONSTRAINT fk_photo_copie_club FOREIGN KEY (copie_club_id) REFERENCES photos_club(id) ON DELETE SET NULL;
 
+-- Une photo peut appartenir à PLUSIEURS catégories (choix explicite de
+-- l'utilisatrice, 09/09/2026) — `categorie_id` sur photos_privees/photos_club
+-- reste en place (première catégorie choisie à l'envoi, pour ne rien casser
+-- sur une base déjà en ligne) mais n'est plus la source de vérité :
+-- l'appartenance réelle vit dans ces deux tables de jointure, une par
+-- galerie, chacune un simple couple (photo, catégorie). Clé primaire
+-- composite : une photo ne peut pas être liée deux fois à la même catégorie.
+-- ON DELETE CASCADE des deux côtés : supprimer la photo ou la catégorie
+-- retire proprement la liaison, sans ligne orpheline à nettoyer.
+CREATE TABLE IF NOT EXISTS photos_club_categories (
+  photo_id     INT NOT NULL,
+  categorie_id INT NOT NULL,
+  PRIMARY KEY (photo_id, categorie_id),
+  CONSTRAINT fk_pcc_photo     FOREIGN KEY (photo_id)     REFERENCES photos_club(id)       ON DELETE CASCADE,
+  CONSTRAINT fk_pcc_categorie FOREIGN KEY (categorie_id) REFERENCES categories_galerie(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS photos_privees_categories (
+  photo_id     INT NOT NULL,
+  categorie_id INT NOT NULL,
+  PRIMARY KEY (photo_id, categorie_id),
+  CONSTRAINT fk_ppc_photo     FOREIGN KEY (photo_id)     REFERENCES photos_privees(id)    ON DELETE CASCADE,
+  CONSTRAINT fk_ppc_categorie FOREIGN KEY (categorie_id) REFERENCES categories_galerie(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Rubriques et catégories de classement des documents du club, modifiables
 -- par un responsable depuis parametres.php — voir inc/documents_categories.php
 -- et RUBRIQUES_DOCUMENTS_PAR_DEFAUT (inc/migration.php) pour le semis initial.

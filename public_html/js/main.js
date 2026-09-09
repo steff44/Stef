@@ -521,6 +521,140 @@
     });
   }
 
+  /* ---------- Blocage du clic droit sur les photos + menu personnalisé ----------
+     Empêche « Enregistrer l'image sous » du menu natif du navigateur sur
+     toute vraie photo du site — vignette de l'espace adhérents
+     (.photo-frame, une <img>, voir inc/photo-carte.php) ou photo agrandie
+     (.lightbox-image, voir poserPhotoAgrandie plus haut, partagée par
+     toutes les galeries) — choix explicite de l'utilisatrice, 09/09/2026.
+     Ne s'applique volontairement pas à .photo-frame quand c'est un simple
+     <span> à fond CSS (vignette des pages publiques, buildPhotoCard) : rien
+     à protéger là, aucune <img> réelle à enregistrer.
+     Remplacé par un mini-menu à une seule action : voir les informations
+     techniques (EXIF) de la photo, si elles existent — espace/photo-exif.php
+     lit le fichier réel derrière la même URL que la photo affichée
+     (telecharger.php?type=...&id=...), qu'on retrouve en la remplaçant dans
+     le src de l'image, sans avoir besoin d'attribut supplémentaire nulle
+     part. Générique : aucune page n'a besoin d'être modifiée, cette
+     délégation d'évènement couvre toute image actuelle ou future portant
+     l'une de ces deux classes. */
+  (function () {
+    const SELECTEUR_PHOTOS = ".photo-frame, .lightbox-image";
+
+    let menu = null;
+    function fermerMenu() {
+      if (menu) {
+        menu.remove();
+        menu = null;
+      }
+    }
+
+    let modale = null;
+    function fermerModale() {
+      if (modale) {
+        modale.remove();
+        modale = null;
+        document.body.style.overflow = "";
+      }
+    }
+
+    function ouvrirModaleExif(urlPhoto) {
+      fermerModale();
+      modale = document.createElement("div");
+      modale.className = "modale-exif";
+      modale.innerHTML =
+        '<div class="modale-exif-contenu" role="dialog" aria-modal="true" aria-label="Informations de la photo">' +
+        '<button type="button" class="modale-exif-fermer" aria-label="Fermer">✕</button>' +
+        "<h3>Informations de la photo</h3>" +
+        '<p class="modale-exif-chargement">Chargement…</p>' +
+        "</div>";
+      document.body.appendChild(modale);
+      document.body.style.overflow = "hidden";
+      modale.querySelector(".modale-exif-fermer").addEventListener("click", fermerModale);
+      modale.addEventListener("click", function (e) {
+        if (e.target === modale) fermerModale();
+      });
+
+      // La même URL que la photo affichée (telecharger.php?type=...&id=...),
+      // seul le nom du script change — fonctionne identiquement que la page
+      // soit dans espace/ ou à la racine du site, puisque le chemin relatif
+      // devant "telecharger.php" est conservé tel quel.
+      const urlExif = urlPhoto.replace("telecharger.php", "photo-exif.php");
+      const echec = function () {
+        if (!modale) return;
+        const chargement = modale.querySelector(".modale-exif-chargement");
+        if (chargement) chargement.textContent = "Aucune métadonnée disponible pour cette photo.";
+      };
+      if (urlExif === urlPhoto) {
+        // Pas d'URL telecharger.php derrière cette image (ex. photo Google
+        // Drive) : impossible de lire un fichier qu'on ne contrôle pas.
+        echec();
+        return;
+      }
+
+      fetch(urlExif)
+        .then(function (reponse) { return reponse.ok ? reponse.json() : Promise.reject(); })
+        .then(function (donnees) {
+          if (!modale) return; // fermée entre-temps
+          const exif = donnees && donnees.exif ? donnees.exif : {};
+          const cles = Object.keys(exif);
+          if (!cles.length) {
+            echec();
+            return;
+          }
+          const table = document.createElement("table");
+          table.className = "modale-exif-table";
+          table.innerHTML = cles.map(function (cle) {
+            return "<tr><td>" + echapperHtml(cle) + "</td><td>" + echapperHtml(String(exif[cle])) + "</td></tr>";
+          }).join("");
+          modale.querySelector(".modale-exif-chargement").replaceWith(table);
+        })
+        .catch(echec);
+    }
+
+    function positionnerMenu(x, y) {
+      const marge = 8;
+      const largeur = menu.offsetWidth;
+      const hauteur = menu.offsetHeight;
+      menu.style.left = Math.min(x, window.innerWidth - largeur - marge) + "px";
+      menu.style.top = Math.min(y, window.innerHeight - hauteur - marge) + "px";
+    }
+
+    document.addEventListener("contextmenu", function (e) {
+      if (e.target.tagName !== "IMG" || !e.target.matches(SELECTEUR_PHOTOS)) return;
+      e.preventDefault();
+      fermerMenu();
+
+      const img = e.target;
+      menu = document.createElement("div");
+      menu.className = "menu-photo";
+      menu.innerHTML = '<button type="button">Voir les informations de la photo</button>';
+      menu.querySelector("button").addEventListener("click", function () {
+        fermerMenu();
+        ouvrirModaleExif(img.currentSrc || img.src);
+      });
+      document.body.appendChild(menu);
+      positionnerMenu(e.clientX, e.clientY);
+    });
+
+    document.addEventListener("click", function (e) {
+      if (menu && !menu.contains(e.target)) fermerMenu();
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "Escape") return;
+      fermerMenu();
+      fermerModale();
+    });
+
+    // Empêche aussi le glissé d'une photo vers le bureau : un autre moyen
+    // courant de l'enregistrer sans passer par le clic droit.
+    document.addEventListener("dragstart", function (e) {
+      if (e.target.tagName === "IMG" && e.target.matches(SELECTEUR_PHOTOS)) {
+        e.preventDefault();
+      }
+    });
+  })();
+
   function buildPhotoCard(photo, hue, membreNom, index, photosForLightbox, masquerTitreVignette) {
     const card = document.createElement("button");
     card.type = "button";
@@ -830,7 +964,7 @@
         const picked = photosClub.slice(0, 8).map(function (p) {
           return {
             titre: p.titre,
-            theme: p.categorie,
+            theme: Array.isArray(p.categories) ? p.categories.join(", ") : "",
             membreNom: p.auteur,
             image: p.image,
             hue: 0,
@@ -877,7 +1011,9 @@
     const pool = [];
     CLUB_DATA.membres.forEach(function (m) {
       m.photos.forEach(function (p, i) {
-        pool.push(Object.assign({}, p, { hue: m.hue, membreNom: m.nom, index: i }));
+        // themes : tableau utilisé pour le filtrage (voir photosFiltrees) —
+        // CLUB_DATA (js/data.js) ne connaît qu'un seul thème par photo.
+        pool.push(Object.assign({}, p, { hue: m.hue, membreNom: m.nom, index: i, themes: p.theme ? [p.theme] : [] }));
       });
     });
 
@@ -888,7 +1024,10 @@
 
     function photosFiltrees() {
       if (filtreActif.type === "theme") {
-        return pool.filter(function (p) { return p.theme === filtreActif.valeur; });
+        // Une photo peut appartenir à plusieurs catégories (choix explicite
+        // de l'utilisatrice, 09/09/2026) : p.themes est un tableau, on
+        // vérifie l'appartenance plutôt qu'une égalité stricte.
+        return pool.filter(function (p) { return p.themes.indexOf(filtreActif.valeur) !== -1; });
       }
       if (filtreActif.type === "photographe") {
         return pool.filter(function (p) { return p.membreNom === filtreActif.valeur; });
@@ -1029,9 +1168,14 @@
         const photosClub = Array.isArray(donnees.photos) ? donnees.photos : [];
 
         photosClub.forEach(function (p) {
+          // Une photo peut appartenir à plusieurs catégories (choix explicite
+          // de l'utilisatrice, 09/09/2026) : p.categories est un tableau —
+          // themes sert au filtrage, theme reste une légende affichable.
+          const themes = Array.isArray(p.categories) ? p.categories : [];
           pool.push({
             titre: p.titre,
-            theme: p.categorie,
+            theme: themes.join(", "),
+            themes: themes,
             description: p.description,
             membreNom: p.auteur,
             image: p.image,
@@ -1043,7 +1187,9 @@
         if (Array.isArray(donnees.categories) && donnees.categories.length) {
           rebuildThemeFilters(donnees.categories);
         } else {
-          photosClub.forEach(function (p) { addThemeFilter(p.categorie); });
+          photosClub.forEach(function (p) {
+            (Array.isArray(p.categories) ? p.categories : []).forEach(addThemeFilter);
+          });
           rebuildPhotographeFilter();
         }
         renderGrid();

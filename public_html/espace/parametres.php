@@ -117,10 +117,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Compte les deux galeries : une catégorie partagée par
             // galerie.php et galerie-club.php (voir inc/galerie_categories.php)
             // ne doit pas pouvoir disparaître tant que l'une des deux
-            // l'utilise encore.
-            $requete_club = $pdo->prepare('SELECT COUNT(*) FROM photos_club WHERE categorie_id = ?');
+            // l'utilise encore. Lit les tables de jointure (une photo peut
+            // être dans plusieurs catégories depuis le 09/09/2026), pas le
+            // categorie_id devenu vestige de photos_club/photos_privees.
+            $requete_club = $pdo->prepare('SELECT COUNT(*) FROM photos_club_categories WHERE categorie_id = ?');
             $requete_club->execute([$id]);
-            $requete_privee = $pdo->prepare('SELECT COUNT(*) FROM photos_privees WHERE categorie_id = ?');
+            $requete_privee = $pdo->prepare('SELECT COUNT(*) FROM photos_privees_categories WHERE categorie_id = ?');
             $requete_privee->execute([$id]);
             $nb_photos = (int) $requete_club->fetchColumn() + (int) $requete_privee->fetchColumn();
 

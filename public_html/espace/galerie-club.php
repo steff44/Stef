@@ -50,17 +50,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             definir_message('erreur', "Vous ne pouvez supprimer que vos propres photos.");
         }
     } else {
-        $titre        = trim((string) ($_POST['titre'] ?? ''));
-        $categorie_id = (int) ($_POST['categorie_id'] ?? 0);
-        $categories   = categories_galerie($pdo);
-        $nom_affiche  = trim((string) ($_POST['nom_affiche'] ?? '')) ?: null;
-        $description  = trim((string) ($_POST['description'] ?? '')) ?: null;
-        $fichiers     = fichiers_multiples($_FILES['photos'] ?? ['name' => []]);
+        $titre         = trim((string) ($_POST['titre'] ?? ''));
+        $categories    = categories_galerie($pdo);
+        // Plusieurs catégories possibles par photo (choix explicite de
+        // l'utilisatrice, 09/09/2026) : cases à cocher plutôt qu'un menu à
+        // choix unique — voir schema.sql / inc/galerie_categories.php.
+        $categorie_ids = array_values(array_intersect(
+            array_map('intval', (array) ($_POST['categorie_ids'] ?? [])),
+            array_keys($categories)
+        ));
+        $nom_affiche   = trim((string) ($_POST['nom_affiche'] ?? '')) ?: null;
+        $description   = trim((string) ($_POST['description'] ?? '')) ?: null;
+        $fichiers      = fichiers_multiples($_FILES['photos'] ?? ['name' => []]);
 
         if ($titre === '') {
             definir_message('erreur', "Donnez un titre à la photo.");
-        } elseif (!isset($categories[$categorie_id])) {
-            definir_message('erreur', "Choisissez une catégorie — créez-en une dans Réglages du site si aucune ne convient.");
+        } elseif (!$categorie_ids) {
+            definir_message('erreur', "Choisissez au moins une catégorie — créez-en une dans Réglages du site si aucune ne convient.");
         } elseif (!$fichiers) {
             definir_message('erreur', "Sélectionnez au moins une photo.");
         } else {
@@ -89,9 +95,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $description,
                     $nom_affiche,
                     $resultat['nom'],
-                    $categorie_id,
+                    $categorie_ids[0],
                     $adherent['id'],
                 ]);
+                definir_categories_photo($pdo, 'photos_club_categories', (int) $pdo->lastInsertId(), $categorie_ids);
                 $reussis++;
             }
 
@@ -102,10 +109,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['dernier_titre_galerie_club'] = $titre;
             }
 
+            $noms_categories = array_map(function ($id) use ($categories) { return $categories[$id]; }, $categorie_ids);
             $parts = [];
             if ($reussis > 0) {
                 $parts[] = "{$reussis} photo" . ($reussis > 1 ? 's' : '') . " ajoutée" . ($reussis > 1 ? 's' : '')
-                    . " à la Galerie du Club, dans « {$categories[$categorie_id]} ». Elle" . ($reussis > 1 ? 's' : '')
+                    . " à la Galerie du Club, dans « " . implode(' », « ', $noms_categories) . " ». Elle" . ($reussis > 1 ? 's' : '')
                     . " apparai" . ($reussis > 1 ? 'ssent' : 't') . " aussi sur la page Galerie, ouverte à tous.";
             }
             array_push($parts, ...$erreurs);
@@ -127,15 +135,21 @@ $photos = $pdo->query(
 )->fetchAll();
 
 // Rangement par catégorie, dans l'ordre de categories_galerie() — pas celui
-// du résultat SQL — pour une présentation stable. « Sans catégorie » ne
-// recueille que des photos dont la catégorie a été supprimée depuis leur
-// dépôt (categorie_id remis à NULL par la contrainte ON DELETE SET NULL).
-$groupes    = [];
+// du résultat SQL — pour une présentation stable. Une photo dans plusieurs
+// catégories (choix explicite de l'utilisatrice, 09/09/2026) apparaît dans
+// CHACUN de ses groupes — sa carte est alors rendue plusieurs fois, une par
+// catégorie, ce qui la rend bien visible quel que soit le filtre choisi.
+// « Sans catégorie » ne recueille que les photos qui n'appartiennent plus à
+// aucune catégorie connue (toutes supprimées depuis leur dépôt).
+$categoriesParPhoto = categories_par_photo($pdo, 'photos_club_categories');
+$groupes        = [];
 $sans_categorie = [];
 foreach ($photos as $photo) {
-    $categorie_id = $photo['categorie_id'] !== null ? (int) $photo['categorie_id'] : null;
-    if ($categorie_id !== null && isset($categories[$categorie_id])) {
-        $groupes[$categorie_id][] = $photo;
+    $ids_categories = array_intersect($categoriesParPhoto[(int) $photo['id']] ?? [], array_keys($categories));
+    if ($ids_categories) {
+        foreach ($ids_categories as $categorie_id) {
+            $groupes[$categorie_id][] = $photo;
+        }
     } else {
         $sans_categorie[] = $photo;
     }
@@ -207,12 +221,15 @@ debut_page("Galerie (Galerie du Club)", 'galerie-club');
                  value="<?= e($_SESSION['dernier_titre_galerie_club'] ?? '') ?>">
         </div>
         <div class="field">
-          <label for="categorie_id">Catégorie</label>
-          <select id="categorie_id" name="categorie_id">
+          <span class="label-comme">Catégories (une ou plusieurs, s'applique à toutes les photos déposées ici)</span>
+          <div class="categories-a-cocher">
             <?php foreach ($categories as $categorie_id => $nom_categorie): ?>
-              <option value="<?= $categorie_id ?>"><?= e($nom_categorie) ?></option>
+              <label class="case-a-cocher">
+                <input type="checkbox" name="categorie_ids[]" value="<?= $categorie_id ?>">
+                <?= e($nom_categorie) ?>
+              </label>
             <?php endforeach; ?>
-          </select>
+          </div>
         </div>
         <div class="field">
           <label for="nom_affiche">Nom affiché (facultatif, s'applique à toutes les photos déposées ici)</label>
