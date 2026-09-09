@@ -3070,22 +3070,35 @@ distingue `photo.theme` (chaîne jointe par « , », affichée en légende) de
 photos récentes de l'accueil, seule autre consommatrice de ce point
 d'accès.
 
-**Clic droit désactivé sur une vraie photo, remplacé par un mini-menu**
-(`js/main.js`, bloc générique en fin de fichier, délégation d'évènement
-sur `document` — aucune page ni aucun gabarit de carte à modifier).
-Cible uniquement `<img class="photo-frame">`/`<img class="lightbox-image">`
-(vérifié via `e.target.tagName === "IMG"`) : les vignettes des pages
-publiques, qui sont des `<span>` à fond CSS (`buildPhotoCard()`), n'ont
-rien à protéger et gardent leur clic droit normal. `e.preventDefault()`
-sur `contextmenu` supprime le menu natif du navigateur (« Enregistrer
-l'image sous… ») ; un `.menu-photo` flottant, positionné à la souris
+**Clic droit désactivé sur toute photo, y compris les vignettes des pages
+publiques, remplacé par un mini-menu** (`js/main.js`, bloc générique en
+fin de fichier, délégation d'évènement sur `document` — aucune page ni
+aucun gabarit de carte à modifier). Couvre `<img class="photo-frame">`/
+`<img class="lightbox-image">` (espace adhérents, photo agrandie) **et**
+`<span class="photo-frame">` à fond CSS (`buildPhotoCard()`, vignettes des
+pages publiques) — un premier essai, le même jour, avait exclu ces
+dernières en pensant qu'un `<span>` sans `<img>` n'avait rien à protéger,
+mais l'utilisatrice a signalé que le clic droit y fonctionnait encore : un
+menu natif reste indésirable même sans « Enregistrer l'image sous » à
+proprement parler. `elementPhoto()` retrouve l'élément à protéger même si
+la cible du clic est un enfant sans intérêt propre (la légende
+`.photo-caption`, en surimpression avec `pointer-events: none` — le clic
+la traverse donc jusqu'au fond, mais `elementPhoto()` remonte aussi via
+`.closest(".photo-card")` par sécurité) ; `urlPhoto()` retrouve l'URL de la
+photo aussi bien depuis `img.src` que depuis le `background-image` calculé
+d'un `<span>` (`getComputedStyle`, qui renvoie une URL absolue même si le
+style inline en portait une relative). `e.preventDefault()` sur
+`contextmenu` supprime le menu natif du navigateur (« Enregistrer l'image
+sous… ») ; un `.menu-photo` flottant, positionné à la souris
 (`positionnerMenu()`, calé pour ne jamais déborder de l'écran), propose
-une seule action : « Voir les informations de la photo ». `dragstart`
-est également neutralisé (glisser une photo vers le bureau contournerait
-sinon la protection), ainsi que `-webkit-user-drag`/`user-select: none`
-en CSS sur `.photo-frame`/`.lightbox-image`. Protection de confort, pas
-de sécurité réelle (l'image reste accessible via les outils de
-développement) — cohérent avec l'absence de DRM ailleurs sur le site.
+une seule action : « Voir les informations de la photo ». `dragstart` est
+également neutralisé sur les vraies `<img>` (glisser une photo vers le
+bureau contournerait sinon la protection — sans objet sur un `<span>` à
+fond CSS, qui ne se glisse pas nativement comme un fichier), ainsi que
+`-webkit-user-drag`/`user-select: none` en CSS sur `.photo-frame`/
+`.lightbox-image`. Protection de confort, pas de sécurité réelle (l'image
+reste accessible via les outils de développement) — cohérent avec
+l'absence de DRM ailleurs sur le site.
 
 **Métadonnées EXIF, si elles existent, via ce même menu** — nouveau
 point d'accès `espace/photo-exif.php`, qui reprend la même logique
@@ -3101,9 +3114,9 @@ en français (Appareil, Objectif — étiquette non standard `UndefinedTag:
 0xA434` —, Date, Vitesse, Ouverture, ISO, Focale), vide sans exception si
 le fichier n'a pas d'EXIF (PNG/WebP, retouche qui les a retirées,
 extension absente du serveur). Le bouton du menu retrouve l'URL EXIF en
-remplaçant simplement `telecharger.php` par `photo-exif.php` dans le
-`src` de l'image déjà affichée (`img.currentSrc || img.src`) : aucun
-attribut `data-*` supplémentaire nécessaire nulle part. La modale
+remplaçant simplement `telecharger.php` par `photo-exif.php` dans l'URL de
+la photo déjà affichée (voir `urlPhoto()` ci-dessus) : aucun attribut
+`data-*` supplémentaire nécessaire nulle part. La modale
 (`.modale-exif`) affiche un tableau clé/valeur si l'appel réussit et
 trouve des métadonnées, sinon « Aucune métadonnée disponible pour cette
 photo. » — jamais une erreur.
@@ -3113,9 +3126,8 @@ Sorties » hébergées sur Google Drive n'ont pas d'URL `telecharger.php`
 — le remplacement de chaîne est alors sans effet
 (`urlExif === urlPhoto`), détecté explicitement pour afficher directement
 « Aucune métadonnée disponible » sans tenter d'appel réseau inutile. Le
-clic droit reste lui aussi désactivé sur ces vignettes puisqu'elles sont
-de vraies `<img>` (contrairement aux vignettes de la page Galerie
-publique).
+clic droit reste lui aussi désactivé sur ces vignettes (de vraies `<img>`,
+comme sur les autres photos hébergées sur ce site).
 
 Testé hors ligne (09/09/2026) : migrations rejouées sur SQLite
 (création des deux tables de liaison, transfert unique depuis
@@ -3127,6 +3139,18 @@ comportement du menu contextuel et de la modale vérifié par Playwright
 « Voir les informations » → modale avec tableau EXIF ou message d'échec
 selon la photo, fermeture par la croix/Échap/clic extérieur, `dragstart`
 neutralisé) — aucune erreur JavaScript dans la console.
+
+**Correctif le jour même** : l'utilisatrice a signalé, après mise en ligne,
+que le clic droit fonctionnait toujours sur une vignette — celles des
+pages publiques, en `<span>` à fond CSS, volontairement exclues par le
+premier essai (voir plus haut). Étendu à ces vignettes (`elementPhoto()`/
+`urlPhoto()` dans `js/main.js`, voir plus haut). Retesté hors ligne par
+Playwright avec une page reproduisant les deux cas côte à côte (carte
+`<img>` et carte `<span>`) : clic droit bloqué et menu personnalisé
+affiché sur les trois cibles testées — l'`<img>`, le `<span>` cliqué
+directement, et le `<span>` cliqué via sa légende en surimpression
+(`pointer-events: none`) — et modale EXIF fonctionnelle depuis la carte
+`<span>`, aucune erreur JavaScript.
 
 ## Conventions
 

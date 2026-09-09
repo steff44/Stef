@@ -522,24 +522,59 @@
   }
 
   /* ---------- Blocage du clic droit sur les photos + menu personnalisé ----------
-     Empêche « Enregistrer l'image sous » du menu natif du navigateur sur
-     toute vraie photo du site — vignette de l'espace adhérents
-     (.photo-frame, une <img>, voir inc/photo-carte.php) ou photo agrandie
-     (.lightbox-image, voir poserPhotoAgrandie plus haut, partagée par
-     toutes les galeries) — choix explicite de l'utilisatrice, 09/09/2026.
-     Ne s'applique volontairement pas à .photo-frame quand c'est un simple
-     <span> à fond CSS (vignette des pages publiques, buildPhotoCard) : rien
-     à protéger là, aucune <img> réelle à enregistrer.
+     Empêche « Enregistrer l'image sous » (et le menu natif en général) sur
+     toute photo du site — vignette de l'espace adhérents (.photo-frame, une
+     <img>, voir inc/photo-carte.php), photo agrandie (.lightbox-image, voir
+     poserPhotoAgrandie plus haut, partagée par toutes les galeries), et
+     vignette des pages publiques (.photo-frame en <span> à fond CSS,
+     buildPhotoCard) — choix explicite de l'utilisatrice, 09/09/2026,
+     complété le même jour après qu'elle a signalé que le clic droit
+     fonctionnait encore sur ces dernières (un premier essai les avait
+     volontairement exclues, en pensant qu'un <span> sans <img> n'avait rien
+     à protéger — mais le clic droit natif reste possible dessus tout de
+     même, ce qu'elle ne voulait pas non plus).
      Remplacé par un mini-menu à une seule action : voir les informations
      techniques (EXIF) de la photo, si elles existent — espace/photo-exif.php
      lit le fichier réel derrière la même URL que la photo affichée
      (telecharger.php?type=...&id=...), qu'on retrouve en la remplaçant dans
-     le src de l'image, sans avoir besoin d'attribut supplémentaire nulle
-     part. Générique : aucune page n'a besoin d'être modifiée, cette
-     délégation d'évènement couvre toute image actuelle ou future portant
-     l'une de ces deux classes. */
+     le src de l'image (une <img>) ou l'URL de fond (un <span>, extraite du
+     style calculé), sans avoir besoin d'attribut supplémentaire nulle part.
+     Sur les pages publiques, la légende (.photo-caption) est en
+     surimpression sur le fond de la carte avec `pointer-events: none`
+     (css/style.css) : un clic droit sur le texte du titre traverse donc
+     jusqu'au conteneur .photo-card, dont on retrouve alors le .photo-frame
+     enfant. Générique : aucune page n'a besoin d'être modifiée, cette
+     délégation d'évènement couvre toute carte actuelle ou future portant
+     l'une de ces classes. */
   (function () {
     const SELECTEUR_PHOTOS = ".photo-frame, .lightbox-image";
+
+    // Retrouve l'élément à protéger (l'<img> ou le <span> à fond CSS) à
+    // partir de la cible réelle du clic droit — qui peut être ce même
+    // élément, ou l'un de ses parents (.photo-card) si le clic a atterri
+    // sur un enfant sans intérêt propre (la légende, déjà pointer-events:
+    // none, ne devrait normalement jamais être ciblée, mais un futur
+    // habillage pourrait changer cela).
+    function elementPhoto(cible) {
+      const direct = cible.closest(SELECTEUR_PHOTOS);
+      if (direct) return direct;
+      const carte = cible.closest(".photo-card");
+      return carte ? carte.querySelector(".photo-frame") : null;
+    }
+
+    // URL de la photo derrière l'élément, qu'il s'agisse d'une vraie <img>
+    // (src) ou d'un <span> à fond CSS (background-image, calculé pour
+    // obtenir une URL absolue même si le style inline en portait une
+    // relative). Chaîne vide si l'élément n'a ni l'un ni l'autre (dégradé
+    // de repli d'une photo sans fichier, photoGradient()) — sans
+    // conséquence, ouvrirModaleExif() affiche alors directement « Aucune
+    // métadonnée disponible ».
+    function urlPhoto(el) {
+      if (el.tagName === "IMG") return el.currentSrc || el.src;
+      const fond = getComputedStyle(el).backgroundImage;
+      const correspondance = /url\(["']?(.*?)["']?\)/.exec(fond);
+      return correspondance ? correspondance[1] : "";
+    }
 
     let menu = null;
     function fermerMenu() {
@@ -621,17 +656,17 @@
     }
 
     document.addEventListener("contextmenu", function (e) {
-      if (e.target.tagName !== "IMG" || !e.target.matches(SELECTEUR_PHOTOS)) return;
+      const photo = elementPhoto(e.target);
+      if (!photo) return;
       e.preventDefault();
       fermerMenu();
 
-      const img = e.target;
       menu = document.createElement("div");
       menu.className = "menu-photo";
       menu.innerHTML = '<button type="button">Voir les informations de la photo</button>';
       menu.querySelector("button").addEventListener("click", function () {
         fermerMenu();
-        ouvrirModaleExif(img.currentSrc || img.src);
+        ouvrirModaleExif(urlPhoto(photo));
       });
       document.body.appendChild(menu);
       positionnerMenu(e.clientX, e.clientY);
