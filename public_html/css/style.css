@@ -452,25 +452,52 @@ a {
 
 /* Full-bleed hero, close to focalclub.fr's homepage */
 .hero-full {
+  position: relative;
+  overflow: hidden;
   min-height: 90vh;
   display: flex;
   /* Le texte se place dans le haut du hero, l'appareil photo reste visible
      en dessous (cf. maquette validee). */
   align-items: flex-start;
   padding: 120px 0 140px;
-  /* Voile sombre en degrade : dense en haut pour la lisibilite du titre,
-     leger sur l'appareil, puis renforce en bas pour enchainer avec la
-     section violette suivante. */
-  background:
-    linear-gradient(
-      to bottom,
-      rgba(8, 10, 22, 0.68) 0%,
-      rgba(8, 10, 22, 0.42) 32%,
-      rgba(8, 10, 22, 0.22) 55%,
-      rgba(30, 27, 75, 0.55) 100%
-    ),
-    url("../images/accueil-pleine-largeur.jpg") center 55% / cover no-repeat,
-    #05040c;
+  background: #05040c;
+}
+/* Diaporama du hero (choix explicite de l'utilisatrice, 09/09/2026) :
+   une photo par calque, superposés, un fondu enchaîné sur l'opacité fait la
+   transition — js/main.js bascule .is-active toutes les 10 secondes. Les
+   calques restent sous le voile et le texte (voir .hero-veil et
+   .hero-full .container plus bas), qui viennent après eux dans le DOM. */
+.hero-slideshow {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+.hero-slide {
+  position: absolute;
+  inset: 0;
+  background-position: center 55%;
+  background-size: cover;
+  background-repeat: no-repeat;
+  opacity: 0;
+  transition: opacity 1.8s ease;
+}
+.hero-slide.is-active {
+  opacity: 1;
+}
+/* Voile sombre en degrade : dense en haut pour la lisibilite du titre,
+   leger sur la photo, puis renforce en bas pour enchainer avec la section
+   violette suivante — au-dessus du diaporama, sous le texte. */
+.hero-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    to bottom,
+    rgba(8, 10, 22, 0.68) 0%,
+    rgba(8, 10, 22, 0.42) 32%,
+    rgba(8, 10, 22, 0.22) 55%,
+    rgba(30, 27, 75, 0.55) 100%
+  );
 }
 /* Sur la photo, le paragraphe passe en blanc et les textes recoivent une
    ombre portee : indispensable pour rester lisibles sur les zones claires. */
@@ -482,6 +509,8 @@ a {
   color: #f1f5f9;
 }
 .hero-full .container {
+  position: relative;
+  z-index: 2;
   width: 100%;
 }
 .hero-content-center {

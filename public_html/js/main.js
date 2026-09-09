@@ -756,6 +756,22 @@
       });
   })();
 
+  /* ---------- Page d'accueil : diaporama du grand hero ----------
+     Change de photo toutes les 10 secondes, en fondu enchaîné (transition
+     CSS sur l'opacité de chaque .hero-slide, voir css/style.css) — choix
+     explicite de l'utilisatrice, 09/09/2026. Générique : ne fait rien si le
+     hero ne porte qu'une seule photo (ou aucune). */
+  (function () {
+    const diapos = document.querySelectorAll(".hero-slideshow .hero-slide");
+    if (diapos.length < 2) return;
+    let indexActif = 0;
+    setInterval(function () {
+      diapos[indexActif].classList.remove("is-active");
+      indexActif = (indexActif + 1) % diapos.length;
+      diapos[indexActif].classList.add("is-active");
+    }, 10000);
+  })();
+
   /* ---------- Page d'accueil : bandeau « prochaine sortie / réunion » ----------
      Dépliant natif (<details>, voir css/style.css), rempli depuis
      infos-prochaine-sortie.php ; reste masqué (hidden en dur dans
