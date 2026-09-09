@@ -1736,6 +1736,7 @@ button.lien-retour {
 .rubrique-documents,
 .groupe-galerie {
   margin: 0 0 36px;
+  scroll-margin-top: 120px;
 }
 .rubrique-documents h2,
 .groupe-galerie h2 {
