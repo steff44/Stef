@@ -3246,6 +3246,75 @@ absentes des pastilles ; cas limite sans aucune photo → seule la
 pastille « Toutes » reste, message « Aucune photo » affiché. Aucune
 erreur JavaScript.
 
+## Modifier les catégories d'une photo déjà déposée
+
+**Une photo déjà en ligne peut changer de catégorie(s) sans être supprimée
+et redéposée** (choix explicite de l'utilisatrice, 09/09/2026, à l'occasion
+d'un besoin concret : reclasser des photos de Marylène Gautier et Stéphane
+dans une nouvelle catégorie « Maré Trail » créée après leur dépôt). Jusqu'ici,
+les catégories d'une photo (`espace/galerie.php`/`galerie-club.php`) ne se
+choisissaient qu'au moment de l'envoi — aucune page ne permettait d'y revenir
+ensuite.
+
+Un bouton `✎` (`.photo-modifier-categories`, en incrustation bas-droite —
+troisième coin encore libre sur la carte, Supprimer occupant le haut-droite
+et Partager/Partagée le haut-gauche sur la Galerie privée) apparaît sur
+chaque carte sous la même condition que Supprimer : son auteur, ou un
+responsable. Il ouvre une modale (voir plus bas) listant toutes les
+catégories disponibles en cases à cocher, celles déjà affectées à la photo
+pré-cochées ; valider POST une nouvelle action, `modifier_categories`
+(ajoutée à `galerie.php` **et** `galerie-club.php`, même règle de
+permission et même structure que les actions `supprimer`/`ajouter_au_club`
+déjà en place), qui appelle `definir_categories_photo()` puis met à jour
+la colonne vestige `categorie_id` (première catégorie choisie, comme à
+l'insertion) pour rester cohérente si jamais elle était relue ailleurs un
+jour.
+
+**`definir_categories_photo()` (`inc/galerie_categories.php`) devient un
+vrai remplacement** (`DELETE` puis `INSERT`), pas un simple ajout comme
+avant : sans ce changement, modifier les catégories d'une photo n'aurait
+fait qu'en ajouter de nouvelles, sans jamais retirer celles décochées. Ce
+changement est sans risque pour les appels existants (dépôt initial, copie
+vers la Galerie du Club) : une photo neuve n'a encore aucune ligne à
+supprimer, le `DELETE` y est un no-op.
+
+**Modale générique, réutilisée depuis la modale EXIF du 09/09/2026** (voir
+plus haut) : ses classes CSS ont été renommées de `.modale-exif`/
+`.modale-exif-contenu`/`.modale-exif-fermer` vers `.modale`/`.modale-contenu`/
+`.modale-fermer` (les classes propres au contenu EXIF, `.modale-exif-
+chargement`/`.modale-exif-table`, restent inchangées) — même habillage de
+boîte de dialogue centrée pour toute modale du site, seul le contenu à
+l'intérieur change. `js/main.js` porte donc deux blocs indépendants
+(clic droit + EXIF, puis modifier catégories), chacun avec sa propre
+variable `modale`/fonction de fermeture, mais partageant ce même style.
+
+La liste complète des catégories (id → nom) et le jeton CSRF nécessaires à
+la modale sont rendus une seule fois par page dans un
+`<script type="application/json" data-categories-disponibles
+data-csrf="…">` (juste avant la lightbox, sur `galerie.php` et
+`galerie-club.php`), plutôt que répétés sur chaque carte — `js/main.js` le
+lit une fois au premier clic sur `[data-modifier-categories]`. Le bouton
+lui-même porte `data-photo-id` et `data-categories-actuelles` (les
+identifiants déjà cochés, séparés par des virgules, lus depuis
+`$categoriesParPhoto` — déjà calculé par chaque page pour grouper
+l'affichage). Un vrai POST classique (comme le reste du site, pas un
+`fetch`) : valider recharge la page et affiche le message de confirmation
+habituel (`afficher_message()`).
+
+Testé hors ligne (09/09/2026) : `definir_categories_photo()` en isolation
+(SQLite) — remplacement complet et non additif, ajout par-dessus un
+ensemble existant, aucune fuite vers une autre photo ; logique complète de
+l'action `modifier_categories` rejouée (auteur autorisé, tiers non
+autorisé refusé sans effet, responsable autorisé sur la photo de
+quelqu'un d'autre, aucune catégorie cochée refusé, identifiant de
+catégorie inconnu/supprimée ignoré sans planter, colonne vestige
+`categorie_id` mise à jour). Comportement de la modale vérifié par
+Playwright : ouverture au clic sur `✎`, titre, cases à cocher construites
+depuis la liste JSON avec la bonne catégorie pré-cochée, champs cachés
+(action/id/csrf) corrects, fermeture par la croix/clic extérieur/Échap.
+Non-régression de la modale EXIF revérifiée après le renommage des
+classes CSS partagées — toujours fonctionnelle à l'identique.
+
 ## Conventions
 
 - Tout le contenu visible est en **français**.

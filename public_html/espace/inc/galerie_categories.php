@@ -50,11 +50,17 @@ function categories_dune_photo(PDO $pdo, string $table, int $photo_id): array
     return array_map('intval', $requete->fetchAll(PDO::FETCH_COLUMN));
 }
 
-// Enregistre l'appartenance d'une photo à un ensemble de catégories — appelé
-// une fois après l'INSERT de la photo elle-même. $categorie_ids : identifiants
-// déjà validés (voir categories_galerie() pour la liste autorisée).
+// Fixe l'appartenance d'une photo à un ensemble de catégories — remplace
+// entièrement les catégories déjà enregistrées (d'abord un DELETE, jamais un
+// simple ajout), pour servir aussi bien à l'INSERT initial de la photo (rien
+// à supprimer, la photo est neuve) qu'à une modification ultérieure de ses
+// catégories (choix explicite de l'utilisatrice, 09/09/2026 — voir l'action
+// modifier_categories de galerie.php/galerie-club.php). $categorie_ids :
+// identifiants déjà validés (voir categories_galerie() pour la liste
+// autorisée).
 function definir_categories_photo(PDO $pdo, string $table, int $photo_id, array $categorie_ids): void
 {
+    $pdo->prepare("DELETE FROM {$table} WHERE photo_id = ?")->execute([$photo_id]);
     $inserer = $pdo->prepare("INSERT IGNORE INTO {$table} (photo_id, categorie_id) VALUES (?, ?)");
     foreach (array_unique($categorie_ids) as $categorie_id) {
         $inserer->execute([$photo_id, (int) $categorie_id]);

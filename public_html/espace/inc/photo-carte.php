@@ -28,6 +28,14 @@
  * accompagne `data-meta`) — lu par le filtre « Photographe » de
  * galerie-club.php (voir js/main.js) pour montrer/masquer une carte par
  * photographe, indépendamment de sa catégorie.
+ *
+ * Un bouton « ✎ » (09/09/2026, choix explicite de l'utilisatrice) permet à
+ * l'auteur ou à un responsable de modifier les catégories d'une photo déjà
+ * déposée, sans la supprimer et la redéposer — même règle de permission que
+ * Supprimer. Ouvre une modale générique (js/main.js, bloc « Modifier les
+ * catégories d'une photo ») ; attend en plus dans la portée appelante :
+ *   - $categoriesParPhoto : le résultat de categories_par_photo(), pour
+ *     connaître les catégories déjà cochées de cette photo.
  */
 declare(strict_types=1);
 
@@ -53,6 +61,12 @@ $image       = 'telecharger.php?type=' . $type . '&id=' . (int) $photo['id'];
               <input type="hidden" name="id" value="<?= (int) $photo['id'] ?>">
               <button type="submit" class="photo-supprimer-bouton" aria-label="Supprimer cette photo" title="Supprimer cette photo">✕</button>
             </form>
+            <div class="photo-modifier-categories">
+              <button type="button" class="photo-modifier-categories-bouton" data-modifier-categories
+                      data-photo-id="<?= (int) $photo['id'] ?>"
+                      data-categories-actuelles="<?= e(implode(',', $categoriesParPhoto[(int) $photo['id']] ?? [])) ?>"
+                      aria-label="Modifier les catégories de cette photo" title="Modifier les catégories de cette photo">✎</button>
+            </div>
             <?php if ($type === 'photo'): ?>
               <?php if (!empty($photo['copie_club_id'])): ?>
                 <span class="photo-partagee" aria-label="Déjà dans la Galerie du Club" title="Cette photo est aussi dans la Galerie du Club">✓</span>

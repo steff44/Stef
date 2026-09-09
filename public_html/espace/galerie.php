@@ -49,6 +49,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             definir_message('erreur', "Vous ne pouvez supprimer que vos propres photos.");
         }
+    } elseif (($_POST['action'] ?? '') === 'modifier_categories') {
+        // Reclasse une photo déjà déposée sans la supprimer/redéposer (choix
+        // explicite de l'utilisatrice, 09/09/2026) — même règle d'auteur que
+        // la suppression. definir_categories_photo() remplace entièrement
+        // les catégories existantes (voir inc/galerie_categories.php).
+        $id      = (int) ($_POST['id'] ?? 0);
+        $requete = $pdo->prepare('SELECT depose_par FROM photos_privees WHERE id = ?');
+        $requete->execute([$id]);
+        $photo      = $requete->fetch();
+        $categories = categories_galerie($pdo);
+        $categorie_ids = array_values(array_intersect(
+            array_map('intval', (array) ($_POST['categorie_ids'] ?? [])),
+            array_keys($categories)
+        ));
+
+        if (!$photo || ((int) $photo['depose_par'] !== $adherent['id'] && !est_administrateur())) {
+            definir_message('erreur', "Vous ne pouvez modifier que vos propres photos.");
+        } elseif (!$categorie_ids) {
+            definir_message('erreur', "Choisissez au moins une catégorie.");
+        } else {
+            definir_categories_photo($pdo, 'photos_privees_categories', $id, $categorie_ids);
+            $pdo->prepare('UPDATE photos_privees SET categorie_id = ? WHERE id = ?')->execute([$categorie_ids[0], $id]);
+            definir_message('succes', "Catégories mises à jour.");
+        }
     } elseif (($_POST['action'] ?? '') === 'ajouter_au_club') {
         // Partage une photo déjà déposée vers la Galerie du Club, sans la
         // retéléverser — choix explicite de l'utilisatrice, 06/09/2026. Même
@@ -354,6 +378,8 @@ titre_page(
     <?php endif; ?>
   <?php endif; ?>
 </div></section>
+
+<script type="application/json" data-categories-disponibles data-csrf="<?= e(jeton_csrf()) ?>"><?= json_encode($categories, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?></script>
 
 <div class="lightbox" data-lightbox role="dialog" aria-modal="true" aria-label="Photo en grand format">
   <button class="lightbox-close" aria-label="Fermer">✕</button>

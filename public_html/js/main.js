@@ -596,16 +596,16 @@
     function ouvrirModaleExif(urlPhoto) {
       fermerModale();
       modale = document.createElement("div");
-      modale.className = "modale-exif";
+      modale.className = "modale";
       modale.innerHTML =
-        '<div class="modale-exif-contenu" role="dialog" aria-modal="true" aria-label="Informations de la photo">' +
-        '<button type="button" class="modale-exif-fermer" aria-label="Fermer">✕</button>' +
+        '<div class="modale-contenu" role="dialog" aria-modal="true" aria-label="Informations de la photo">' +
+        '<button type="button" class="modale-fermer" aria-label="Fermer">✕</button>' +
         "<h3>Informations de la photo</h3>" +
         '<p class="modale-exif-chargement">Chargement…</p>' +
         "</div>";
       document.body.appendChild(modale);
       document.body.style.overflow = "hidden";
-      modale.querySelector(".modale-exif-fermer").addEventListener("click", fermerModale);
+      modale.querySelector(".modale-fermer").addEventListener("click", fermerModale);
       modale.addEventListener("click", function (e) {
         if (e.target === modale) fermerModale();
       });
@@ -687,6 +687,88 @@
       if (e.target.tagName === "IMG" && e.target.matches(SELECTEUR_PHOTOS)) {
         e.preventDefault();
       }
+    });
+  })();
+
+  /* ---------- Modifier les catégories d'une photo déjà déposée ----------
+     Choix explicite de l'utilisatrice, 09/09/2026 : à l'origine une
+     catégorie ne se choisissait qu'au moment du dépôt (galerie.php /
+     galerie-club.php) — un adhérent ou un responsable qui voulait
+     reclasser une photo déjà en ligne (ex. une nouvelle catégorie créée
+     après coup) devait la supprimer et la redéposer. Un bouton « ✎ » sur
+     chaque carte (inc/photo-carte.php, même condition d'auteur/responsable
+     que Supprimer) ouvre une modale — même habillage générique que la
+     modale EXIF ci-dessus (.modale/.modale-contenu/.modale-fermer) — avec
+     une case à cocher par catégorie disponible, pré-cochées selon
+     `data-categories-actuelles` posé sur le bouton. La liste complète des
+     catégories (id → nom) et le jeton CSRF sont lus une seule fois depuis
+     un `<script type="application/json" data-categories-disponibles>`
+     rendu par la page (galerie.php / galerie-club.php), toujours présent
+     dès qu'au moins une catégorie existe — sans lui, ce bouton n'apparaît
+     jamais côté PHP, donc rien à câbler ici pour son absence. Un vrai
+     POST classique (comme le reste du site), pas un fetch : la page se
+     recharge et affiche le message de confirmation habituel. */
+  (function () {
+    const scriptCategories = document.querySelector("[data-categories-disponibles]");
+    if (!scriptCategories) return;
+
+    let categoriesDisponibles = {};
+    try {
+      categoriesDisponibles = JSON.parse(scriptCategories.textContent || "{}");
+    } catch (e) {
+      return;
+    }
+    const csrf = scriptCategories.getAttribute("data-csrf") || "";
+
+    let modaleCategories = null;
+    function fermerModaleCategories() {
+      if (modaleCategories) {
+        modaleCategories.remove();
+        modaleCategories = null;
+        document.body.style.overflow = "";
+      }
+    }
+
+    document.addEventListener("click", function (e) {
+      const bouton = e.target.closest("[data-modifier-categories]");
+      if (!bouton) return;
+
+      const photoId = bouton.getAttribute("data-photo-id") || "";
+      const actuelles = (bouton.getAttribute("data-categories-actuelles") || "").split(",").filter(Boolean);
+
+      fermerModaleCategories();
+      modaleCategories = document.createElement("div");
+      modaleCategories.className = "modale";
+      const cases = Object.keys(categoriesDisponibles)
+        .map(function (id) {
+          const coche = actuelles.indexOf(id) !== -1 ? " checked" : "";
+          return (
+            '<label class="case-a-cocher"><input type="checkbox" name="categorie_ids[]" value="' +
+            id + '"' + coche + "> " + echapperHtml(categoriesDisponibles[id]) + "</label>"
+          );
+        })
+        .join("");
+      modaleCategories.innerHTML =
+        '<div class="modale-contenu" role="dialog" aria-modal="true" aria-label="Modifier les catégories de la photo">' +
+        '<button type="button" class="modale-fermer" aria-label="Fermer">✕</button>' +
+        "<h3>Modifier les catégories</h3>" +
+        '<form method="post">' +
+        '<input type="hidden" name="csrf" value="' + echapperHtml(csrf) + '">' +
+        '<input type="hidden" name="action" value="modifier_categories">' +
+        '<input type="hidden" name="id" value="' + echapperHtml(photoId) + '">' +
+        '<div class="categories-a-cocher">' + cases + "</div>" +
+        '<button type="submit" class="btn btn-primary" style="margin-top:16px;">Enregistrer</button>' +
+        "</form></div>";
+      document.body.appendChild(modaleCategories);
+      document.body.style.overflow = "hidden";
+      modaleCategories.querySelector(".modale-fermer").addEventListener("click", fermerModaleCategories);
+      modaleCategories.addEventListener("click", function (ev) {
+        if (ev.target === modaleCategories) fermerModaleCategories();
+      });
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") fermerModaleCategories();
     });
   })();
 

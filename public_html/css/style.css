@@ -806,6 +806,38 @@ a {
   pointer-events: none;
 }
 
+/* Bouton « Modifier les catégories », en incrustation en bas à droite —
+   troisième coin encore libre (Supprimer en haut à droite, Partager/
+   Partagée en haut à gauche sur la Galerie privée), choix explicite de
+   l'utilisatrice, 09/09/2026. Même rond que les deux autres boutons ; ouvre
+   la modale générique .modale (voir js/main.js, bloc « Modifier les
+   catégories d'une photo »). */
+.photo-modifier-categories {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  pointer-events: auto;
+}
+.photo-modifier-categories-bouton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(10, 9, 16, 0.65);
+  color: #fff;
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.photo-modifier-categories-bouton:hover {
+  background: var(--accent-gradient);
+  border-color: transparent;
+}
+
 /* Member cards */
 .members-grid {
   display: grid;
@@ -3113,9 +3145,13 @@ button.lien-retour {
   background: var(--bg);
 }
 
-/* Modale des informations techniques (EXIF) d'une photo, ouverte depuis le
-   menu contextuel ci-dessus. */
-.modale-exif {
+/* Modale générique en surimpression (choix explicite de l'utilisatrice,
+   09/09/2026) : d'abord posée pour les informations techniques (EXIF) d'une
+   photo, ouverte depuis le menu contextuel ci-dessus, puis réutilisée telle
+   quelle pour modifier les catégories d'une photo déjà déposée (voir
+   inc/photo-carte.php / js/main.js) — même habillage pour toute boîte de
+   dialogue centrée du site, seul le contenu à l'intérieur change. */
+.modale {
   position: fixed;
   inset: 0;
   z-index: 301;
@@ -3125,7 +3161,7 @@ button.lien-retour {
   justify-content: center;
   padding: 20px;
 }
-.modale-exif-contenu {
+.modale-contenu {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -3134,7 +3170,7 @@ button.lien-retour {
   width: 100%;
   position: relative;
 }
-.modale-exif-fermer {
+.modale-fermer {
   position: absolute;
   top: 14px;
   right: 14px;
@@ -3145,7 +3181,7 @@ button.lien-retour {
   cursor: pointer;
   line-height: 1;
 }
-.modale-exif-contenu h3 {
+.modale-contenu h3 {
   margin: 0 0 16px;
   font-family: var(--font-heading);
   padding-right: 24px;
