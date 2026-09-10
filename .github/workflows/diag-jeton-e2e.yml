@@ -62,11 +62,20 @@ jobs:
           } > /tmp/resultat.txt 2>&1
           cat /tmp/resultat.txt
 
+      - name: Comparatif From (myfocal.online vs focalclub.fr) sur le vrai contenu
+        run: |
+          {
+            echo "=== Comparatif From: sur l'e-mail réel 'inscription en attente' ==="
+            curl -sS "$BASE/espace/diag-jeton.php?secret=$SECRET&action=comparer_expediteur&identifiant=$(python3 -c "import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1]))" "$IDENTIFIANT")"
+            echo ""
+          } > /tmp/resultat-from.txt 2>&1
+          cat /tmp/resultat-from.txt
+
       - name: Publier le résultat comme check run
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          CONTENU=$(cat /tmp/resultat.txt | head -c 60000)
+          CONTENU=$(cat /tmp/resultat.txt /tmp/resultat-from.txt | head -c 60000)
           curl -sS -X POST \
             -H "Authorization: Bearer $GH_TOKEN" \
             -H "Accept: application/vnd.github+json" \
