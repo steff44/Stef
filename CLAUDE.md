@@ -3852,10 +3852,14 @@ site myfocal.online »), un oubli de la bascule du 30/08/2026 vers
 une provenance externe ; un commentaire dans `.htaccess`) sont
 légitimes et inchangées — `myfocal.online` reste un vrai second site.
 
-Une fois la réception confirmée sur Gmail, les diagnostics temporaires
+**Confirmé par l'utilisatrice** (10/09/2026, même jour) : « je viens de
+recevoir trois mails dont un pour réinitialisation, sur gmail. » — le
+correctif `From: noreply@focalclub.fr` résout définitivement le
+problème. Les quatre diagnostics temporaires
 (`espace/diag-reset-mail.php`, `espace/diag-jeton.php`,
 `.github/workflows/diag-jeton-e2e.yml`, `.github/workflows/
-diag-dns-spf.yml`) seront supprimés.
+diag-dns-spf.yml`) ont été supprimés une fois cette confirmation
+obtenue, comme prévu.
 
 ## Conventions
 
