@@ -1048,6 +1048,15 @@ a {
   padding: 40px 0;
 }
 
+/* « Voir plus de photos » sous la grille de « Notre Galerie » (choix
+   explicite de l'utilisatrice, 10/09/2026 : limiter l'affichage initial à
+   8 lignes de 4 photos, sans jamais retirer de photo du site — voir
+   js/main.js, bloc « Page galerie »). */
+.voir-plus-bar {
+  text-align: center;
+  margin: 24px 0 0;
+}
+
 /* Lightbox */
 .lightbox {
   position: fixed;

@@ -1145,7 +1145,20 @@
     const grid = document.querySelector("[data-photos]");
     const emptyMessage = document.querySelector("[data-gallery-empty]");
     const filtersRoot = document.querySelector("[data-theme-filters]");
+    const voirPlusBar = document.querySelector("[data-voir-plus-bar]");
+    const voirPlusBtn = document.querySelector("[data-voir-plus]");
     let filtreActif = { type: "toutes", valeur: "" };
+
+    // Limite d'affichage sur « Notre Galerie » (choix explicite de
+    // l'utilisatrice, 10/09/2026) : 8 lignes de 4 photos visibles au départ
+    // (la grille est responsive — auto-fill — donc « 4 par ligne » n'est
+    // vrai qu'à la largeur de référence, mais 32 reste le repère demandé).
+    // « Voir plus » révèle 32 photos supplémentaires à chaque clic, sans
+    // jamais en retirer du site — la lightbox et le diaporama continuent de
+    // porter sur toutes les photos du filtre actif, visibles ou non
+    // encore, pas seulement celles déjà révélées.
+    const PHOTOS_PAR_PAGE = 32;
+    let nombreVisible = PHOTOS_PAR_PAGE;
 
     function photosFiltrees() {
       if (filtreActif.type === "theme") {
@@ -1163,10 +1176,18 @@
     function renderGrid() {
       const filtered = photosFiltrees();
       grid.innerHTML = "";
-      filtered.forEach(function (photo) {
+      filtered.slice(0, nombreVisible).forEach(function (photo) {
         grid.appendChild(buildPhotoCard(photo, photo.hue, photo.membreNom, photo.index, filtered));
       });
       if (emptyMessage) emptyMessage.hidden = filtered.length > 0;
+      if (voirPlusBar) voirPlusBar.hidden = filtered.length <= nombreVisible;
+    }
+
+    if (voirPlusBtn) {
+      voirPlusBtn.addEventListener("click", function () {
+        nombreVisible += PHOTOS_PAR_PAGE;
+        renderGrid();
+      });
     }
 
     const toutesLesPhotos = "Toutes";
@@ -1211,6 +1232,7 @@
         selectionnerPastille(btn);
         fermerPhotographes();
         filtreActif = theme === toutesLesPhotos ? { type: "toutes" } : { type: "theme", valeur: theme };
+        nombreVisible = PHOTOS_PAR_PAGE;
         renderGrid();
       });
       filtersRoot.appendChild(btn);
@@ -1252,6 +1274,7 @@
           selectionnerPastille(btn);
           boutonPhotographe.classList.add("is-active");
           filtreActif = { type: "photographe", valeur: nom };
+          nombreVisible = PHOTOS_PAR_PAGE;
           renderGrid();
         });
         photographesPanel.appendChild(btn);

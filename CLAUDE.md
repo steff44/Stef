@@ -3354,6 +3354,49 @@ exactement le même titre et le même auteur (reproduisant le cas de Mylène
 Coucault), chacune cliquée ouvre désormais bien sa propre image plutôt que
 systématiquement la première.
 
+## Notre Galerie : affichage limité à 8 lignes de 4 photos, avec « Voir plus »
+
+**Choix explicite de l'utilisatrice, 10/09/2026** : « je voudrais que tu
+limites à 8 le nombre de lignes de 4 photos visibles sur Notre Galerie »
+(le `<h1>` de `galerie.html`, la page publique). But : éviter une page qui
+s'allonge indéfiniment à mesure que les adhérents déposent des photos dans
+la Galerie du Club, sans jamais empêcher de voir le reste.
+
+`js/main.js` (bloc « Page galerie ») limite désormais le rendu à
+`PHOTOS_PAR_PAGE` (32 — la grille est en `auto-fill` donc responsive, « 4
+par ligne » n'est vrai qu'à la largeur de référence, mais 32 reste le
+repère demandé) via `filtered.slice(0, nombreVisible)` dans `renderGrid()`,
+plutôt que d'afficher tout `filtered`. Un bouton **« Voir plus de
+photos »** (`.voir-plus-bar`, sous la grille, style `.btn.btn-ghost` déjà
+utilisé ailleurs) n'apparaît que s'il reste des photos au-delà de
+`nombreVisible` ; chaque clic ajoute 32 photos supplémentaires
+(`nombreVisible += PHOTOS_PAR_PAGE`) sans jamais recharger la page. Changer
+de pastille de filtre (thème ou photographe) **réinitialise** `nombreVisible`
+à 32 — sans quoi une position de défilement acquise sur « Toutes » se
+propagerait à tort à une catégorie bien plus petite. Aucune photo n'est
+jamais retirée du site : seul l'affichage initial est plafonné, comme le
+masquage des catégories vides (27/08/2026) ou la réduction des bandeaux de
+titre — pas une pagination avec des photos qui disparaîtraient.
+
+**La lightbox et le diaporama continuent de porter sur `filtered` en
+entier**, pas seulement sur les photos déjà révélées : `buildPhotoCard()`
+reçoit toujours `filtered` (voir le correctif du bug de vignette dupliquée
+juste au-dessus, `photosForLightbox.indexOf(photo)`), donc les flèches
+précédente/suivante et le diaporama peuvent avancer au-delà de la 32ᵉ
+photo affichée — seule la grille elle-même est tronquée à l'écran.
+
+Portée volontairement limitée à `galerie.html` : ni la Galerie du Club
+(`espace/galerie-club.php`, groupée par catégorie côté serveur, hors
+périmètre demandé) ni la sélection de photos récentes de l'accueil (8
+photos au maximum de toute façon) ne sont concernées.
+
+Testé hors ligne (10/09/2026) avec Playwright : 55 photos réparties entre
+deux catégories (50 « Portrait », 5 « Paysage »), filtre « Toutes » →
+32 visibles et bouton affiché ; clic sur « Voir plus » → les 55 affichées,
+bouton masqué ; bascule sur « Paysage » (5 photos) → les 5 affichées sans
+bouton (réinitialisation confirmée) ; retour sur « Toutes » → de nouveau
+32 visibles et bouton réaffiché. Aucune erreur JavaScript.
+
 ## Conventions
 
 - Tout le contenu visible est en **français**.
