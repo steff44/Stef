@@ -3614,9 +3614,46 @@ partout ailleurs sur le site pour ce genre d'indication —, énonce
 maintenant la règle en clair : « Le mot de passe doit contenir au moins 10
 caractères, une majuscule et un caractère spécial. » Le label repasse à
 « Nouveau mot de passe » simple, la note portant désormais seule ce texte.
-`inscription.php` (qui garde son propre label avec la règle entre
-parenthèses, sans note dédiée) n'a pas été touché, la demande portant sur
-cette page.
+
+**Même traitement appliqué à `inscription.php` le jour même** (« Fais la
+même chose sur inscription.php ») : le label du champ « Mot de passe »
+perd sa parenthèse, remplacée par le même `<p class="form-note">` sous le
+champ, avec exactement le même texte. `nouveau-mot-de-passe.php` et
+`inscription.php` affichent donc désormais la même indication, à l'identique.
+
+**Signalé le même jour : aucun e-mail reçu en testant la réinitialisation
+en libre-service** (« quand on fait la nouvelle manip aucun mail n'est
+envoyé à l'adhérent »). Le code de `mot-de-passe-oublie.php` lui-même est
+correct (même fonction `envoyer_mail()` que les autres notifications du
+site, déjà fiable depuis le correctif DMARC du 23/08/2026) — la cause la
+plus probable n'est pas un bug d'envoi mais un compte sans e-mail
+renseigné : `installation.php` (le tout premier compte, celui du
+président/responsable qui installe le site) rend l'e-mail **facultatif**
+(« E-mail (facultatif) »), contrairement à `inscription.php` qui l'exige
+depuis toujours. Si le compte testé — vraisemblablement celui de
+l'utilisatrice elle-même, le tout premier compte du site — n'a jamais eu
+d'e-mail renseigné depuis, `mot-de-passe-oublie.php` ne trouve aucune
+adresse à qui écrire et se tait **silencieusement**, par conception
+(anti-énumération : le même message générique s'affiche que le compte
+existe ou non, pour ne jamais laisser deviner quels identifiants sont
+valides) — d'où l'impression qu' « aucun mail n'est envoyé » alors qu'aucun
+n'a en réalité été tenté. **À vérifier en premier** : dans l'Annuaire
+(`annuaire.php`) ou la gestion des adhérents (`adherents.php`), le compte
+utilisé pour le test a-t-il bien une adresse e-mail enregistrée ? Sinon, il
+suffit de l'ajouter (modifiable depuis l'Annuaire) puis de refaire l'essai.
+Deux améliorations apportées en attendant cette vérification :
+- **Journalisation** : `mot-de-passe-oublie.php` consigne désormais dans
+  `error_log` (« … mais aucun e-mail n'est renseigné sur ce compte »)
+  chaque fois qu'un compte est trouvé mais n'a pas d'e-mail — jusque-là,
+  ce cas ne laissait absolument aucune trace, rendant ce diagnostic
+  impossible à confirmer sans deviner. Permet de vérifier la vraie cause
+  par les journaux si le problème persiste après avoir renseigné un
+  e-mail.
+- **Rappel spams** : le corps de l'e-mail de réinitialisation reprend
+  désormais le même rappel en gras que celui de l'inscription (« Pensez à
+  vérifier aussi votre dossier de courriers indésirables ») — absent
+  jusqu'ici de ce message précis, pour couvrir aussi le cas où l'e-mail
+  part bien mais atterrit en spam.
 
 ## Conventions
 

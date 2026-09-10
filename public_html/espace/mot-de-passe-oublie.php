@@ -57,6 +57,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $requete->execute([$saisie, $saisie]);
         $adherent = $requete->fetch();
 
+        // Consigné même en cas de succès de la recherche : un compte trouvé
+        // mais sans e-mail renseigné (le tout premier compte, créé par
+        // installation.php, où l'e-mail est facultatif — voir plus bas) ne
+        // reçoit jamais de lien, silencieusement comme voulu (anti-
+        // énumération), mais sans aucune trace nulle part sinon. Utile pour
+        // diagnostiquer un « je n'ai rien reçu » qui ne serait pas un
+        // problème d'envoi mais simplement une fiche adhérent incomplète.
+        if ($adherent && !$adherent['email']) {
+            error_log("Espace adhérents — réinitialisation demandée pour {$adherent['identifiant']} (id {$adherent['id']}), mais aucun e-mail n'est renseigné sur ce compte.");
+        }
+
         if ($adherent && $adherent['email']) {
             $jeton = bin2hex(random_bytes(32));
             $pdo->prepare(
@@ -79,6 +90,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 . "Il est valable une heure :\n" . $lien . "\n\n"
                 . "**Si vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail** : "
                 . "votre mot de passe actuel reste inchangé.\n\n"
+                . "**Pensez à vérifier aussi votre dossier de courriers indésirables (spams)** "
+                . "si vous ne voyez pas cet e-mail arriver.\n\n"
                 . "À bientôt,\nLe Focal Club Turballais"
             );
         }

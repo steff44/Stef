@@ -250,10 +250,11 @@ titre_page("Rejoignez le club", "Créez votre compte pour accéder à l'espace a
                value="<?= e($valeurs['boitier']) ?>" placeholder="Canon EOS R6">
       </div>
       <div class="field">
-        <label for="mot_de_passe">Mot de passe (10 caractères minimum, avec au moins une majuscule et un caractère spécial)</label>
+        <label for="mot_de_passe">Mot de passe</label>
         <input type="password" id="mot_de_passe" name="mot_de_passe" required minlength="10"
                pattern="(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{10,}"
                title="Au moins 10 caractères, une majuscule et un caractère spécial">
+        <p class="form-note">Le mot de passe doit contenir au moins 10 caractères, une majuscule et un caractère spécial.</p>
       </div>
       <div class="field">
         <label for="confirmation">Confirmer le mot de passe</label>
