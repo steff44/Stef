@@ -3354,7 +3354,7 @@ exactement le même titre et le même auteur (reproduisant le cas de Mylène
 Coucault), chacune cliquée ouvre désormais bien sa propre image plutôt que
 systématiquement la première.
 
-## Notre Galerie : affichage limité à 8 lignes de 4 photos, avec « Voir plus »
+## Notre Galerie : affichage limité à 8 lignes de 4 photos, pagination numérotée
 
 **Choix explicite de l'utilisatrice, 10/09/2026** : « je voudrais que tu
 limites à 8 le nombre de lignes de 4 photos visibles sur Notre Galerie »
@@ -3362,40 +3362,52 @@ limites à 8 le nombre de lignes de 4 photos visibles sur Notre Galerie »
 s'allonge indéfiniment à mesure que les adhérents déposent des photos dans
 la Galerie du Club, sans jamais empêcher de voir le reste.
 
-`js/main.js` (bloc « Page galerie ») limite désormais le rendu à
-`PHOTOS_PAR_PAGE` (32 — la grille est en `auto-fill` donc responsive, « 4
-par ligne » n'est vrai qu'à la largeur de référence, mais 32 reste le
-repère demandé) via `filtered.slice(0, nombreVisible)` dans `renderGrid()`,
-plutôt que d'afficher tout `filtered`. Un bouton **« Voir plus de
-photos »** (`.voir-plus-bar`, sous la grille, style `.btn.btn-ghost` déjà
-utilisé ailleurs) n'apparaît que s'il reste des photos au-delà de
-`nombreVisible` ; chaque clic ajoute 32 photos supplémentaires
-(`nombreVisible += PHOTOS_PAR_PAGE`) sans jamais recharger la page. Changer
-de pastille de filtre (thème ou photographe) **réinitialise** `nombreVisible`
-à 32 — sans quoi une position de défilement acquise sur « Toutes » se
-propagerait à tort à une catégorie bien plus petite. Aucune photo n'est
-jamais retirée du site : seul l'affichage initial est plafonné, comme le
-masquage des catégories vides (27/08/2026) ou la réduction des bandeaux de
-titre — pas une pagination avec des photos qui disparaîtraient.
+**Premier essai (bouton « Voir plus »), remplacé le jour même** : l'idée
+initiale accumulait 32 photos de plus à chaque clic sur un bouton
+« Voir plus de photos » sous la grille. Après l'avoir vu en ligne,
+l'utilisatrice a demandé autre chose : « je ne veux pas "Plus de photos"
+mais qu'il y ait des pages 1,2,3.... etc... » — une vraie pagination
+numérotée, chaque page **remplaçant** la précédente plutôt que s'y
+ajoutant.
+
+`js/main.js` (bloc « Page galerie ») découpe désormais `filtered` en pages
+de `PHOTOS_PAR_PAGE` (32 — la grille est en `auto-fill` donc responsive,
+« 4 par ligne » n'est vrai qu'à la largeur de référence, mais 32 reste le
+repère demandé) : `pageActuelle` (1 par défaut) et
+`filtered.slice(debut, debut + PHOTOS_PAR_PAGE)` dans `renderGrid()`.
+`renderPagination()` construit un bouton par page dans
+`<nav data-gallery-pagination>` (`.gallery-pagination-btn`, même habillage
+que `.theme-filter` — pastille arrondie, dégradé d'accent sur la page
+active) ; la nav elle-même reste masquée (`hidden`) tant qu'il n'y a qu'une
+seule page. Cliquer un numéro change `pageActuelle`, ré-affiche la grille
+et fait défiler la page jusqu'à la grille (`grid.scrollIntoView()`) —
+utile quand on clique depuis un numéro en bas de page. Changer de pastille
+de filtre (thème ou photographe) **réinitialise** `pageActuelle` à 1 —
+sans quoi une page 3 atteinte sur « Toutes » resterait sélectionnée sur une
+catégorie bien plus petite qui n'a pas de 3ᵉ page (`renderGrid()` ramène
+de toute façon `pageActuelle` à la dernière page valide si le total de
+pages diminue). Aucune photo n'est jamais retirée du site : seul
+l'affichage par page est plafonné, comme le masquage des catégories vides
+(27/08/2026) ou la réduction des bandeaux de titre.
 
 **La lightbox et le diaporama continuent de porter sur `filtered` en
-entier**, pas seulement sur les photos déjà révélées : `buildPhotoCard()`
+entier**, pas seulement sur la page affichée à l'écran : `buildPhotoCard()`
 reçoit toujours `filtered` (voir le correctif du bug de vignette dupliquée
 juste au-dessus, `photosForLightbox.indexOf(photo)`), donc les flèches
-précédente/suivante et le diaporama peuvent avancer au-delà de la 32ᵉ
-photo affichée — seule la grille elle-même est tronquée à l'écran.
+précédente/suivante et le diaporama peuvent avancer au-delà de la page
+actuellement affichée — seule la grille elle-même est paginée à l'écran.
 
 Portée volontairement limitée à `galerie.html` : ni la Galerie du Club
 (`espace/galerie-club.php`, groupée par catégorie côté serveur, hors
 périmètre demandé) ni la sélection de photos récentes de l'accueil (8
 photos au maximum de toute façon) ne sont concernées.
 
-Testé hors ligne (10/09/2026) avec Playwright : 55 photos réparties entre
-deux catégories (50 « Portrait », 5 « Paysage »), filtre « Toutes » →
-32 visibles et bouton affiché ; clic sur « Voir plus » → les 55 affichées,
-bouton masqué ; bascule sur « Paysage » (5 photos) → les 5 affichées sans
-bouton (réinitialisation confirmée) ; retour sur « Toutes » → de nouveau
-32 visibles et bouton réaffiché. Aucune erreur JavaScript.
+Testé hors ligne (10/09/2026) avec Playwright : 75 photos réparties entre
+deux catégories (70 « Portrait », 5 « Paysage »), filtre « Toutes » →
+page 1/3 (32 photos, boutons 1/2/3 affichés) ; clic sur la page 3 → les
+11 photos restantes affichées, bouton 3 actif ; bascule sur « Paysage »
+(5 photos, une seule page) → pagination masquée ; retour sur « Toutes » →
+page 1 à nouveau (pas restée sur la page 3). Aucune erreur JavaScript.
 
 ## Conventions
 

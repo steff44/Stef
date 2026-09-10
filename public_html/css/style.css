@@ -1048,13 +1048,42 @@ a {
   padding: 40px 0;
 }
 
-/* « Voir plus de photos » sous la grille de « Notre Galerie » (choix
-   explicite de l'utilisatrice, 10/09/2026 : limiter l'affichage initial à
-   8 lignes de 4 photos, sans jamais retirer de photo du site — voir
-   js/main.js, bloc « Page galerie »). */
-.voir-plus-bar {
-  text-align: center;
+/* Pagination numérotée sous la grille de « Notre Galerie » (choix explicite
+   de l'utilisatrice, 10/09/2026 : limiter l'affichage à 8 lignes de 4
+   photos par page, avec des numéros de page plutôt qu'un bouton « Voir
+   plus » — voir js/main.js, bloc « Page galerie »). Boutons construits en
+   JavaScript, un par page ; même habillage que .theme-filter (pastille
+   arrondie, dégradé d'accent pour la page active) pour rester cohérent
+   avec le reste de la page. */
+.gallery-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
   margin: 24px 0 0;
+}
+.gallery-pagination-btn {
+  min-width: 40px;
+  padding: 8px 14px;
+  border-radius: var(--radius-btn);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+.gallery-pagination-btn:hover {
+  color: var(--text);
+  border-color: var(--accent-3);
+}
+.gallery-pagination-btn.is-active {
+  background: var(--accent-gradient);
+  border-color: transparent;
+  color: #fff;
+  cursor: default;
 }
 
 /* Lightbox */

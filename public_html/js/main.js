@@ -1145,20 +1145,19 @@
     const grid = document.querySelector("[data-photos]");
     const emptyMessage = document.querySelector("[data-gallery-empty]");
     const filtersRoot = document.querySelector("[data-theme-filters]");
-    const voirPlusBar = document.querySelector("[data-voir-plus-bar]");
-    const voirPlusBtn = document.querySelector("[data-voir-plus]");
+    const paginationRoot = document.querySelector("[data-gallery-pagination]");
     let filtreActif = { type: "toutes", valeur: "" };
 
     // Limite d'affichage sur « Notre Galerie » (choix explicite de
-    // l'utilisatrice, 10/09/2026) : 8 lignes de 4 photos visibles au départ
+    // l'utilisatrice, 10/09/2026) : 8 lignes de 4 photos visibles par page
     // (la grille est responsive — auto-fill — donc « 4 par ligne » n'est
     // vrai qu'à la largeur de référence, mais 32 reste le repère demandé).
-    // « Voir plus » révèle 32 photos supplémentaires à chaque clic, sans
-    // jamais en retirer du site — la lightbox et le diaporama continuent de
-    // porter sur toutes les photos du filtre actif, visibles ou non
-    // encore, pas seulement celles déjà révélées.
+    // Un premier essai proposait un bouton « Voir plus » qui accumulait les
+    // photos ; l'utilisatrice a demandé une vraie pagination numérotée
+    // (1, 2, 3…) à la place, chaque page remplaçant la précédente plutôt
+    // que s'y ajouter.
     const PHOTOS_PAR_PAGE = 32;
-    let nombreVisible = PHOTOS_PAR_PAGE;
+    let pageActuelle = 1;
 
     function photosFiltrees() {
       if (filtreActif.type === "theme") {
@@ -1173,21 +1172,40 @@
       return pool;
     }
 
+    function renderPagination(totalPages) {
+      if (!paginationRoot) return;
+      paginationRoot.innerHTML = "";
+      if (totalPages <= 1) {
+        paginationRoot.hidden = true;
+        return;
+      }
+      paginationRoot.hidden = false;
+      for (let i = 1; i <= totalPages; i++) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "gallery-pagination-btn" + (i === pageActuelle ? " is-active" : "");
+        btn.textContent = String(i);
+        if (i === pageActuelle) btn.setAttribute("aria-current", "page");
+        btn.addEventListener("click", function () {
+          pageActuelle = i;
+          renderGrid();
+          grid.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+        paginationRoot.appendChild(btn);
+      }
+    }
+
     function renderGrid() {
       const filtered = photosFiltrees();
+      const totalPages = Math.max(1, Math.ceil(filtered.length / PHOTOS_PAR_PAGE));
+      if (pageActuelle > totalPages) pageActuelle = totalPages;
+      const debut = (pageActuelle - 1) * PHOTOS_PAR_PAGE;
       grid.innerHTML = "";
-      filtered.slice(0, nombreVisible).forEach(function (photo) {
+      filtered.slice(debut, debut + PHOTOS_PAR_PAGE).forEach(function (photo) {
         grid.appendChild(buildPhotoCard(photo, photo.hue, photo.membreNom, photo.index, filtered));
       });
       if (emptyMessage) emptyMessage.hidden = filtered.length > 0;
-      if (voirPlusBar) voirPlusBar.hidden = filtered.length <= nombreVisible;
-    }
-
-    if (voirPlusBtn) {
-      voirPlusBtn.addEventListener("click", function () {
-        nombreVisible += PHOTOS_PAR_PAGE;
-        renderGrid();
-      });
+      renderPagination(totalPages);
     }
 
     const toutesLesPhotos = "Toutes";
@@ -1232,7 +1250,7 @@
         selectionnerPastille(btn);
         fermerPhotographes();
         filtreActif = theme === toutesLesPhotos ? { type: "toutes" } : { type: "theme", valeur: theme };
-        nombreVisible = PHOTOS_PAR_PAGE;
+        pageActuelle = 1;
         renderGrid();
       });
       filtersRoot.appendChild(btn);
@@ -1274,7 +1292,7 @@
           selectionnerPastille(btn);
           boutonPhotographe.classList.add("is-active");
           filtreActif = { type: "photographe", valeur: nom };
-          nombreVisible = PHOTOS_PAR_PAGE;
+          pageActuelle = 1;
           renderGrid();
         });
         photographesPanel.appendChild(btn);
