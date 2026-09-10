@@ -116,5 +116,48 @@ if ($action === 'tester_envoi_reel') {
     exit;
 }
 
+if ($action === 'comparer_expediteur') {
+    // Envoie le VRAI contenu de l'e-mail "en attente de validation"
+    // (inscription.php) deux fois, avec un From différent à chaque fois —
+    // myfocal.online (actuel) contre focalclub.fr (candidat) — pour établir
+    // si le domaine du From explique pourquoi cet e-mail précis n'arrive
+    // jamais, alors que le diagnostic simple (tester_envoi_reel) arrive.
+    $adherent = trouver($pdo, $identifiant);
+    if (!$adherent || !$adherent['email']) {
+        echo json_encode(['erreur' => 'compte introuvable ou sans e-mail']);
+        exit;
+    }
+
+    $corps_reel = "Bonjour {$adherent['nom']},\n\n"
+        . "Votre inscription à l'espace adhérents du Focal Club Turballais a bien été "
+        . "enregistrée. Elle est en attente de validation par un responsable du club : "
+        . "vous recevrez un nouvel e-mail dès que votre compte sera activé.\n\n"
+        . "**Pensez à vérifier aussi votre dossier de courriers indésirables (spams)** "
+        . "si vous ne voyez pas cet e-mail de validation arriver.\n\n"
+        . "À bientôt,\nLe Focal Club Turballais";
+    $corps_html = corps_html($corps_reel);
+
+    $resultats = [];
+    foreach (['myfocal.online', 'focalclub.fr'] as $domaine) {
+        $entetes = "From: Focal Club Turballais <noreply@{$domaine}>\r\n"
+                 . "Reply-To: {$adherent['email']}\r\n"
+                 . "Content-Type: text/html; charset=UTF-8\r\n";
+        $sujet = '=?UTF-8?B?' . base64_encode("[Comparatif From] Depuis {$domaine}") . '?=';
+
+        error_clear_last();
+        $reussi = @mail($adherent['email'], $sujet, $corps_html, $entetes);
+        $erreur = error_get_last();
+
+        $resultats[] = [
+            'domaine_from' => $domaine,
+            'envoi_reussi' => $reussi,
+            'derniere_erreur' => $erreur['message'] ?? null,
+        ];
+    }
+
+    echo json_encode(['ok' => true, 'destinataire' => $adherent['email'], 'resultats' => $resultats]);
+    exit;
+}
+
 http_response_code(400);
-echo json_encode(['erreur' => 'action inconnue (effacer, lire, tester_envoi_reel)']);
+echo json_encode(['erreur' => 'action inconnue (effacer, lire, tester_envoi_reel, comparer_expediteur)']);
