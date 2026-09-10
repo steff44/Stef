@@ -1129,10 +1129,12 @@ a {
   align-items: center;
   justify-content: center;
   /* Fondu entre les photos du diaporama (choix explicite de l'utilisatrice,
-     10/09/2026) — .is-fading est posée/retirée par renderLightbox() dans
+     10/09/2026, allongé le jour même — « la transition est un peu courte »,
+     220ms → 600ms) — .is-fading est posée/retirée par renderLightbox() dans
      js/main.js, uniquement pour l'avance automatique du diaporama, jamais
-     pour les flèches précédente/suivante qui restent instantanées. */
-  transition: opacity 0.22s ease;
+     pour les flèches précédente/suivante qui restent instantanées. Même
+     durée des deux côtés (DUREE_FONDU_MS en JS). */
+  transition: opacity 0.6s ease;
 }
 .lightbox-frame.is-fading {
   opacity: 0;

@@ -427,7 +427,7 @@
   // Le fondu ne s'applique qu'à l'avance automatique du diaporama, jamais
   // aux flèches précédente/suivante ni à l'ouverture de la lightbox, qui
   // restent instantanées comme avant.
-  const DUREE_FONDU_MS = 220;
+  const DUREE_FONDU_MS = 600;
   let jetonFondu = 0;
 
   const ICONE_DIAPORAMA_JOUER =

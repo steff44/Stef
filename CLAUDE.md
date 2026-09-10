@@ -3484,6 +3484,12 @@ lancement du diaporama → `.is-fading` observée pendant l'avance
 automatique, retirée ensuite avec la photo suivante bien affichée. Aucune
 erreur JavaScript.
 
+**Durée allongée le jour même** (« La transition est un peu courte ») :
+220 ms → 600 ms, changée aux deux endroits qui doivent rester synchronisés
+— `DUREE_FONDU_MS` (`js/main.js`) et `transition: opacity` sur
+`.lightbox-frame` (`css/style.css`). L'intervalle du diaporama
+(3500 ms, inchangé) laisse largement la place à ce fondu plus long.
+
 ## Conventions
 
 - Tout le contenu visible est en **français**.
