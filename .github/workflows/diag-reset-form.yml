@@ -41,9 +41,14 @@ jobs:
           } > /tmp/resultat-diag.txt 2>&1
           cat /tmp/resultat-diag.txt
 
-      - name: Publier le résultat en artefact
-        uses: actions/upload-artifact@v4
-        with:
-          name: resultat-diag
-          path: /tmp/resultat-diag.txt
-          retention-days: 1
+      - name: Publier le résultat comme check run (artefacts inaccessibles depuis le sandbox)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          CONTENU=$(cat /tmp/resultat-diag.txt | head -c 60000)
+          curl -sS -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${{ github.repository }}/check-runs \
+            -d "$(jq -n --arg sha "${{ github.sha }}" --arg text "$CONTENU" \
+              '{name: "resultat-diag", head_sha: $sha, status: "completed", conclusion: "neutral", output: {title: "Résultat diagnostic", summary: "voir texte", text: $text}}')"
