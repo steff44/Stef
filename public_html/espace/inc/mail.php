@@ -43,18 +43,37 @@ function valeur_parametre(PDO $pdo, string $cle): ?string
  * d'aboutir — l'action en base a déjà réussi quand celle-ci est appelée.
  *
  * Le champ From utilise toujours une adresse du domaine du site
- * (myfocal.online), jamais l'adresse de contact réelle (souvent une
- * adresse Gmail) : Hostinger envoie mail() sous ce domaine, et un From qui
- * prétend venir d'une autre adresse (ex. Gmail) échoue à la vérification
- * DMARC du destinataire — Gmail rejette alors le message en silence, sans
- * même le déposer dans les spams. Piège constaté le 23/08/2026 : aucun mail
- * de notification reçu malgré une adresse correctement réglée dans
- * Réglages du site. $expediteur reste utilisé comme Reply-To, pour que
- * répondre au mail atterrisse bien sur la bonne adresse.
+ * (focalclub.fr, voir plus bas — pas la vraie adresse de contact du club,
+ * souvent une adresse Gmail), $expediteur restant utilisé comme Reply-To
+ * pour que répondre au mail atterrisse bien sur la bonne adresse.
+ *
+ * **Ce domaine a changé le 10/09/2026** (choix explicite de l'utilisatrice,
+ * qui a signalé ne plus recevoir aucun e-mail de réinitialisation sur
+ * Gmail — ni en boîte de réception, ni en spam — alors qu'une adresse
+ * Hostinger comme admin@focalclub.fr recevait tout normalement, la même
+ * asymétrie inbox-Hostinger/rien-Gmail que pour les autres notifications
+ * du site). Avant ce jour, `From:` utilisait `noreply@myfocal.online` :
+ * réglage posé le 23/08/2026, quand `myfocal.online` était encore l'unique
+ * domaine du site et que « Hostinger envoie mail() sous ce domaine »
+ * suffisait à décrire l'infrastructure. Depuis la bascule du 30/08/2026,
+ * qui a fait de `focalclub.fr` un second site Hostinger entièrement
+ * séparé (voir CLAUDE.md, « Pièges déjà rencontrés »), cette hypothèse
+ * n'a jamais été revérifiée. Un diagnostic DNS direct (10/09/2026, requêtes
+ * `dig` depuis un workflow GitHub Actions, le sandbox ne pouvant pas
+ * interroger le DNS public) a confirmé l'écart : `focalclub.fr` porte un
+ * enregistrement SPF valide (`v=spf1 include:_spf.mail.hostinger.com
+ * ~all`), un DMARC (`p=none`) et des MX Hostinger — tandis que
+ * `myfocal.online` n'a **aucun** enregistrement SPF, MX ni DMARC. Un
+ * `From:` sur un domaine sans SPF est exactement le signal qui pousse
+ * Gmail à rejeter silencieusement un message (pas même en spam), tout en
+ * laissant passer sans problème une remise locale vers une boîte du même
+ * hébergeur (d'où « ça marche sur admin@focalclub.fr, jamais sur Gmail »).
+ * `From:` pointe donc maintenant vers `noreply@focalclub.fr`, le domaine
+ * réellement authentifié.
  */
 function envoyer_mail(string $destinataire, string $expediteur, string $sujet, string $corps): void
 {
-    $entetes = "From: Focal Club Turballais <noreply@myfocal.online>\r\n"
+    $entetes = "From: Focal Club Turballais <noreply@focalclub.fr>\r\n"
              . "Reply-To: {$expediteur}\r\n"
              . "Content-Type: text/html; charset=UTF-8\r\n";
     $sujet_encode = '=?UTF-8?B?' . base64_encode($sujet) . '?=';
