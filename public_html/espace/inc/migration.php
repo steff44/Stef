@@ -46,6 +46,14 @@ const COLONNES_ATTENDUES = [
     // jour (revenu sur « facultatif » quelques échanges plus tard). Colonne
     // nullable malgré tout, même raison qu'adresse ci-dessus.
     'boitier'           => 'VARCHAR(120) DEFAULT NULL',
+    // Réinitialisation de mot de passe en libre-service (choix explicite de
+    // l'utilisatrice, 11/09/2026) : un jeton aléatoire à usage unique, envoyé
+    // par e-mail, valable une heure — voir espace/mot-de-passe-oublie.php et
+    // espace/nouveau-mot-de-passe.php. Les deux colonnes sont remises à NULL
+    // une fois le mot de passe changé (ou le jeton simplement écrasé par une
+    // nouvelle demande).
+    'jeton_reinitialisation' => 'VARCHAR(64) DEFAULT NULL',
+    'jeton_expire_le'        => 'DATETIME DEFAULT NULL',
 ];
 
 // Colonnes attendues sur `sorties` — même principe, table différente.

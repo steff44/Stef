@@ -35,6 +35,11 @@ CREATE TABLE IF NOT EXISTS adherents (
   -- Posé par un responsable qui coupe la session à distance. Toute session
   -- ouverte AVANT cet instant est refusée à la requête suivante.
   deconnecte_le      DATETIME     DEFAULT NULL,
+  -- Réinitialisation de mot de passe en libre-service : jeton à usage
+  -- unique envoyé par e-mail, valable une heure (voir
+  -- espace/mot-de-passe-oublie.php et espace/nouveau-mot-de-passe.php).
+  jeton_reinitialisation VARCHAR(64) DEFAULT NULL,
+  jeton_expire_le    DATETIME     DEFAULT NULL,
   cree_le            DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

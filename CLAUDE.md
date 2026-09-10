@@ -3524,6 +3524,82 @@ deux dans la même journée (matin/soir) donnant exactement les 8 mêmes
 photos dans le même ordre, un troisième le lendemain donnant une sélection
 différente. Aucune erreur JavaScript.
 
+## Réinitialisation du mot de passe en libre-service
+
+**Choix explicite de l'utilisatrice, 11/09/2026** : « je voudrais savoir
+comment il faut réinitialiser le mot de passe si un adhérent l'a oublié.
+je voudrais qu'il puisse le faire lui même ». Jusqu'ici, « Mot de passe
+oublié ? » sur `connexion.php` renvoyait vers `contact.html` : un
+responsable devait régénérer un mot de passe **provisoire** depuis
+`adherents.php` (`mot_de_passe_provisoire()`, action `reinitialiser`,
+inchangée, toujours utile pour un adhérent injoignable par e-mail) et le
+communiquer lui-même à la main (téléphone, en personne…) — aucun canal
+automatique. Cette étape manuelle disparaît pour le cas courant : un
+adhérent qui a encore accès à sa boîte mail peut désormais tout faire seul.
+
+**Deux nouvelles pages, sur le modèle exact de `connexion.php`/
+`inscription.php`** (mêmes classes CSS, `.form-card`/`.field`/`.btn`,
+aucune nouvelle règle nécessaire) :
+- `espace/mot-de-passe-oublie.php` — un seul champ, « Identifiant ou
+  e-mail ». Cherche l'adhérent (`identifiant = ? OR email = ?`, `actif =
+  1`) ; s'il existe et a un e-mail renseigné, génère un jeton aléatoire de
+  64 caractères hexadécimaux (`bin2hex(random_bytes(32))`), le stocke
+  (`jeton_reinitialisation`, `jeton_expire_le = NOW() + INTERVAL 1 HOUR`)
+  et envoie un e-mail avec le lien vers la page suivante
+  (`envoyer_mail()`, `inc/mail.php`, même convention que les autres
+  notifications du site). **Le message affiché est toujours le même**,
+  qu'un compte corresponde ou non à la saisie — même principe que
+  `tenter_connexion()`, qui ne révèle jamais si c'est l'identifiant ou le
+  mot de passe qui cloche, pour ne pas laisser deviner quels identifiants
+  existent. Protégé par le même anti-spam que `inscription.php` (champ
+  piège `site_web` + délai minimum de 3 secondes) : sans ça, ce formulaire
+  public permettrait de bombarder la boîte mail de n'importe quel adhérent
+  de demandes de réinitialisation.
+- `espace/nouveau-mot-de-passe.php?jeton=…` — arrivée depuis le lien reçu
+  par e-mail. Vérifie que le jeton existe et n'est pas expiré
+  (`jeton_expire_le > NOW()`), puis propose un formulaire à deux champs
+  (mot de passe + confirmation) avec **exactement les mêmes règles** qu'à
+  l'inscription et dans l'Annuaire (10 caractères, une majuscule, un
+  caractère spécial) — un changement de mot de passe ne doit pas permettre
+  de revenir à plus faible. Une fois le mot de passe changé,
+  `jeton_reinitialisation`/`jeton_expire_le` sont remis à `NULL` (jeton à
+  usage unique). Un jeton invalide ou expiré affiche une page d'erreur
+  dédiée (`page_erreur()`, même famille que les autres erreurs de
+  l'espace) avec un lien pour en redemander un. **Cette page ne dépend
+  jamais de l'état de connexion du navigateur** — contrairement à
+  `connexion.php`/`inscription.php`, qui renvoient un visiteur déjà
+  connecté vers `index.php` — puisque l'autorité vient ici du jeton, pas
+  de la session : le lien peut être ouvert depuis un autre appareil que
+  celui où l'adhérent est éventuellement déjà connecté.
+
+**Deux nouvelles colonnes sur `adherents`** (`jeton_reinitialisation
+VARCHAR(64)`, `jeton_expire_le DATETIME`, toutes deux nullable) — ajoutées
+à `COLONNES_ATTENDUES` (`inc/migration.php`, appliquées automatiquement à
+la base déjà en ligne) et à `inc/schema.sql` (pour une prochaine
+installation neuve). Aucun nouveau témoin de version nécessaire :
+`signature_schema()` hache déjà la liste des clés de `COLONNES_ATTENDUES`,
+donc l'ajout de ces deux clés suffit à lui seul à invalider le témoin
+existant et déclencher la migration.
+
+Le lien « Mot de passe oublié ? » de `connexion.php` pointe désormais vers
+`mot-de-passe-oublie.php` (« Réinitialisez-le vous-même ») au lieu de
+`contact.html`.
+
+Testé hors ligne (11/09/2026) avec un vrai serveur PHP intégré branché sur
+SQLite (même principe que les autres bancs d'essai de ce fichier, avec une
+traduction à la volée de `NOW() + INTERVAL 1 HOUR` en
+`datetime(NOW(), '+1 hour')`, jamais dans le dépôt) et des requêtes HTTP
+réelles (curl, avec cookies de session pour le jeton CSRF) : demande de
+réinitialisation pour un compte actif avec e-mail (jeton de 64 caractères
+créé, expiration ~1h plus tard) ; identifiant inconnu, compte inactif et
+compte sans e-mail (aucun jeton créé dans les trois cas, même message
+générique affiché) ; champ piège rempli et soumission trop rapide (aucun
+jeton créé malgré un identifiant valide) ; cycle complet avec un vrai
+jeton (nouveau mot de passe accepté, ancien mot de passe rejeté ensuite,
+jeton remis à NULL) ; jeton inexistant et jeton expiré (page d'erreur 400
+dans les deux cas) ; mot de passe trop faible (erreurs affichées, jeton
+resté valide pour réessayer).
+
 ## Conventions
 
 - Tout le contenu visible est en **français**.

@@ -69,7 +69,7 @@ titre_page("Espace adhérents", "Réservé aux membres du Focal Club Turballais.
 
     <p class="form-note" style="margin-top:18px;">
       Mot de passe oublié ?
-      <a href="../contact.html" style="text-decoration:underline;">Contactez un responsable du club</a>.
+      <a href="mot-de-passe-oublie.php" style="text-decoration:underline;">Réinitialisez-le vous-même</a>.
     </p>
     <p class="form-note">
       Pas encore de compte ?
