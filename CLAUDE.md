@@ -3490,6 +3490,40 @@ erreur JavaScript.
 `.lightbox-frame` (`css/style.css`). L'intervalle du diaporama
 (3500 ms, inchangé) laisse largement la place à ce fondu plus long.
 
+## Accueil : « Quelques photos du club » tirées au hasard, changées chaque jour
+
+**Choix explicite de l'utilisatrice, 11/09/2026** : « je veux que sur la
+page de garde dans la partie "Quelque photos du club" le 8 photos exposées
+doivent être prisent au hasard dans la galerie et changées tous les
+jours ». Revient sur le comportement précédent, qui prenait simplement les
+8 photos les plus récentes de la Galerie du Club.
+
+`js/main.js` (bloc « Page d'accueil : sélection de photos ») tire
+désormais les 8 photos parmi **toutes** celles renvoyées par
+`infos-galerie-club.php` (pas seulement les plus récentes), via
+`melangeDuJour()` — un mélange (Fisher-Yates) piloté par un générateur
+pseudo-aléatoire dont la graine dépend uniquement de la date du jour
+(`graineDuJour()`, AAAA-M-J). Choix volontaire de **ne rien stocker côté
+serveur** : le tirage est recalculé côté navigateur à chaque chargement de
+page, mais toujours identique pour une même date — même sélection pour
+tous les visiteurs toute la journée, qui change automatiquement à minuit
+(heure du navigateur du visiteur) sans cron ni table dédiée. Un vrai
+`Math.random()` aurait donné un tirage différent à *chaque rechargement*
+de page, ce qui n'était pas demandé (« changées tous les jours », pas à
+chaque visite).
+
+Portée limitée à ce seul bloc : la page publique Galerie et la Galerie du
+Club gardent leur tri habituel (plus récentes en premier), non concernées
+par cette demande.
+
+Testé hors ligne (11/09/2026) : logique du mélange vérifiée en isolation
+(même date → tirage identique, date différente → tirage différent,
+distribution correcte sur un jeu de 20 photos) puis avec Playwright et
+l'horloge du navigateur simulée (`page.clock.install`) sur trois instants —
+deux dans la même journée (matin/soir) donnant exactement les 8 mêmes
+photos dans le même ordre, un troisième le lendemain donnant une sélection
+différente. Aucune erreur JavaScript.
+
 ## Conventions
 
 - Tout le contenu visible est en **français**.

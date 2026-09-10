@@ -1105,12 +1105,52 @@
   })();
 
   /* ---------- Page d'accueil : sélection de photos ----------
-     Reprend les photos les plus récentes de la Galerie du Club (même point
-     d'accès que la page Galerie, voir plus bas) — il n'y a plus de photos de
-     démonstration depuis leur retrait le 20/08/2026. La section reste
-     masquée (attribut `hidden` posé en dur dans index.html) tant qu'aucune
-     photo réelle n'est encore disponible, plutôt que d'afficher une grille
-     vide sous un titre. */
+     Huit photos tirées au hasard parmi TOUTES les photos de la Galerie du
+     Club (même point d'accès que la page Galerie, voir plus bas), pas
+     seulement les plus récentes (choix explicite de l'utilisatrice,
+     11/09/2026 — revient sur le choix précédent qui prenait les 8 plus
+     récentes) — il n'y a plus de photos de démonstration depuis leur
+     retrait le 20/08/2026. La section reste masquée (attribut `hidden`
+     posé en dur dans index.html) tant qu'aucune photo réelle n'est encore
+     disponible, plutôt que d'afficher une grille vide sous un titre.
+
+     Le tirage change « tous les jours » mais reste le même pour tout le
+     monde toute la journée (pas un tirage différent à chaque visite) :
+     melangeDuJour() mélange le tableau avec un générateur pseudo-aléatoire
+     dont la graine dépend uniquement de la date du jour (AAAA-MM-JJ) —
+     même date, même mélange, sans rien stocker côté serveur ni recalculer
+     en base. Le changement a lieu à minuit, heure du navigateur du
+     visiteur (pas de fuseau commun imposé, sans conséquence pratique pour
+     un club local). */
+  function graineDuJour() {
+    const aujourdhui = new Date();
+    const cle = aujourdhui.getFullYear() + "-" + (aujourdhui.getMonth() + 1) + "-" + aujourdhui.getDate();
+    let hash = 0;
+    for (let i = 0; i < cle.length; i++) {
+      hash = (hash * 31 + cle.charCodeAt(i)) >>> 0;
+    }
+    return hash;
+  }
+
+  function melangeDuJour(tableau) {
+    // Générateur congruentiel linéaire (LCG) : déterministe pour une
+    // graine donnée, contrairement à Math.random() qui changerait le
+    // tirage à chaque rechargement de page.
+    let graine = graineDuJour();
+    function suivant() {
+      graine = (graine * 1103515245 + 12345) >>> 0;
+      return graine / 4294967296;
+    }
+    const copie = tableau.slice();
+    for (let i = copie.length - 1; i > 0; i--) {
+      const j = Math.floor(suivant() * (i + 1));
+      const echange = copie[i];
+      copie[i] = copie[j];
+      copie[j] = echange;
+    }
+    return copie;
+  }
+
   const highlightSection = document.querySelector("[data-highlights-section]");
   const highlightGrid = document.querySelector("[data-highlights]");
   if (highlightSection && highlightGrid) {
@@ -1120,8 +1160,7 @@
         const photosClub = Array.isArray(donnees.photos) ? donnees.photos : [];
         if (!photosClub.length) return;
 
-        // Déjà triées des plus récentes aux plus anciennes par l'API.
-        const picked = photosClub.slice(0, 8).map(function (p) {
+        const picked = melangeDuJour(photosClub).slice(0, 8).map(function (p) {
           return {
             titre: p.titre,
             theme: Array.isArray(p.categories) ? p.categories.join(", ") : "",
