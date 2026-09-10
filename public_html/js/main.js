@@ -786,10 +786,18 @@
       '<span class="meta">' + echapperHtml([membreNom, photo.theme].filter(Boolean).join(" · ")) + "</span>" +
       "</span>";
     card.addEventListener("click", function () {
-      const idx = photosForLightbox.findIndex(function (p) {
-        return p.titre === photo.titre && p.membreNom === membreNom;
-      });
-      openLightbox(photosForLightbox, idx);
+      // Comparaison par référence (indexOf), jamais par titre+auteur : deux
+      // photos d'un même adhérent peuvent tout à fait partager le même
+      // titre (le champ est prérempli d'un dépôt à l'autre, voir plus haut
+      // « Le titre reste inscrit d'une photo à l'autre ») — un appariement
+      // par contenu renvoyait alors toujours la même (première) photo
+      // trouvée, quelle que soit la vignette réellement cliquée (piège
+      // signalé par l'utilisatrice le 10/09/2026 avec les photos de Mylène
+      // Coucault). `photo` est ici littéralement l'un des éléments de
+      // photosForLightbox (jamais une copie), donc indexOf le retrouve sans
+      // ambiguïté.
+      const idx = photosForLightbox.indexOf(photo);
+      openLightbox(photosForLightbox, idx === -1 ? 0 : idx);
     });
     return card;
   }

@@ -3315,6 +3315,45 @@ depuis la liste JSON avec la bonne catégorie pré-cochée, champs cachés
 Non-régression de la modale EXIF revérifiée après le renommage des
 classes CSS partagées — toujours fonctionnelle à l'identique.
 
+## Bug corrigé : cliquer sur une vignette ouvrait toujours la même photo
+
+**Signalé par l'utilisatrice le 10/09/2026** : une nouvelle adhérente,
+Mylène Coucault, venait de téléverser des photos — en essayant d'en
+visualiser n'importe laquelle (sur une page publique, vraisemblablement
+`galerie.html`), c'était toujours la même qui s'affichait, et cette photo
+semblait « en double ».
+
+**Cause** : `buildPhotoCard()` (`js/main.js`, utilisée par l'accueil, la
+page Galerie publique et « Nos Sorties ») retrouvait la photo à agrandir
+au clic en la recherchant dans le tableau par **titre + nom d'auteur**
+(`photosForLightbox.findIndex(p => p.titre === photo.titre && p.membreNom
+=== membreNom)`) plutôt qu'en utilisant sa position réelle. Or deux photos
+d'un même adhérent partagent très facilement le même titre — le champ
+« Titre » est justement prérempli d'un dépôt à l'autre pour éviter d'avoir
+à le retaper (voir plus haut, 26/08/2026, « Le titre reste inscrit d'une
+photo à l'autre »). Dès que Mylène avait déposé plusieurs photos sans
+changer ce titre, `findIndex` retrouvait systématiquement la **première**
+photo portant ce titre, quelle que soit la vignette réellement cliquée —
+d'où l'impression qu'une seule photo « en double » s'affichait sans arrêt
+à la place des autres. Un paramètre `index` existait déjà dans la
+signature de la fonction mais n'était en réalité jamais utilisé par le
+clic, resté un vestige d'une version antérieure.
+
+**Corrigé** en comparant par **référence** (`photosForLightbox.indexOf(photo)`)
+plutôt que par contenu : `photo` est toujours littéralement l'un des
+éléments du tableau passé en paramètre (jamais une copie), donc `indexOf`
+retrouve sans ambiguïté la bonne position, même si son titre et son auteur
+sont identiques à ceux d'une autre photo. N'affecte pas les galeries de
+l'espace adhérents (`galerie.php`/`galerie-club.php`), qui retrouvent déjà
+la carte cliquée par sa position dans le DOM (`visibles.indexOf(carte)`,
+voir plus haut) — seules les pages publiques utilisant `buildPhotoCard()`
+étaient concernées.
+
+Vérifié hors ligne (10/09/2026) avec Playwright : trois photos partageant
+exactement le même titre et le même auteur (reproduisant le cas de Mylène
+Coucault), chacune cliquée ouvre désormais bien sa propre image plutôt que
+systématiquement la première.
+
 ## Conventions
 
 - Tout le contenu visible est en **français**.
