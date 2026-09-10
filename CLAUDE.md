@@ -3600,6 +3600,24 @@ jeton remis à NULL) ; jeton inexistant et jeton expiré (page d'erreur 400
 dans les deux cas) ; mot de passe trop faible (erreurs affichées, jeton
 resté valide pour réessayer).
 
+**Exigence de mot de passe rendue plus visible sur `nouveau-mot-de-passe.php`**
+(choix explicite de l'utilisatrice, 11/09/2026, même jour : « Il faudrait
+que tu signifies qu'il faut : 10 caractères, une majuscule, un caractère
+spécial »). La règle existait déjà à cet endroit — dans le label du champ
+(entre parenthèses) et dans l'infobulle `title` de chaque champ mot de
+passe — mais ces deux formes sont discrètes (parenthèse dans un texte plus
+long) ou invisibles tant qu'on ne survole pas le champ (`title`, sans effet
+sur un écran tactile, alors que la plupart des adhérents ouvrent ce lien
+depuis leur e-mail sur mobile). Un `<p class="form-note">` toujours visible,
+juste sous le champ « Nouveau mot de passe » — même classe déjà utilisée
+partout ailleurs sur le site pour ce genre d'indication —, énonce
+maintenant la règle en clair : « Le mot de passe doit contenir au moins 10
+caractères, une majuscule et un caractère spécial. » Le label repasse à
+« Nouveau mot de passe » simple, la note portant désormais seule ce texte.
+`inscription.php` (qui garde son propre label avec la règle entre
+parenthèses, sans note dédiée) n'a pas été touché, la demande portant sur
+cette page.
+
 ## Conventions
 
 - Tout le contenu visible est en **français**.
