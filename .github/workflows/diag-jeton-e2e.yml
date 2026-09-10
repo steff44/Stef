@@ -1,0 +1,76 @@
+name: Diagnostic temporaire - test de bout en bout (mot de passe oublié)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  checks: write
+
+env:
+  SECRET: ba0551506f815f0c8a71ffa5b2ace98b6f4a4b009b3516a4
+  IDENTIFIANT: cooky44.sl@gmail.com
+  BASE: https://focalclub.fr
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test de bout en bout
+        run: |
+          {
+            echo "=== 1. Valeur réelle de parametres_site.email + test mail() avec le vrai Reply-To ==="
+            curl -sS "$BASE/espace/diag-jeton.php?secret=$SECRET&action=tester_envoi_reel&identifiant=$(python3 -c "import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1]))" "$IDENTIFIANT")"
+            echo ""
+            echo ""
+
+            echo "=== 2. Effacement du jeton existant (baseline) ==="
+            curl -sS "$BASE/espace/diag-jeton.php?secret=$SECRET&action=effacer&identifiant=$(python3 -c "import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1]))" "$IDENTIFIANT")"
+            echo ""
+            echo ""
+
+            echo "=== 3. Lecture du jeton juste après l'effacement (doit être absent) ==="
+            curl -sS "$BASE/espace/diag-jeton.php?secret=$SECRET&action=lire&identifiant=$(python3 -c "import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1]))" "$IDENTIFIANT")"
+            echo ""
+            echo ""
+
+            echo "=== 4. GET du formulaire réel (nouvelle session + jeton CSRF, comme un navigateur) ==="
+            rm -f /tmp/cookies.txt
+            curl -sS -c /tmp/cookies.txt -o /tmp/form.html "$BASE/espace/mot-de-passe-oublie.php?e2ebust=$(date +%s)"
+            CSRF=$(grep -o 'name="csrf" value="[a-f0-9]*"' /tmp/form.html | grep -o '[a-f0-9]\{20,\}')
+            echo "Jeton CSRF obtenu : $CSRF"
+            echo "Cookies reçus :"
+            cat /tmp/cookies.txt
+            echo ""
+
+            echo "=== 5. POST réel au formulaire, avec la même session (exactement ce qu'un navigateur enverrait) ==="
+            curl -sS -b /tmp/cookies.txt -c /tmp/cookies.txt -D /tmp/post-headers.txt -o /tmp/post-body.html \
+              -X POST "$BASE/espace/mot-de-passe-oublie.php" \
+              --data-urlencode "csrf=$CSRF" \
+              --data-urlencode "ref_interne=" \
+              --data-urlencode "identifiant_ou_email=$IDENTIFIANT"
+            echo "En-têtes de la réponse au POST :"
+            cat /tmp/post-headers.txt
+            echo ""
+            echo "Corps de la réponse au POST (les 2000 premiers caractères) :"
+            head -c 2000 /tmp/post-body.html
+            echo ""
+            echo ""
+
+            echo "=== 6. Lecture du jeton juste après le POST (doit être présent si le code a été exécuté) ==="
+            curl -sS "$BASE/espace/diag-jeton.php?secret=$SECRET&action=lire&identifiant=$(python3 -c "import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1]))" "$IDENTIFIANT")"
+            echo ""
+          } > /tmp/resultat.txt 2>&1
+          cat /tmp/resultat.txt
+
+      - name: Publier le résultat comme check run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          CONTENU=$(cat /tmp/resultat.txt | head -c 60000)
+          curl -sS -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${{ github.repository }}/check-runs \
+            -d "$(jq -n --arg sha "${{ github.sha }}" --arg text "$CONTENU" \
+              '{name: "resultat-jeton-e2e", head_sha: $sha, status: "completed", conclusion: "neutral", output: {title: "Résultat diagnostic bout en bout", summary: "voir texte", text: $text}}')" \
+            -w "\nHTTP %{http_code}\n"
