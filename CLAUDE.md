@@ -3409,6 +3409,51 @@ page 1/3 (32 photos, boutons 1/2/3 affichés) ; clic sur la page 3 → les
 (5 photos, une seule page) → pagination masquée ; retour sur « Toutes » →
 page 1 à nouveau (pas restée sur la page 3). Aucune erreur JavaScript.
 
+## Vignettes vides et changeantes sur « Notre Galerie » : cache manquant sur les fichiers publics
+
+**Signalé par l'utilisatrice le 10/09/2026** : après avoir mis en ligne la
+pagination ci-dessus, elle a remarqué qu'à chaque rafraîchissement de
+« Notre Galerie », certaines vignettes restaient vides — jamais les mêmes
+d'une fois à l'autre, et n'apparaissant pas même en attendant. Deux détails
+qui excluent un fichier réellement manquant sur le disque (qui aurait
+échoué **systématiquement** pour les mêmes photos) : le caractère aléatoire
+pointe plutôt vers une surcharge côté serveur sous requêtes simultanées.
+
+**Cause trouvée dans `espace/telecharger.php`** : la ligne
+`header('Cache-Control: private, max-age=600')` s'appliquait à **tous**
+les types de fichiers, y compris les quatre types publics
+(`sortie`/`galerie_club`/`blog`/`sortie_album`, listés dans
+`TYPES_PUBLICS`, servis sans connexion). `private` interdit à un cache
+partagé (le CDN `hcdn` de Hostinger, déjà repéré ailleurs dans ce fichier
+pour `style.css`/`main.js`/le favicon) de les mettre en cache à l'edge : à
+chaque visite de « Notre Galerie », le navigateur doit donc relancer un
+appel PHP (`readfile()`) distinct pour **chaque** vignette affichée — 32
+en même temps depuis la pagination ci-dessus, potentiellement bien plus
+avant. Sur un hébergement mutualisé, le nombre de processus PHP-FPM
+simultanés est limité : sous cette charge, certaines requêtes échouaient
+au hasard, exactement le symptôme observé (aléatoire, ne se rattrapant
+jamais tout seul puisque le navigateur n'a tenté qu'une fois).
+
+**Corrigé** en distinguant les deux cas : les quatre types publics passent
+à `public, max-age=604800` (une semaine, même durée que le cache déjà
+accepté pour `style.css`/`main.js`), ce qui laisse désormais le CDN
+Hostinger servir ces vignettes depuis l'edge après leur tout premier
+chargement — plus aucun appel PHP répété pour la même photo tant que le
+cache est valide, donc plus de compétition entre 32 requêtes simultanées
+sur les processus PHP du serveur. Les deux types privés (`photo`,
+`document`) gardent `private, max-age=600` : leur contenu dépend de qui
+est connecté, un cache partagé y donnerait accès au fichier de la mauvaise
+personne. Chaque photo/fichier étant identifié par un id immuable (jamais
+réutilisé ni modifié après dépôt, seule une suppression est possible),
+cette semaine de cache ne risque pas de servir un contenu périmé — au pire,
+un lien direct vers une photo supprimée resterait accessible jusqu'à une
+semaine depuis le cache, un compromis déjà accepté ailleurs sur le site.
+
+Non vérifiable en ligne depuis ce sandbox (comme tout ce qui touche au CDN
+Hostinger) — à confirmer par l'utilisatrice après déploiement : si le
+problème persiste après quelques rafraîchissements (le temps que le cache
+se peuple), revoir l'hypothèse.
+
 ## Conventions
 
 - Tout le contenu visible est en **français**.

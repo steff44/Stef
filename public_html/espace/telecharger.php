@@ -94,8 +94,23 @@ header(sprintf(
     $disposition,
     rawurlencode($nom_affiche)
 ));
-// Contenu réservé : ni cache partagé, ni indexation.
-header('Cache-Control: private, max-age=600');
+// Les types publics (sortie/galerie_club/blog/sortie_album) sont accessibles
+// sans connexion : rien n'empêche le CDN de Hostinger (hcdn) de les mettre en
+// cache à l'edge, comme il le fait déjà pour style.css/main.js. Corrigé le
+// 10/09/2026 (choix explicite de l'utilisatrice, qui a signalé des vignettes
+// vides et changeantes à chaque rafraîchissement de « Notre Galerie ») —
+// jusqu'ici, TOUS les types recevaient `private`, ce qui empêchait ce cache
+// et forçait chaque vignette (jusqu'à 32 par page depuis la pagination) à
+// relancer un `readfile()` PHP à chaque visite : sous forte charge simultanée,
+// certaines requêtes échouaient au hasard sur cet hébergement mutualisé.
+// Chaque photo/fichier étant identifié par un id immuable (jamais réutilisé,
+// jamais modifié après dépôt — seule une suppression est possible), une
+// semaine de cache reste sans risque, même principe que le cache-busting
+// `?v=` déjà accepté ailleurs sur le site. Les types privés (photo/document)
+// gardent `private` : leur accès dépend de qui est connecté, jamais du même
+// contenu pour tout le monde.
+$est_public = in_array($type, TYPES_PUBLICS, true);
+header('Cache-Control: ' . ($est_public ? 'public, max-age=604800' : 'private, max-age=600'));
 header('X-Robots-Tag: noindex, nofollow');
 header('X-Content-Type-Options: nosniff');
 
