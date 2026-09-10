@@ -3711,6 +3711,32 @@ place le temps de confirmer, via le vrai formulaire `mot-de-passe-oublie.php`
 cette fois, qu'un e-mail arrive bien désormais — à supprimer une fois cette
 confirmation obtenue.
 
+**Le retrait du délai minimum, seul, n'a pas suffi** — l'utilisatrice a
+retesté le vrai formulaire `mot-de-passe-oublie.php` le jour même, et a
+confirmé (via `diag-reset-mail.php`) recevoir bien les e-mails d'un dépôt
+de test classique (création d'un adhérent), mais **toujours aucun** via
+« Mot de passe oublié ». Second suspect identifié : le **champ piège
+lui-même**, jusque-là nommé `site_web`. Ce nom (« website » en anglais)
+correspond à une catégorie que beaucoup de navigateurs et gestionnaires de
+mots de passe reconnaissent et préremplissent automatiquement — y compris
+sur un champ positionné hors écran (`position:absolute; left:-9999px`),
+qui n'est **pas** masqué au sens CSS (`display:none`/`visibility:hidden`)
+que ces outils vérifient habituellement pour décider si un champ mérite
+d'être rempli. Le champ piège se faisait donc probablement remplir tout
+seul par le navigateur de l'utilisatrice, déclenchant à tort la même
+protection anti-spam que le délai déjà retiré.
+
+**Corrigé** : le champ piège est renommé `ref_interne` — un nom qui ne
+correspond à aucune catégorie de préremplissage connue des navigateurs/
+gestionnaires de mots de passe. Trois journalisations distinctes ajoutées
+pour confirmer sans ambiguïté la cause si le problème persistait malgré
+tout : champ piège rempli (avec sa valeur, pour voir ce qui l'a rempli),
+aucun compte trouvé pour la saisie, ou compte trouvé sans e-mail (déjà en
+place). `inscription.php` n'a pas été touché — l'utilisatrice n'y a jamais
+signalé de problème (son formulaire, plus riche, sollicite sans doute un
+autre profil d'autoremplissage, moins susceptible de viser un champ
+« site_web » isolé).
+
 ## Conventions
 
 - Tout le contenu visible est en **français**.

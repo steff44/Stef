@@ -40,12 +40,32 @@ $pdo = base_de_donnees();
 // par un navigateur/gestionnaire de mots de passe, ce qui déclenchait à
 // tort le délai minimum et bloquait silencieusement l'envoi pour un
 // adhérent parfaitement légitime).
+//
+// Le champ piège s'appelait à l'origine "site_web" — renommé le même jour
+// après un second diagnostic : même après le retrait du délai ci-dessus,
+// l'utilisatrice recevait toujours zéro e-mail depuis cette page (alors
+// que le test direct via diag-reset-mail.php fonctionnait). "site_web"
+// ("website" en anglais) est un nom que beaucoup de navigateurs/
+// gestionnaires de mots de passe reconnaissent et préremplissent
+// automatiquement — y compris sur un champ positionné hors écran
+// (`position:absolute; left:-9999px`), qui n'est pas masqué au sens CSS
+// (`display:none`) que ces outils vérifient généralement. Le champ piège
+// se faisait donc probablement remplir tout seul, déclenchant à tort la
+// même protection anti-spam que le délai retiré plus haut. Renommé en
+// "ref_interne", un nom qui ne correspond à aucune catégorie
+// d'autoremplissage connue.
 $message_generique = "Si un identifiant ou une adresse e-mail correspond à un compte, un e-mail avec les instructions de réinitialisation vient d'être envoyé.";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verifier_csrf();
 
-    $piege_rempli = trim((string) ($_POST['site_web'] ?? '')) !== '';
+    $piege_rempli = trim((string) ($_POST['ref_interne'] ?? '')) !== '';
+
+    // Consigné pour confirmer définitivement si ce champ se fait encore
+    // remplir automatiquement malgré le renommage ci-dessus.
+    if ($piege_rempli) {
+        error_log("Espace adhérents — réinitialisation bloquée par le champ piège (ref_interne rempli avec : " . trim((string) ($_POST['ref_interne'] ?? '')) . ").");
+    }
 
     $saisie = trim((string) ($_POST['identifiant_ou_email'] ?? ''));
 
@@ -57,6 +77,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         );
         $requete->execute([$saisie, $saisie]);
         $adherent = $requete->fetch();
+
+        // Consigné pour distinguer, dans les journaux, une saisie qui ne
+        // correspond à aucun compte actif (faute de frappe, valeur
+        // autoremplie erronée...) des deux autres cas déjà journalisés
+        // ci-dessous.
+        if (!$adherent) {
+            error_log("Espace adhérents — réinitialisation demandée pour « {$saisie} », mais aucun compte actif ne correspond.");
+        }
 
         // Consigné même en cas de succès de la recherche : un compte trouvé
         // mais sans e-mail renseigné (le tout premier compte, créé par
@@ -118,8 +146,8 @@ titre_page("Mot de passe oublié", "Recevez un lien par e-mail pour en choisir u
       <!-- Champ piège anti-spam : invisible et non focalisable (voir
            inscription.php pour le même principe). -->
       <div style="position:absolute;left:-9999px;top:-9999px;" aria-hidden="true">
-        <label for="site_web">Laissez ce champ vide</label>
-        <input type="text" id="site_web" name="site_web" tabindex="-1" autocomplete="off">
+        <label for="ref_interne">Laissez ce champ vide</label>
+        <input type="text" id="ref_interne" name="ref_interne" tabindex="-1" autocomplete="off">
       </div>
       <div class="field">
         <label for="identifiant_ou_email">Identifiant ou e-mail</label>
