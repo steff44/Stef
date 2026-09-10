@@ -13,7 +13,20 @@ declare(strict_types=1);
 // Adresse de base du site, pour bâtir des liens absolus dans un e-mail ou un
 // message externe (WhatsApp) — un lien relatif n'aurait aucun sens en dehors
 // d'une page du site.
-const SITE_URL = 'https://myfocal.online';
+//
+// Pointait vers myfocal.online (bug trouvé le 10/09/2026, en creusant le
+// signalement « aucun mail reçu » sur mot-de-passe-oublie.php) : ce réglage
+// datait d'avant le 30/08/2026, quand myfocal.online était encore l'unique
+// domaine en ligne — depuis, focalclub.fr est devenu le site de référence
+// (voir plus haut, « Pièges déjà rencontrés »), et myfocal.online est un
+// site de test qui peut prendre du retard sur les déploiements (constaté le
+// 09/09/2026, figé depuis le 31/08/2026 à cette date). Tout lien envoyé par
+// e-mail ou WhatsApp (nouvelle sortie, nouvel article de blog, ce lien de
+// réinitialisation) pointait donc potentiellement vers une page absente ou
+// périmée sur myfocal.online, en plus d'un signal de hameçonnage classique
+// pour les filtres anti-spam (nom de marque « Focal Club Turballais » dans
+// l'e-mail, lien vers un domaine sans rapport apparent).
+const SITE_URL = 'https://focalclub.fr';
 
 /* Lit une seule valeur de parametres_site (coordonnées du club). */
 function valeur_parametre(PDO $pdo, string $cle): ?string
