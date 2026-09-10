@@ -9,25 +9,41 @@ jobs:
     steps:
       - name: Interroger la page en direct (cache-busté)
         run: |
-          URL="https://focalclub.fr/espace/mot-de-passe-oublie.php?diagbust=$(date +%s)"
-          echo "=== En-têtes ==="
-          curl -sS -D - -o /tmp/page.html "$URL" -H "Cache-Control: no-cache" | tee /tmp/headers.txt
-          echo ""
-          echo "=== Présence des champs dans le HTML servi ==="
-          if grep -q 'name="ref_interne"' /tmp/page.html; then
-            echo "OK : le champ piège renommé (ref_interne) est bien présent dans le HTML servi."
-          else
-            echo "PROBLEME : ref_interne absent du HTML servi !"
-          fi
-          if grep -q 'name="site_web"' /tmp/page.html; then
-            echo "PROBLEME : l'ancien champ (site_web) est encore présent dans le HTML servi !"
-          else
-            echo "OK : l'ancien champ (site_web) n'apparaît plus."
-          fi
-          echo ""
-          echo "=== Jeton CSRF trouvé ==="
-          grep -o 'name="csrf" value="[a-f0-9]*"' /tmp/page.html || echo "Aucun jeton CSRF trouvé."
-          echo ""
-          echo "=== Deuxième requête immédiate, pour voir si le jeton CSRF change (session propre à chaque requête) ==="
-          curl -sS -D - -o /tmp/page2.html "$URL&second=1" -H "Cache-Control: no-cache" | grep -i "set-cookie\|x-hcdn"
-          grep -o 'name="csrf" value="[a-f0-9]*"' /tmp/page2.html || echo "Aucun jeton CSRF trouvé (2e requête)."
+          {
+            URL="https://focalclub.fr/espace/mot-de-passe-oublie.php?diagbust=$(date +%s)"
+            echo "=== En-têtes ==="
+            curl -sS -D - -o /tmp/page.html "$URL" -H "Cache-Control: no-cache"
+            echo ""
+            echo "=== Présence des champs dans le HTML servi ==="
+            if grep -q 'name="ref_interne"' /tmp/page.html; then
+              echo "OK : le champ piège renommé (ref_interne) est bien présent dans le HTML servi."
+            else
+              echo "PROBLEME : ref_interne absent du HTML servi !"
+            fi
+            if grep -q 'name="site_web"' /tmp/page.html; then
+              echo "PROBLEME : l'ancien champ (site_web) est encore présent dans le HTML servi !"
+            else
+              echo "OK : l'ancien champ (site_web) n'apparaît plus."
+            fi
+            echo ""
+            echo "=== Jeton CSRF trouvé (1re requête) ==="
+            grep -o 'name="csrf" value="[a-f0-9]*"' /tmp/page.html || echo "Aucun jeton CSRF trouvé."
+            echo ""
+            echo "=== Cookie de session reçu (1re requête) ==="
+            curl -sS -D /tmp/h2.txt -o /tmp/page2.html "$URL&second=1" -H "Cache-Control: no-cache"
+            cat /tmp/h2.txt
+            echo ""
+            echo "=== Jeton CSRF trouvé (2e requête, doit différer du 1er) ==="
+            grep -o 'name="csrf" value="[a-f0-9]*"' /tmp/page2.html || echo "Aucun jeton CSRF trouvé (2e requête)."
+            echo ""
+            echo "=== Contenu complet de la page (pour inspection) ==="
+            cat /tmp/page.html
+          } > /tmp/resultat-diag.txt 2>&1
+          cat /tmp/resultat-diag.txt
+
+      - name: Publier le résultat en artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultat-diag
+          path: /tmp/resultat-diag.txt
+          retention-days: 1
