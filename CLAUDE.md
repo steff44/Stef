@@ -3798,21 +3798,64 @@ maintenant vers `https://focalclub.fr`. Le `From:` reste volontairement
 lequel Hostinger envoie réellement `mail()`, une exigence DMARC sans
 rapport avec ce bug).
 
-**À confirmer par l'utilisatrice** : vérifier boîte de réception, spams
-*et* « Tous les messages » dans Gmail pour un e-mail de
-« Focal Club Turballais » sujet « Réinitialisation de votre mot de passe
-— Focal Club Turballais », envoyé par ce diagnostic vers 15h33 et 15h37 UTC
-le 10/09/2026 (~17h33/17h37 heure de Paris) — le second contient déjà le
-lien corrigé vers focalclub.fr. Si aucun des deux n'apparaît nulle part
-(pas même dans les spams), cela confirme un rejet silencieux côté Gmail
-plutôt qu'un problème côté code, qui est maintenant démontré fonctionner
-correctement de bout en bout. Si elle les trouve dans les spams, la
-correction de `SITE_URL` peut suffire à elle seule à faire remonter les
-prochains dans la boîte de réception (moins de signal de hameçonnage) —
-à revérifier avec un nouvel essai après ce correctif. Les deux diagnostics
-temporaires (`espace/diag-jeton.php`, `.github/workflows/diag-jeton-e2e.yml`)
-restent en place le temps de cette confirmation, à supprimer ensuite comme
-`espace/diag-reset-mail.php`.
+**Confirmation immédiate : rien du tout dans Gmail, ni en boîte de
+réception ni en spam** — mais l'utilisatrice a testé en parallèle avec
+une adresse **hébergée par Hostinger** (`admin@focalclub.fr`, une vraie
+boîte sur le domaine du site) : « je reçois les avertissements de
+création et aussi les demandes de réinitialisation de mot de passe ».
+Preuve directe que l'envoi fonctionne parfaitement et que le contenu
+n'a rien de bloquant — seul Gmail, spécifiquement, avale les messages
+sans laisser de trace.
+
+**Cause confirmée par un diagnostic DNS direct** (10/09/2026,
+`diag-dns-spf.yml`, temporaire — `dig` depuis un workflow GitHub Actions,
+le sandbox ne pouvant pas interroger le DNS public) : `focalclub.fr`
+porte un enregistrement **SPF** valide (`v=spf1 include:_spf.mail.
+hostinger.com ~all`), un **DMARC** (`p=none`) et des **MX** Hostinger —
+tandis que `myfocal.online` n'a **strictement aucun** enregistrement
+SPF, MX ni DMARC. `envoyer_mail()` (`inc/mail.php`) envoyait pourtant
+tous les e-mails du site avec `From: noreply@myfocal.online` depuis le
+23/08/2026 — réglage posé quand `myfocal.online` était encore l'unique
+domaine du site, jamais revu depuis la bascule du 30/08/2026 qui a fait
+de `focalclub.fr` un second site Hostinger entièrement séparé (voir
+« Pièges déjà rencontrés » plus haut). Un `From:` sur un domaine sans
+aucun SPF est précisément le signal qui pousse un gros fournisseur
+comme Gmail à rejeter silencieusement un message, sans même le déposer
+en spam — alors qu'une remise locale vers une boîte du même hébergeur
+(comme `admin@focalclub.fr`) n'a pas les mêmes exigences
+d'authentification et passe sans problème. Exactement l'asymétrie
+observée.
+
+**Corrigé** : `From:` pointe maintenant vers `noreply@focalclub.fr`, le
+domaine réellement authentifié. Revalidé par un nouvel envoi réel via
+`mot-de-passe-oublie.php` (même diagnostic de bout en bout que plus
+haut, 10/09/2026, ~16h36 UTC) : jeton créé en base, `mail()` toujours
+`envoi_reussi: true` avec ce nouveau `From:` — **à confirmer par
+l'utilisatrice** en vérifiant sa boîte Gmail (et les spams) pour cet
+envoi précis. Si l'e-mail arrive cette fois, le problème est
+définitivement résolu ; sinon, il faudra creuser plus loin côté
+réputation d'envoi ou DKIM (aucun sélecteur DKIM courant trouvé pour
+`focalclub.fr` lors du diagnostic DNS — Hostinger peut en utiliser un
+non standard, à vérifier dans hPanel si le problème persiste malgré le
+correctif SPF).
+
+**Audit complet des autres mentions de `myfocal.online`** (même
+diagnostic, 10/09/2026) : deux vraies erreurs trouvées et corrigées —
+`mentions-legales.html` et `confidentialite.html` identifiaient encore
+« le site myfocal.online » dans leur texte légal (« Le site
+myfocal.online est édité par... », « ... les données collectées sur le
+site myfocal.online »), un oubli de la bascule du 30/08/2026 vers
+`focalclub.fr` comme domaine de référence — corrigé pour citer
+`focalclub.fr`. Les deux autres mentions restantes du dépôt
+(`enregistrer-visite.php`, qui reconnaît les deux domaines comme
+« internes » pour ne pas compter un lien depuis l'un vers l'autre comme
+une provenance externe ; un commentaire dans `.htaccess`) sont
+légitimes et inchangées — `myfocal.online` reste un vrai second site.
+
+Une fois la réception confirmée sur Gmail, les diagnostics temporaires
+(`espace/diag-reset-mail.php`, `espace/diag-jeton.php`,
+`.github/workflows/diag-jeton-e2e.yml`, `.github/workflows/
+diag-dns-spf.yml`) seront supprimés.
 
 ## Conventions
 
