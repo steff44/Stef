@@ -419,6 +419,16 @@
   let activePhotos = [];
   let activeIndex = 0;
   let diaporamaTimer = null;
+  // Transition en fondu entre les photos du diaporama (choix explicite de
+  // l'utilisatrice, 10/09/2026 : « tous les diaporamas [...] avec une
+  // transition en fondu »). Un seul mécanisme partagé par toutes les pages
+  // (index.html, galerie.html, nos-sorties.html, espace/galerie-club.php) —
+  // corriger renderLightbox() ici suffit à tous les couvrir d'un coup.
+  // Le fondu ne s'applique qu'à l'avance automatique du diaporama, jamais
+  // aux flèches précédente/suivante ni à l'ouverture de la lightbox, qui
+  // restent instantanées comme avant.
+  const DUREE_FONDU_MS = 220;
+  let jetonFondu = 0;
 
   const ICONE_DIAPORAMA_JOUER =
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>Diaporama';
@@ -453,7 +463,7 @@
     stopDiaporama();
     diaporamaTimer = setInterval(function () {
       activeIndex = (activeIndex + 1) % activePhotos.length;
-      renderLightbox();
+      renderLightbox(true);
     }, 3500);
     reglerBoutonDiaporama(true);
   }
@@ -475,17 +485,42 @@
     document.body.style.overflow = "";
   }
 
-  function renderLightbox() {
+  function renderLightbox(fondu) {
     const photo = activePhotos[activeIndex];
-    poserPhotoAgrandie(lightbox.querySelector(".lightbox-frame"), photo);
-    lightbox.querySelector(".lightbox-title").textContent = photo.masquerTitreAgrandi ? "" : photo.titre;
-    lightbox.querySelector(".lightbox-meta").textContent =
-      [photo.masquerNomAgrandi ? null : photo.membreNom, photo.theme].filter(Boolean).join(" — ");
-    const descriptionEl = lightbox.querySelector(".lightbox-description");
-    if (descriptionEl) {
-      descriptionEl.textContent = photo.description || "";
-      descriptionEl.hidden = !photo.description;
+    const frame = lightbox.querySelector(".lightbox-frame");
+    // Incrémenté à chaque appel, fondu ou non : invalide tout fondu déjà en
+    // attente (l'utilisateur a cliqué une flèche pendant un fondu, par
+    // exemple), pour ne jamais laisser un ancien setTimeout écraser un
+    // changement plus récent.
+    const jeton = ++jetonFondu;
+
+    function appliquer() {
+      poserPhotoAgrandie(frame, photo);
+      lightbox.querySelector(".lightbox-title").textContent = photo.masquerTitreAgrandi ? "" : photo.titre;
+      lightbox.querySelector(".lightbox-meta").textContent =
+        [photo.masquerNomAgrandi ? null : photo.membreNom, photo.theme].filter(Boolean).join(" — ");
+      const descriptionEl = lightbox.querySelector(".lightbox-description");
+      if (descriptionEl) {
+        descriptionEl.textContent = photo.description || "";
+        descriptionEl.hidden = !photo.description;
+      }
     }
+
+    if (!fondu) {
+      frame.classList.remove("is-fading");
+      appliquer();
+      return;
+    }
+
+    // Fondu enchaîné : masque la photo actuelle, l'échange une fois
+    // invisible, puis la révèle — .is-fading porte la transition CSS
+    // (voir .lightbox-frame).
+    frame.classList.add("is-fading");
+    window.setTimeout(function () {
+      if (jeton !== jetonFondu) return;
+      appliquer();
+      frame.classList.remove("is-fading");
+    }, DUREE_FONDU_MS);
   }
 
   if (lightbox) {

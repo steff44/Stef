@@ -3452,7 +3452,37 @@ semaine depuis le cache, un compromis déjà accepté ailleurs sur le site.
 Non vérifiable en ligne depuis ce sandbox (comme tout ce qui touche au CDN
 Hostinger) — à confirmer par l'utilisatrice après déploiement : si le
 problème persiste après quelques rafraîchissements (le temps que le cache
-se peuple), revoir l'hypothèse.
+se peuple), revoir l'hypothèse. **Confirmé par l'utilisatrice** (« Cela a
+l'air d'aller mieux »).
+
+## Diaporama : transition en fondu
+
+**Choix explicite de l'utilisatrice, 10/09/2026** : « je voudrais que tous
+les diaporamas soient avec une transition en fondu ». Un seul mécanisme de
+diaporama est partagé par toutes les pages qui en ont un — `index.html`,
+`galerie.html`, `nos-sorties.html`, `espace/galerie-club.php` (voir plus
+haut) — donc un seul correctif dans `renderLightbox()` (`js/main.js`) les
+couvre tous d'un coup.
+
+`renderLightbox()` prend désormais un paramètre `fondu` : sans lui (ouverture
+de la lightbox, flèches précédente/suivante), le changement de photo reste
+**instantané**, comme avant — seule l'avance automatique du diaporama
+(`startDiaporama()`, l'intervalle de 3500 ms) l'appelle avec `fondu = true`.
+Avec le fondu, `.lightbox-frame` reçoit la classe `.is-fading` (opacité 0,
+transition CSS de 220 ms — `DUREE_FONDU_MS` côté JS, la même durée des deux
+côtés), le changement de photo (`poserPhotoAgrandie()`, titre, méta,
+description) n'a lieu qu'une fois la photo devenue invisible, puis la
+classe est retirée pour révéler la nouvelle photo en fondu. Un jeton
+(`jetonFondu`, incrémenté à **chaque** appel de `renderLightbox()`, fondu ou
+non) invalide tout fondu resté en attente si l'utilisatrice clique une
+flèche pendant la transition — sans lui, un ancien `setTimeout` du
+diaporama pourrait écraser une navigation manuelle plus récente.
+
+Testé hors ligne (10/09/2026) avec Playwright : ouverture de la lightbox
+et clic sur « Suivant » tous deux instantanés (`.is-fading` jamais posée) ;
+lancement du diaporama → `.is-fading` observée pendant l'avance
+automatique, retirée ensuite avec la photo suivante bien affichée. Aucune
+erreur JavaScript.
 
 ## Conventions
 
