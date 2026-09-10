@@ -33,22 +33,23 @@ if (adherent_connecte()) {
 
 $pdo = base_de_donnees();
 
-// Même anti-spam que inscription.php (champ piège + délai minimum), sans
-// dépendance externe : ce formulaire public peut sinon servir à bombarder
-// la boîte mail de n'importe quel adhérent de demandes de réinitialisation.
-const DELAI_MIN_RESET_SECONDES = 3;
-
+// Anti-spam pour ce formulaire public — le champ piège suffit ici, sans
+// délai minimum (choix explicite de l'utilisatrice, 11/09/2026, après
+// diagnostic : contrairement à inscription.php, un formulaire à un seul
+// champ portant autocomplete="username" est complété quasi instantanément
+// par un navigateur/gestionnaire de mots de passe, ce qui déclenchait à
+// tort le délai minimum et bloquait silencieusement l'envoi pour un
+// adhérent parfaitement légitime).
 $message_generique = "Si un identifiant ou une adresse e-mail correspond à un compte, un e-mail avec les instructions de réinitialisation vient d'être envoyé.";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verifier_csrf();
 
     $piege_rempli = trim((string) ($_POST['site_web'] ?? '')) !== '';
-    $trop_rapide  = (time() - (int) ($_SESSION['reset_affiche_a'] ?? 0)) < DELAI_MIN_RESET_SECONDES;
 
     $saisie = trim((string) ($_POST['identifiant_ou_email'] ?? ''));
 
-    if (!$piege_rempli && !$trop_rapide && $saisie !== '') {
+    if (!$piege_rempli && $saisie !== '') {
         $requete = $pdo->prepare(
             'SELECT id, identifiant, nom, email FROM adherents
               WHERE actif = 1 AND (identifiant = ? OR email = ?)
@@ -101,9 +102,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Location: connexion.php');
     exit;
 }
-
-// Réamorce le délai anti-spam à chaque affichage du formulaire.
-$_SESSION['reset_affiche_a'] = time();
 
 debut_page("Mot de passe oublié", 'connexion');
 titre_page("Mot de passe oublié", "Recevez un lien par e-mail pour en choisir un nouveau.");

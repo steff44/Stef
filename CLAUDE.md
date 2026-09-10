@@ -3655,6 +3655,62 @@ Deux améliorations apportées en attendant cette vérification :
   jusqu'ici de ce message précis, pour couvrir aussi le cas où l'e-mail
   part bien mais atterrit en spam.
 
+**L'hypothèse ci-dessus (compte sans e-mail) était fausse** — l'utilisatrice
+a vérifié : son compte a bien un e-mail enregistré. Le journal d'erreurs PHP
+s'est révélé introuvable depuis hPanel (aucune section « Journaux d'erreurs »
+localisée, aucun fichier `error_log` trouvé dans le Gestionnaire de fichiers).
+
+**Diagnostic posé directement sur le site** (`espace/diag-reset-mail.php`,
+temporaire, réservé au responsable via `exige_administrateur()` — même
+principe que les diagnostics déjà utilisés pour le favicon et Google Drive) :
+reproduit la recherche de `mot-de-passe-oublie.php` (sans le filtre `actif`,
+pour diagnostiquer aussi un compte inactif) et tente un envoi réel par
+`mail()` directement (pas `envoyer_mail()`, qui ne renvoie rien), avec le
+résultat exact affiché à l'écran plutôt que consigné en silence.
+
+**Résultat** : compte trouvé correctement, `mail()` a renvoyé vrai, et
+l'e-mail de test est bien arrivé en boîte de réception (pas en spam). La
+recherche en base et l'envoi lui-même fonctionnent donc parfaitement — la
+cause n'était ni l'un ni l'autre, mais **l'anti-spam de la page réelle**,
+absent de ce diagnostic.
+
+**Cause trouvée** : `mot-de-passe-oublie.php` reprenait le même anti-spam
+qu'`inscription.php` — champ piège **et** délai minimum de 3 secondes entre
+l'affichage du formulaire et son envoi (`$_SESSION['reset_affiche_a']`,
+posé au chargement de la page). Ce délai est adapté à `inscription.php`,
+un formulaire à une dizaine de champs qu'un humain met nécessairement plus
+de 3 secondes à remplir à la main. Mais `mot-de-passe-oublie.php` n'a
+**qu'un seul champ**, `identifiant_ou_email`, qui porte en plus
+`autocomplete="username"` : un navigateur ou un gestionnaire de mots de
+passe (très probablement le cas de l'utilisatrice, déjà connectée au site
+par ailleurs) peut le préremplir **instantanément** au chargement de la
+page — il suffit alors de cliquer « Recevoir le lien » dans la foulée pour
+que l'ensemble (chargement + remplissage automatique + clic) prenne bien
+moins de 3 secondes. Le délai minimum, pensé pour repérer un robot,
+déclenchait donc à tort sur une utilisation **parfaitement humaine et
+légitime** — et silencieusement, par conception (anti-énumération), sans
+jamais le signaler.
+
+**Corrigé** : le délai minimum (`DELAI_MIN_RESET_SECONDES`,
+`$_SESSION['reset_affiche_a']`) est retiré de `mot-de-passe-oublie.php` —
+seul le champ piège (`site_web`) reste, suffisant contre un robot générique
+qui remplit tous les champs d'un formulaire sans distinction. Un attaquant
+ciblant spécifiquement cette page pourrait en théorie contourner le seul
+champ piège, mais l'enjeu reste faible (au pire, quelques e-mails de
+réinitialisation non désirés envoyés à un adhérent — aucune création de
+compte, aucune donnée exposée) comparé au risque, bien réel ici, de
+bloquer silencieusement un adhérent légitime sur la seule page où
+l'autocomplétion du navigateur est justement la plus utile. `inscription.php`
+n'a pas été touché — son formulaire, plus long, ne présente pas le même
+risque de faux positif.
+
+Testé (11/09/2026) : `php -l` sur le fichier modifié, relecture confirmant
+qu'aucune référence à `DELAI_MIN_RESET_SECONDES`/`trop_rapide`/
+`reset_affiche_a` ne subsiste. Le diagnostic `diag-reset-mail.php` reste en
+place le temps de confirmer, via le vrai formulaire `mot-de-passe-oublie.php`
+cette fois, qu'un e-mail arrive bien désormais — à supprimer une fois cette
+confirmation obtenue.
+
 ## Conventions
 
 - Tout le contenu visible est en **français**.
