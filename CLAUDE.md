@@ -3737,6 +3737,83 @@ signalé de problème (son formulaire, plus riche, sollicite sans doute un
 autre profil d'autoremplissage, moins susceptible de viser un champ
 « site_web » isolé).
 
+**Ni le délai ni le champ piège n'étaient la vraie cause** — l'utilisatrice
+a retesté après les deux correctifs, en navigation privée (donc sans aucun
+autoremplissage possible), sur Chrome et Firefox, avec plusieurs adhérents,
+par identifiant et par e-mail : toujours aucun e-mail reçu. Les deux
+correctifs restent en place (légitimes en eux-mêmes), mais un diagnostic
+plus poussé était nécessaire, sans dépendre à nouveau des tests manuels de
+l'utilisatrice — le journal d'erreurs PHP s'étant révélé introuvable depuis
+hPanel (aucune section « Journaux d'erreurs » localisée).
+
+**Diagnostic de bout en bout depuis un workflow GitHub Actions externe**
+(10/09/2026, `diag-jeton-e2e.yml`, temporaire) : reproduit exactement ce
+qu'un navigateur ferait — un premier `GET` sur `mot-de-passe-oublie.php`
+pour obtenir une session et un jeton CSRF frais, puis un vrai `POST` avec
+ce même cookie, en réutilisant l'identifiant de l'utilisatrice
+(`cooky44.sl@gmail.com`, son adresse e-mail connue plutôt qu'un identifiant
+deviné). Couplé à un second point d'accès temporaire,
+`espace/diag-jeton.php` (protégé par un secret dans l'URL plutôt qu'une
+connexion, puisqu'appelé par un script externe non authentifié) qui
+efface/relit directement `jeton_reinitialisation`/`jeton_expire_le` en
+base, pour vérifier objectivement si le code de `mot-de-passe-oublie.php`
+va bien jusqu'au bout, indépendamment de la question « l'e-mail est-il
+arrivé ? ».
+
+**Résultat sans appel : le code fonctionne parfaitement, de bout en
+bout.** Le jeton est bien créé en base après le `POST` (absent après
+effacement, présent avec une expiration à +1h juste après), et un test
+séparé confirme que `mail()` réussit (`envoi_reussi: true`) avec le vrai
+`Reply-To` (`parametres_site.email`, égal à `cooky44.sl@gmail.com`) —
+écartant à la fois un problème de recherche en base, un problème de session/
+CSRF, et un problème d'en-tête `Reply-To` malformé. Le `POST` a donc
+réellement déclenché `envoyer_mail()` en conditions de production, avec le
+vrai contenu de l'e-mail (sujet « Réinitialisation de votre mot de passe —
+Focal Club Turballais », lien de réinitialisation compris) — un vrai e-mail
+de réinitialisation vient donc d'être envoyé à l'utilisatrice par ce test,
+deux fois (10/09/2026, ~15h33 et ~15h37 UTC), sans passer par son
+navigateur.
+
+**Un vrai bug trouvé au passage, distinct du problème de non-réception,
+mais potentiellement lié** : `SITE_URL` (`inc/mail.php`), qui sert à bâtir
+le lien de réinitialisation (et ceux des e-mails de nouvelle sortie/nouvel
+article de blog), pointait encore vers `https://myfocal.online` — un
+réglage jamais mis à jour depuis que `focalclub.fr` est devenu le site de
+référence le 30/08/2026. Deux conséquences : (1) le lien cliqué depuis
+l'e-mail pouvait renvoyer vers une page absente ou périmée sur
+`myfocal.online`, resté figé depuis le 31/08/2026 (voir le diagnostic du
+09/09/2026 plus haut) — `nouveau-mot-de-passe.php`, ajouté le 11/09/2026,
+n'y existe probablement même pas ; (2) une marque annoncée dans l'e-mail
+(« Focal Club Turballais ») pointant vers un domaine sans rapport apparent
+avec l'expéditeur (`noreply@myfocal.online`) est un signal classique de
+hameçonnage pour les filtres anti-spam — combiné à un e-mail au ton
+typique d'une réinitialisation (« cliquez sur ce lien pour changer votre
+mot de passe »), c'est exactement le genre de message que Gmail peut
+choisir de supprimer silencieusement plutôt que de le déposer même dans
+les spams, sans que rien ne le signale à l'expéditeur (`mail()` renvoie
+vrai : Hostinger a bien accepté d'envoyer le message, ce qui ne garantit
+pas sa remise finale chez le destinataire). **Corrigé** : `SITE_URL` pointe
+maintenant vers `https://focalclub.fr`. Le `From:` reste volontairement
+`noreply@myfocal.online` (inchangé, voir plus haut — c'est le domaine sous
+lequel Hostinger envoie réellement `mail()`, une exigence DMARC sans
+rapport avec ce bug).
+
+**À confirmer par l'utilisatrice** : vérifier boîte de réception, spams
+*et* « Tous les messages » dans Gmail pour un e-mail de
+« Focal Club Turballais » sujet « Réinitialisation de votre mot de passe
+— Focal Club Turballais », envoyé par ce diagnostic vers 15h33 et 15h37 UTC
+le 10/09/2026 (~17h33/17h37 heure de Paris) — le second contient déjà le
+lien corrigé vers focalclub.fr. Si aucun des deux n'apparaît nulle part
+(pas même dans les spams), cela confirme un rejet silencieux côté Gmail
+plutôt qu'un problème côté code, qui est maintenant démontré fonctionner
+correctement de bout en bout. Si elle les trouve dans les spams, la
+correction de `SITE_URL` peut suffire à elle seule à faire remonter les
+prochains dans la boîte de réception (moins de signal de hameçonnage) —
+à revérifier avec un nouvel essai après ce correctif. Les deux diagnostics
+temporaires (`espace/diag-jeton.php`, `.github/workflows/diag-jeton-e2e.yml`)
+restent en place le temps de cette confirmation, à supprimer ensuite comme
+`espace/diag-reset-mail.php`.
+
 ## Conventions
 
 - Tout le contenu visible est en **français**.
