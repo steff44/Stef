@@ -14,28 +14,29 @@ env:
 jobs:
   diag:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Test de bout en bout
         run: |
           {
             echo "=== 1. Valeur réelle de parametres_site.email + test mail() avec le vrai Reply-To ==="
-            curl -sS "$BASE/espace/diag-jeton.php?secret=$SECRET&action=tester_envoi_reel&identifiant=$(python3 -c "import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1]))" "$IDENTIFIANT")"
+            curl -sS --max-time 20 "$BASE/espace/diag-jeton.php?secret=$SECRET&action=tester_envoi_reel&identifiant=$(python3 -c "import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1]))" "$IDENTIFIANT")"
             echo ""
             echo ""
 
             echo "=== 2. Effacement du jeton existant (baseline) ==="
-            curl -sS "$BASE/espace/diag-jeton.php?secret=$SECRET&action=effacer&identifiant=$(python3 -c "import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1]))" "$IDENTIFIANT")"
+            curl -sS --max-time 20 "$BASE/espace/diag-jeton.php?secret=$SECRET&action=effacer&identifiant=$(python3 -c "import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1]))" "$IDENTIFIANT")"
             echo ""
             echo ""
 
             echo "=== 3. Lecture du jeton juste après l'effacement (doit être absent) ==="
-            curl -sS "$BASE/espace/diag-jeton.php?secret=$SECRET&action=lire&identifiant=$(python3 -c "import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1]))" "$IDENTIFIANT")"
+            curl -sS --max-time 20 "$BASE/espace/diag-jeton.php?secret=$SECRET&action=lire&identifiant=$(python3 -c "import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1]))" "$IDENTIFIANT")"
             echo ""
             echo ""
 
             echo "=== 4. GET du formulaire réel (nouvelle session + jeton CSRF, comme un navigateur) ==="
             rm -f /tmp/cookies.txt
-            curl -sS -c /tmp/cookies.txt -o /tmp/form.html "$BASE/espace/mot-de-passe-oublie.php?e2ebust=$(date +%s)"
+            curl -sS --max-time 20 -c /tmp/cookies.txt -o /tmp/form.html "$BASE/espace/mot-de-passe-oublie.php?e2ebust=$(date +%s)"
             CSRF=$(grep -o 'name="csrf" value="[a-f0-9]*"' /tmp/form.html | grep -o '[a-f0-9]\{20,\}')
             echo "Jeton CSRF obtenu : $CSRF"
             echo "Cookies reçus :"
@@ -43,7 +44,7 @@ jobs:
             echo ""
 
             echo "=== 5. POST réel au formulaire, avec la même session (exactement ce qu'un navigateur enverrait) ==="
-            curl -sS -b /tmp/cookies.txt -c /tmp/cookies.txt -D /tmp/post-headers.txt -o /tmp/post-body.html \
+            curl -sS --max-time 30 -b /tmp/cookies.txt -c /tmp/cookies.txt -D /tmp/post-headers.txt -o /tmp/post-body.html \
               -X POST "$BASE/espace/mot-de-passe-oublie.php" \
               --data-urlencode "csrf=$CSRF" \
               --data-urlencode "ref_interne=" \
@@ -57,7 +58,7 @@ jobs:
             echo ""
 
             echo "=== 6. Lecture du jeton juste après le POST (doit être présent si le code a été exécuté) ==="
-            curl -sS "$BASE/espace/diag-jeton.php?secret=$SECRET&action=lire&identifiant=$(python3 -c "import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1]))" "$IDENTIFIANT")"
+            curl -sS --max-time 20 "$BASE/espace/diag-jeton.php?secret=$SECRET&action=lire&identifiant=$(python3 -c "import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1]))" "$IDENTIFIANT")"
             echo ""
           } > /tmp/resultat.txt 2>&1
           cat /tmp/resultat.txt
@@ -66,7 +67,7 @@ jobs:
         run: |
           {
             echo "=== Comparatif From: sur l'e-mail réel 'inscription en attente' ==="
-            curl -sS "$BASE/espace/diag-jeton.php?secret=$SECRET&action=comparer_expediteur&identifiant=$(python3 -c "import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1]))" "$IDENTIFIANT")"
+            curl -sS --max-time 20 "$BASE/espace/diag-jeton.php?secret=$SECRET&action=comparer_expediteur&identifiant=$(python3 -c "import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1]))" "$IDENTIFIANT")"
             echo ""
           } > /tmp/resultat-from.txt 2>&1
           cat /tmp/resultat-from.txt
