@@ -29,11 +29,13 @@
  * galerie-club.php (voir js/main.js) pour montrer/masquer une carte par
  * photographe, indépendamment de sa catégorie.
  *
- * Un bouton « ✎ » (09/09/2026, choix explicite de l'utilisatrice) permet à
- * l'auteur ou à un responsable de modifier les catégories d'une photo déjà
- * déposée, sans la supprimer et la redéposer — même règle de permission que
- * Supprimer. Ouvre une modale générique (js/main.js, bloc « Modifier les
- * catégories d'une photo ») ; attend en plus dans la portée appelante :
+ * Un bouton « ✎ » (09/09/2026, choix explicite de l'utilisatrice ; étendu
+ * le 10/09/2026 au nom affiché, pour corriger une faute de frappe d'un
+ * adhérent sans redéposer la photo) permet à l'auteur ou à un responsable
+ * de modifier les catégories et le nom affiché d'une photo déjà déposée,
+ * sans la supprimer et la redéposer — même règle de permission que
+ * Supprimer. Ouvre une modale générique (js/main.js, bloc « Modifier une
+ * photo déjà déposée ») ; attend en plus dans la portée appelante :
  *   - $categoriesParPhoto : le résultat de categories_par_photo(), pour
  *     connaître les catégories déjà cochées de cette photo.
  */
@@ -65,7 +67,8 @@ $image       = 'telecharger.php?type=' . $type . '&id=' . (int) $photo['id'];
               <button type="button" class="photo-modifier-categories-bouton" data-modifier-categories
                       data-photo-id="<?= (int) $photo['id'] ?>"
                       data-categories-actuelles="<?= e(implode(',', $categoriesParPhoto[(int) $photo['id']] ?? [])) ?>"
-                      aria-label="Modifier les catégories de cette photo" title="Modifier les catégories de cette photo">✎</button>
+                      data-nom-affiche="<?= e((string) $photo['nom_affiche']) ?>"
+                      aria-label="Modifier les catégories ou le nom affiché de cette photo" title="Modifier les catégories ou le nom affiché de cette photo">✎</button>
             </div>
             <?php if ($type === 'photo'): ?>
               <?php if (!empty($photo['copie_club_id'])): ?>

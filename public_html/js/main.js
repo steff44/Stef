@@ -725,7 +725,7 @@
     });
   })();
 
-  /* ---------- Modifier les catégories d'une photo déjà déposée ----------
+  /* ---------- Modifier une photo déjà déposée (catégories + nom affiché) ----------
      Choix explicite de l'utilisatrice, 09/09/2026 : à l'origine une
      catégorie ne se choisissait qu'au moment du dépôt (galerie.php /
      galerie-club.php) — un adhérent ou un responsable qui voulait
@@ -740,9 +740,17 @@
      un `<script type="application/json" data-categories-disponibles>`
      rendu par la page (galerie.php / galerie-club.php), toujours présent
      dès qu'au moins une catégorie existe — sans lui, ce bouton n'apparaît
-     jamais côté PHP, donc rien à câbler ici pour son absence. Un vrai
-     POST classique (comme le reste du site), pas un fetch : la page se
-     recharge et affiche le message de confirmation habituel. */
+     jamais côté PHP, donc rien à câbler ici pour son absence.
+
+     Étendu le 10/09/2026 (choix explicite de l'utilisatrice : « quand un
+     adhérent s'est trompé en téléversant une photo dans le nom [...]
+     pouvoir aussi en tant que responsable changer ce nom ») avec un champ
+     « Nom affiché », pré-rempli depuis `data-nom-affiche` posé sur le
+     bouton — même limite (120 caractères) et même champ facultatif
+     (laissé vide, la photo retombe sur le nom de l'adhérent) que le
+     formulaire de dépôt. Un vrai POST classique (comme le reste du site),
+     pas un fetch : la page se recharge et affiche le message de
+     confirmation habituel. */
   (function () {
     const scriptCategories = document.querySelector("[data-categories-disponibles]");
     if (!scriptCategories) return;
@@ -770,6 +778,7 @@
 
       const photoId = bouton.getAttribute("data-photo-id") || "";
       const actuelles = (bouton.getAttribute("data-categories-actuelles") || "").split(",").filter(Boolean);
+      const nomAffiche = bouton.getAttribute("data-nom-affiche") || "";
 
       fermerModaleCategories();
       modaleCategories = document.createElement("div");
@@ -784,14 +793,19 @@
         })
         .join("");
       modaleCategories.innerHTML =
-        '<div class="modale-contenu" role="dialog" aria-modal="true" aria-label="Modifier les catégories de la photo">' +
+        '<div class="modale-contenu" role="dialog" aria-modal="true" aria-label="Modifier la photo">' +
         '<button type="button" class="modale-fermer" aria-label="Fermer">✕</button>' +
-        "<h3>Modifier les catégories</h3>" +
+        "<h3>Modifier la photo</h3>" +
         '<form method="post">' +
         '<input type="hidden" name="csrf" value="' + echapperHtml(csrf) + '">' +
-        '<input type="hidden" name="action" value="modifier_categories">' +
+        '<input type="hidden" name="action" value="modifier_photo">' +
         '<input type="hidden" name="id" value="' + echapperHtml(photoId) + '">' +
-        '<div class="categories-a-cocher">' + cases + "</div>" +
+        '<div class="field">' +
+        '<label for="modale-nom-affiche">Nom affiché (facultatif)</label>' +
+        '<input type="text" id="modale-nom-affiche" name="nom_affiche" maxlength="120" value="' +
+        echapperHtml(nomAffiche) + '">' +
+        "</div>" +
+        '<div class="categories-a-cocher" style="margin-top:16px;">' + cases + "</div>" +
         '<button type="submit" class="btn btn-primary" style="margin-top:16px;">Enregistrer</button>' +
         "</form></div>";
       document.body.appendChild(modaleCategories);

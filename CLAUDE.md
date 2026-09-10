@@ -3861,6 +3861,29 @@ problème. Les quatre diagnostics temporaires
 diag-dns-spf.yml`) ont été supprimés une fois cette confirmation
 obtenue, comme prévu.
 
+## Modifier le nom affiché d'une photo déjà déposée
+
+**Choix explicite de l'utilisatrice, 10/09/2026** : « je voudrais aussi
+pouvoir quand un adhérent s'est trompé en téléversant une photo dans le
+nom [...] pouvoir aussi en tant que responsable changer ce nom » — le
+champ « Nom affiché » du formulaire de dépôt (Galerie privée et Galerie
+du Club) ne pouvait jusqu'ici être corrigé qu'en supprimant la photo et
+en la redéposant.
+
+Étend le bouton `✎` déjà en place pour modifier les catégories d'une
+photo (09/09/2026, voir plus haut) plutôt que d'en ajouter un nouveau :
+l'action POST est renommée `modifier_categories` → **`modifier_photo`**
+(`galerie.php`/`galerie-club.php`), et prend désormais aussi
+`nom_affiche` — même règle de permission que pour les catégories
+(l'auteur, ou un responsable). La modale (`js/main.js`) affiche un champ
+« Nom affiché (facultatif) » pré-rempli depuis `data-nom-affiche` posé
+sur le bouton (`inc/photo-carte.php`), avec la même limite de 120
+caractères que le formulaire de dépôt ; laissé vide, la photo retombe
+sur le nom de l'adhérent (repli déjà en place ailleurs sur le site).
+`js/main.js` a été redéployé partout où il est chargé — version de
+cache-busting (`?v=`) relevée sur les 7 pages statiques qui le
+référencent en dur.
+
 ## Conventions
 
 - Tout le contenu visible est en **français**.

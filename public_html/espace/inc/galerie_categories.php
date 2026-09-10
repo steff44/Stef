@@ -55,7 +55,7 @@ function categories_dune_photo(PDO $pdo, string $table, int $photo_id): array
 // simple ajout), pour servir aussi bien à l'INSERT initial de la photo (rien
 // à supprimer, la photo est neuve) qu'à une modification ultérieure de ses
 // catégories (choix explicite de l'utilisatrice, 09/09/2026 — voir l'action
-// modifier_categories de galerie.php/galerie-club.php). $categorie_ids :
+// modifier_photo de galerie.php/galerie-club.php). $categorie_ids :
 // identifiants déjà validés (voir categories_galerie() pour la liste
 // autorisée).
 function definir_categories_photo(PDO $pdo, string $table, int $photo_id, array $categorie_ids): void

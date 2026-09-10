@@ -49,12 +49,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             definir_message('erreur', "Vous ne pouvez supprimer que vos propres photos.");
         }
-    } elseif (($_POST['action'] ?? '') === 'modifier_categories') {
-        // Reclasse une photo déjà déposée sans la supprimer/redéposer (choix
-        // explicite de l'utilisatrice, 09/09/2026) — même règle d'auteur que
+    } elseif (($_POST['action'] ?? '') === 'modifier_photo') {
+        // Reclasse une photo déjà déposée et/ou corrige son nom affiché,
+        // sans la supprimer/redéposer (choix explicite de l'utilisatrice,
+        // 09/09/2026 pour les catégories, étendu le 10/09/2026 au nom
+        // affiché — « quand un adhérent s'est trompé... pouvoir aussi en
+        // tant que responsable changer ce nom ») — même règle d'auteur que
         // la suppression. definir_categories_photo() remplace entièrement
         // les catégories existantes (voir inc/galerie_categories.php).
-        $id      = (int) ($_POST['id'] ?? 0);
+        $id          = (int) ($_POST['id'] ?? 0);
+        $nom_affiche = trim((string) ($_POST['nom_affiche'] ?? '')) ?: null;
         $requete = $pdo->prepare('SELECT depose_par FROM photos_privees WHERE id = ?');
         $requete->execute([$id]);
         $photo      = $requete->fetch();
@@ -70,8 +74,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             definir_message('erreur', "Choisissez au moins une catégorie.");
         } else {
             definir_categories_photo($pdo, 'photos_privees_categories', $id, $categorie_ids);
-            $pdo->prepare('UPDATE photos_privees SET categorie_id = ? WHERE id = ?')->execute([$categorie_ids[0], $id]);
-            definir_message('succes', "Catégories mises à jour.");
+            $pdo->prepare('UPDATE photos_privees SET categorie_id = ?, nom_affiche = ? WHERE id = ?')
+                ->execute([$categorie_ids[0], $nom_affiche, $id]);
+            definir_message('succes', "Photo mise à jour.");
         }
     } elseif (($_POST['action'] ?? '') === 'ajouter_au_club') {
         // Partage une photo déjà déposée vers la Galerie du Club, sans la
