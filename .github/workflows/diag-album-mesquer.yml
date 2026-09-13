@@ -18,6 +18,12 @@ jobs:
             curl -sS --max-time 20 "https://focalclub.fr/infos-albums.php?bust=$(date +%s)"
             echo ""
             echo ""
+            echo "=== 2. Contenu de l'album 2 (Fête de la mer Mesquer 2026) ==="
+            curl -sS --max-time 20 "https://focalclub.fr/infos-albums.php?album=2&bust=$(date +%s)"
+            echo ""
+            echo ""
+            echo "=== 3. Métadonnées du dossier album sur Drive (accès public direct) ==="
+            curl -sS --max-time 20 "https://drive.google.com/drive/folders/14J6LltG0SzY3myMvIxv2VVt3mEiZbYKC" -o /dev/null -w "HTTP: %{http_code}\n"
           } > /tmp/resultat.txt 2>&1
           cat /tmp/resultat.txt
 
