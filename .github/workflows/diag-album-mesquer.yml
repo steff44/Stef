@@ -1,0 +1,35 @@
+name: Diagnostic temporaire - album Fête de la mer Mesquer vide
+
+on:
+  workflow_dispatch:
+
+permissions:
+  checks: write
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Interroger infos-albums.php (liste puis contenu)
+        run: |
+          {
+            echo "=== 1. Liste des albums (infos-albums.php sans paramètre) ==="
+            curl -sS --max-time 20 "https://focalclub.fr/infos-albums.php?bust=$(date +%s)"
+            echo ""
+            echo ""
+          } > /tmp/resultat.txt 2>&1
+          cat /tmp/resultat.txt
+
+      - name: Publier le résultat comme check run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          CONTENU=$(cat /tmp/resultat.txt | head -c 60000)
+          curl -sS -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${{ github.repository }}/check-runs \
+            -d "$(jq -n --arg sha "${{ github.sha }}" --arg text "$CONTENU" \
+              '{name: "resultat-album-mesquer", head_sha: $sha, status: "completed", conclusion: "neutral", output: {title: "Résultat diagnostic album", summary: "voir texte", text: $text}}')" \
+            -w "\nHTTP %{http_code}\n"
