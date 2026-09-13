@@ -3354,7 +3354,7 @@ exactement le même titre et le même auteur (reproduisant le cas de Mylène
 Coucault), chacune cliquée ouvre désormais bien sa propre image plutôt que
 systématiquement la première.
 
-## Notre Galerie : affichage limité à 8 lignes de 4 photos, pagination numérotée
+## Notre Galerie : affichage limité à 7 lignes de 4 photos, pagination numérotée
 
 **Choix explicite de l'utilisatrice, 10/09/2026** : « je voudrais que tu
 limites à 8 le nombre de lignes de 4 photos visibles sur Notre Galerie »
@@ -3371,8 +3371,10 @@ numérotée, chaque page **remplaçant** la précédente plutôt que s'y
 ajoutant.
 
 `js/main.js` (bloc « Page galerie ») découpe désormais `filtered` en pages
-de `PHOTOS_PAR_PAGE` (32 — la grille est en `auto-fill` donc responsive,
-« 4 par ligne » n'est vrai qu'à la largeur de référence, mais 32 reste le
+de `PHOTOS_PAR_PAGE` (32 au départ, ramené à **28** le 13/09/2026 — choix
+explicite de l'utilisatrice, « je voudrais que tu découpe les photos par
+groupe de 7 lignes » — la grille est en `auto-fill` donc responsive,
+« 4 par ligne » n'est vrai qu'à la largeur de référence, mais 7×4 reste le
 repère demandé) : `pageActuelle` (1 par défaut) et
 `filtered.slice(debut, debut + PHOTOS_PAR_PAGE)` dans `renderGrid()`.
 `renderPagination()` construit un bouton par page dans

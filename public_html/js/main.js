@@ -1237,14 +1237,15 @@
     let filtreActif = { type: "toutes", valeur: "" };
 
     // Limite d'affichage sur « Notre Galerie » (choix explicite de
-    // l'utilisatrice, 10/09/2026) : 8 lignes de 4 photos visibles par page
-    // (la grille est responsive — auto-fill — donc « 4 par ligne » n'est
-    // vrai qu'à la largeur de référence, mais 32 reste le repère demandé).
-    // Un premier essai proposait un bouton « Voir plus » qui accumulait les
-    // photos ; l'utilisatrice a demandé une vraie pagination numérotée
-    // (1, 2, 3…) à la place, chaque page remplaçant la précédente plutôt
-    // que s'y ajouter.
-    const PHOTOS_PAR_PAGE = 32;
+    // l'utilisatrice, 10/09/2026, ramené à 7 lignes le 13/09/2026) : 7
+    // lignes de 4 photos visibles par page (la grille est responsive —
+    // auto-fill — donc « 4 par ligne » n'est vrai qu'à la largeur de
+    // référence, mais 28 reste le repère demandé). Un premier essai
+    // proposait un bouton « Voir plus » qui accumulait les photos ;
+    // l'utilisatrice a demandé une vraie pagination numérotée (1, 2, 3…)
+    // à la place, chaque page remplaçant la précédente plutôt que s'y
+    // ajouter.
+    const PHOTOS_PAR_PAGE = 28;
     let pageActuelle = 1;
 
     function photosFiltrees() {
