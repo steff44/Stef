@@ -30,4 +30,21 @@ foreach (glob($dossier . '/.cache-albums-*.json') ?: [] as $fichier) {
     }
 }
 
-echo json_encode(['ok' => true, 'fichiers_supprimes' => $supprimes]);
+$albums = null;
+$chemin_config = __DIR__ . '/inc/config.local.php';
+if (is_file($chemin_config)) {
+    $config = require $chemin_config;
+    try {
+        $pdo = new PDO(
+            sprintf('mysql:host=%s;dbname=%s;charset=utf8mb4', $config['hote'], $config['base']),
+            $config['utilisateur'],
+            $config['mot_de_passe'],
+            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]
+        );
+        $albums = $pdo->query('SELECT id, nom, type, dossier_drive FROM albums_sorties')->fetchAll();
+    } catch (PDOException $e) {
+        $albums = ['erreur' => $e->getMessage()];
+    }
+}
+
+echo json_encode(['ok' => true, 'fichiers_supprimes' => $supprimes, 'albums_en_base' => $albums]);
