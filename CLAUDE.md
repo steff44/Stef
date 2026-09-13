@@ -3884,6 +3884,41 @@ sur le nom de l'adhérent (repli déjà en place ailleurs sur le site).
 cache-busting (`?v=`) relevée sur les 7 pages statiques qui le
 référencent en dur.
 
+## Album « Fête de la mer Mesquer 2026 » vide : cache disque non vidé après correction
+
+**Signalé par l'utilisatrice le 13/09/2026** : l'album apparaissait bien
+dans « Nos Sorties », mais sans aucune photo une fois ouvert. Diagnostic
+via un workflow GitHub Actions temporaire (`diag-album-mesquer.yml`,
+même principe que les diagnostics précédents — le sandbox ne peut
+atteindre `focalclub.fr`) interrogeant `infos-albums.php` directement :
+le dossier Google Drive enregistré en base pour cet album
+(`dossier_drive`) était correct dès le départ — confirmé par une
+capture d'écran de `parametres.php` montrant bien l'identifiant attendu
+(`14J6LltG0SzY3myMvIxv2VVt3mEiZbYKC`).
+
+**Cause** : le **cache disque de 15 minutes** d'`infos-albums.php`
+(`.cache-albums-album-2.json`, voir « Nos Sorties » plus haut) avait
+enregistré un résultat vide lors d'un tout premier appel — avant que le
+dossier Drive ne soit correctement partagé/peuplé, ou pendant une
+fenêtre où l'identifiant était encore erroné — et continuait de le
+resservir tel quel, bien après la correction. Un second point d'accès
+temporaire, `espace/diag-vider-cache-albums.php` (protégé par un secret
+dans l'URL, comme les autres diagnostics de ce type), a supprimé les
+fichiers `.cache-albums-*.json` puis relu l'album directement depuis
+l'API Google : les 18 photos du dossier « Focal Club Turballais »
+remontent alors normalement.
+
+**Rien à corriger dans le code** — le comportement du cache est celui
+voulu partout ailleurs (éviter d'user le quota Google à chaque visite),
+et 15 minutes suffisent largement à ce qu'un album fraîchement corrigé
+finisse par s'afficher tout seul. Réflexe à garder pour un prochain
+album qui semblerait vide juste après une correction : attendre au
+plus 15 minutes, ou vider le cache disque à la main (Gestionnaire de
+fichiers hPanel, dossier `espace/inc/`) plutôt que de chercher un bug.
+Les deux diagnostics temporaires (`diag-album-mesquer.yml`,
+`diag-vider-cache-albums.php`) ont été supprimés une fois la cause
+confirmée.
+
 ## Conventions
 
 - Tout le contenu visible est en **français**.
