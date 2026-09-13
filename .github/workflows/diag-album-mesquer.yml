@@ -11,19 +11,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Interroger infos-albums.php (liste puis contenu)
+      - name: Vider le cache puis interroger infos-albums.php (liste puis contenu)
         run: |
           {
-            echo "=== 1. Liste des albums (infos-albums.php sans paramètre) ==="
-            curl -sS --max-time 20 "https://focalclub.fr/infos-albums.php?bust=$(date +%s)"
+            echo "=== 0. Vidage du cache disque des albums ==="
+            curl -sS --max-time 20 "https://focalclub.fr/espace/diag-vider-cache-albums.php?secret=ba0551506f815f0c8a71ffa5b2ace98b6f4a4b009b3516a4"
             echo ""
             echo ""
-            echo "=== 2. Contenu de l'album 2 (Fête de la mer Mesquer 2026) ==="
-            curl -sS --max-time 20 "https://focalclub.fr/infos-albums.php?album=2&bust=$(date +%s)"
+            echo "=== 1. Liste des albums (infos-albums.php sans paramètre, juste après le vidage) ==="
+            time curl -sS --max-time 30 "https://focalclub.fr/infos-albums.php?bust=$(date +%s)"
             echo ""
             echo ""
-            echo "=== 3. Métadonnées du dossier album sur Drive (accès public direct) ==="
-            curl -sS --max-time 20 "https://drive.google.com/drive/folders/14J6LltG0SzY3myMvIxv2VVt3mEiZbYKC" -o /dev/null -w "HTTP: %{http_code}\n"
+            echo "=== 2. Contenu de l'album 2 (Fête de la mer Mesquer 2026), juste après le vidage ==="
+            time curl -sS --max-time 30 "https://focalclub.fr/infos-albums.php?album=2&bust=$(date +%s)"
+            echo ""
+            echo ""
           } > /tmp/resultat.txt 2>&1
           cat /tmp/resultat.txt
 
