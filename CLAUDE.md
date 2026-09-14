@@ -4013,22 +4013,9 @@ apparaître — cocher l'une ou l'autre suffit déjà à la montrer).
 
 `selectionnerPastille()` (qui n'activait visuellement qu'une seule
 pastille à la fois) est remplacée par `appliquerEtatPastilles()`, qui
-relit l'état de `filtreActif` à chaque clic pour cocher/décocher les
+relit l'état des sélections à chaque clic pour cocher/décocher les
 pastilles en conséquence — plus robuste qu'ajouter/retirer la classe
-`is-active` au coup par coup dans chaque gestionnaire, et réutilisable
-aussi bien pour les catégories (plusieurs actives) que pour le
-photographe (une seule).
-
-**Le filtre « Photographe » reste exclusif**, hors du périmètre de cette
-demande (qui ne portait que sur les catégories) : sélectionner un nom
-vide la sélection de catégories (`themesSelectionnes.clear()`) et
-inversement, cocher une catégorie ferme le sous-panneau des photographes
-(`fermerPhotographes()`, déjà en place) — les deux filtres restent donc
-mutuellement exclusifs comme avant, seule la sélection *entre catégories*
-devient multiple. Portée volontairement limitée à `galerie.html`, comme
-demandé — ni la Galerie du Club (`espace/galerie-club.php`, qui affiche
-déjà chaque catégorie comme un groupe séparé) ni la sélection de photos
-récentes de l'accueil ne sont concernées.
+`is-active` au coup par coup dans chaque gestionnaire.
 
 Testé hors ligne (14/09/2026) avec un serveur HTTP local et Playwright
 (un vrai `fetch()` vers `infos-galerie-club.php` échoue silencieusement
@@ -4036,10 +4023,41 @@ en `file://`, un serveur était nécessaire) : cocher une catégorie filtre
 correctement, en cocher une seconde élargit l'affichage (union, pas
 intersection), décocher l'une des deux ne laisse que l'autre active,
 décocher la dernière revient à « Toutes » (toutes les photos, pastille
-« Toutes » réactivée) ; sélectionner un photographe alors qu'une
-catégorie était cochée bascule proprement sur le filtre exclusif
-(catégorie décochée), et recocher ensuite une catégorie désélectionne
-le photographe. Aucune erreur JavaScript.
+« Toutes » réactivée). Aucune erreur JavaScript.
+
+**Le même jour, l'utilisatrice a signalé que « cela ne fonctionne pas »
+et redemandé, dans la foulée, que le filtre « Photographe » ne soit lui
+non plus exclusif** — jusque-là seul un photographe pouvait être coché à
+la fois, et le cocher effaçait la sélection de catégories (et
+inversement). N'ayant pas pu reproduire de dysfonctionnement du filtre
+par catégorie en isolation (voir le test ci-dessus, toujours valable),
+le correctif a consisté à **supprimer complètement cette exclusivité**
+plutôt qu'à chercher un bug ponctuel : `filtreActif` (un objet à un seul
+« type » actif) est retiré, remplacé par **deux `Set` indépendants**,
+`themesSelectionnes` et `photographesSelectionnes` — chaque pastille,
+catégorie ou nom de photographe, est désormais une case à cocher
+autonome, sans qu'aucune n'efface la sélection d'un autre groupe.
+`photosFiltrees()` calcule une **union sur l'ensemble des deux
+groupes** : une photo s'affiche dès qu'elle correspond à au moins une
+catégorie cochée OU à au moins un photographe coché, quel que soit le
+mélange (ex. cocher « Macro » et le nom « Alice » montre les photos
+Macro de tout le monde, plus toutes les photos d'Alice, même hors
+Macro). « Toutes » vide les deux sélections d'un coup, seule pastille à
+le faire. Le panneau des photographes reste ouvert après un clic sur un
+nom, pour pouvoir en cocher plusieurs à la suite sans le rouvrir à
+chaque fois. Portée toujours limitée à `galerie.html` — ni la Galerie du
+Club ni la sélection de photos récentes de l'accueil ne sont concernées.
+
+Revérifié hors ligne (14/09/2026, même jour) avec le même serveur HTTP
+local et Playwright, un jeu de quatre photos réparties entre trois
+photographes (dont un avec des photos dans plusieurs catégories, pour
+vérifier le cas d'union le plus piégeux) : catégorie seule, catégorie +
+un photographe, catégorie + deux photographes, déclic d'un photographe
+en gardant les autres sélections, déclic de la catégorie en ne gardant
+qu'un photographe, retour à « Toutes » quand plus rien n'est coché,
+catégorie et photographe sans recoupement cochés ensemble, et réinitialisation
+complète via « Toutes ». Comptes de cartes affichées et pastilles actives
+corrects à chaque étape ; aucune erreur JavaScript.
 
 ## Conventions
 

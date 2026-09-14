@@ -1310,17 +1310,20 @@
     const emptyMessage = document.querySelector("[data-gallery-empty]");
     const filtersRoot = document.querySelector("[data-theme-filters]");
     const paginationRoot = document.querySelector("[data-gallery-pagination]");
-    let filtreActif = { type: "toutes", valeur: "" };
-    // Sélection multiple des catégories (choix explicite de l'utilisatrice,
-    // 14/09/2026 : « est-il possible de pouvoir choisir plusieurs
-    // catégories dans "Notre Galerie" ») — les pastilles de thème passent
-    // de « une seule à la fois » à « plusieurs, cochées/décochées au
-    // clic » ; une photo appartenant à n'importe laquelle des catégories
-    // cochées s'affiche (union, pas intersection). Le filtre par
-    // photographe reste, lui, exclusif (une seule personne à la fois) —
-    // non concerné par cette demande, qui ne portait que sur les
-    // catégories.
+    // Sélection multiple, catégories ET photographes (choix explicite de
+    // l'utilisatrice, 14/09/2026 : « est-il possible de pouvoir choisir
+    // plusieurs catégories », puis, le jour même, « je souhaite aussi que
+    // photographe ne soit pas exclusif ») — les deux groupes de pastilles
+    // fonctionnent maintenant comme des cases à cocher indépendantes,
+    // chacune dans son propre `Set` : cliquer sur une pastille l'ajoute ou
+    // la retire de sa sélection, sans toucher aux autres, qu'elles soient
+    // du même groupe ou de l'autre. Une photo s'affiche dès qu'elle
+    // correspond à **au moins une** catégorie cochée OU à **au moins un**
+    // photographe coché (union sur l'ensemble, pas juste à l'intérieur
+    // d'un groupe) ; aucune coche nulle part affiche tout, comme cliquer
+    // sur « Toutes » (qui vide les deux sélections d'un coup).
     const themesSelectionnes = new Set();
+    const photographesSelectionnes = new Set();
 
     // Limite d'affichage sur « Notre Galerie » (choix explicite de
     // l'utilisatrice, 10/09/2026, ramené à 7 lignes le 13/09/2026) : 7
@@ -1335,20 +1338,17 @@
     let pageActuelle = 1;
 
     function photosFiltrees() {
-      if (filtreActif.type === "themes") {
-        // Une photo peut appartenir à plusieurs catégories (choix explicite
-        // de l'utilisatrice, 09/09/2026) : p.themes est un tableau. Depuis
-        // le 14/09/2026, plusieurs pastilles peuvent aussi être cochées à
-        // la fois : une photo s'affiche dès qu'elle correspond à l'une
-        // d'elles (union, pas intersection).
-        return pool.filter(function (p) {
-          return filtreActif.valeurs.some(function (theme) { return p.themes.indexOf(theme) !== -1; });
-        });
-      }
-      if (filtreActif.type === "photographe") {
-        return pool.filter(function (p) { return p.membreNom === filtreActif.valeur; });
-      }
-      return pool;
+      if (!themesSelectionnes.size && !photographesSelectionnes.size) return pool;
+      // Une photo peut appartenir à plusieurs catégories (choix explicite de
+      // l'utilisatrice, 09/09/2026) : p.themes est un tableau. Une photo
+      // s'affiche dès qu'elle correspond à l'une des catégories cochées OU
+      // à l'un des photographes cochés (union sur l'ensemble des deux
+      // groupes, choix explicite de l'utilisatrice, 14/09/2026).
+      return pool.filter(function (p) {
+        const correspondTheme = p.themes.some(function (theme) { return themesSelectionnes.has(theme); });
+        const correspondPhotographe = photographesSelectionnes.has(p.membreNom);
+        return correspondTheme || correspondPhotographe;
+      });
     }
 
     function renderPagination(totalPages) {
@@ -1410,33 +1410,25 @@
       if (boutonPhotographe) boutonPhotographe.setAttribute("aria-expanded", "false");
     }
 
-    // Reflète l'état de filtreActif sur les pastilles (remplace l'ancienne
-    // selectionnerPastille(), qui n'activait qu'une seule pastille à la
-    // fois) : « Toutes » active quand aucune catégorie n'est cochée,
-    // chaque catégorie cochée reste active indépendamment des autres, et
-    // le photographe sélectionné (le cas échéant) reste seul actif dans
-    // son propre panneau — appelée après chaque clic plutôt que dupliquée
-    // dans chaque gestionnaire.
+    // Reflète les deux sélections (catégories, photographes) sur les
+    // pastilles — remplace l'ancienne selectionnerPastille(), qui
+    // n'activait qu'une seule pastille à la fois dans tout le groupe.
+    // « Toutes » n'est active que si aucune coche nulle part ; chaque
+    // catégorie et chaque photographe reste actif indépendamment des
+    // autres, y compris entre les deux groupes. Appelée après chaque
+    // clic plutôt que dupliquée dans chaque gestionnaire.
     function appliquerEtatPastilles() {
-      filtersRoot.querySelectorAll(".theme-filter").forEach(function (b) { b.classList.remove("is-active"); });
-      photographesPanel.querySelectorAll(".theme-filter").forEach(function (b) { b.classList.remove("is-active"); });
-
-      if (filtreActif.type === "themes") {
-        filtersRoot.querySelectorAll(".theme-filter:not(.theme-filter--photographe)").forEach(function (b) {
-          if (filtreActif.valeurs.indexOf(b.textContent) !== -1) b.classList.add("is-active");
-        });
-        return;
-      }
-      if (filtreActif.type === "photographe") {
-        if (boutonPhotographe) boutonPhotographe.classList.add("is-active");
-        photographesPanel.querySelectorAll(".theme-filter").forEach(function (b) {
-          if (b.textContent === filtreActif.valeur) b.classList.add("is-active");
-        });
-        return;
-      }
-      // "toutes" : la pastille de ce nom, toujours la première du groupe.
-      const toutesBtn = filtersRoot.querySelector(".theme-filter:not(.theme-filter--photographe)");
-      if (toutesBtn) toutesBtn.classList.add("is-active");
+      filtersRoot.querySelectorAll(".theme-filter:not(.theme-filter--photographe)").forEach(function (b) {
+        const active = b.textContent === toutesLesPhotos
+          ? themesSelectionnes.size === 0 && photographesSelectionnes.size === 0
+          : themesSelectionnes.has(b.textContent);
+        b.classList.toggle("is-active", active);
+      });
+      if (boutonPhotographe) boutonPhotographe.classList.toggle("is-active", photographesSelectionnes.size > 0);
+      photographesPanel.querySelectorAll(".theme-filter--photographe").forEach(function (b) {
+        if (b === boutonPhotographe) return;
+        b.classList.toggle("is-active", photographesSelectionnes.has(b.textContent));
+      });
     }
 
     function addThemeFilter(theme) {
@@ -1447,19 +1439,16 @@
       btn.type = "button";
       btn.className = "theme-filter";
       btn.textContent = theme;
-      if (theme === toutesLesPhotos) btn.classList.add("is-active");
       btn.addEventListener("click", function () {
-        fermerPhotographes();
         if (theme === toutesLesPhotos) {
           themesSelectionnes.clear();
+          photographesSelectionnes.clear();
+          fermerPhotographes();
         } else if (themesSelectionnes.has(theme)) {
           themesSelectionnes.delete(theme);
         } else {
           themesSelectionnes.add(theme);
         }
-        filtreActif = themesSelectionnes.size
-          ? { type: "themes", valeurs: Array.from(themesSelectionnes) }
-          : { type: "toutes" };
         appliquerEtatPastilles();
         pageActuelle = 1;
         renderGrid();
@@ -1480,6 +1469,7 @@
       noms.sort(function (a, b) { return a.localeCompare(b, "fr", { sensitivity: "base" }); });
 
       boutonPhotographe = null;
+      photographesSelectionnes.clear();
       fermerPhotographes();
       if (!noms.length) return;
 
@@ -1494,14 +1484,22 @@
       });
       filtersRoot.appendChild(boutonPhotographe);
 
+      // Chaque nom est une case à cocher indépendante (choix explicite de
+      // l'utilisatrice, 14/09/2026 : « je souhaite aussi que photographe
+      // ne soit pas exclusif ») — plusieurs photographes peuvent être
+      // cochés à la fois, et le panneau reste ouvert après un clic pour
+      // pouvoir en cocher plusieurs à la suite sans le rouvrir.
       noms.forEach(function (nom) {
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "theme-filter theme-filter--photographe";
         btn.textContent = nom;
         btn.addEventListener("click", function () {
-          themesSelectionnes.clear();
-          filtreActif = { type: "photographe", valeur: nom };
+          if (photographesSelectionnes.has(nom)) {
+            photographesSelectionnes.delete(nom);
+          } else {
+            photographesSelectionnes.add(nom);
+          }
           appliquerEtatPastilles();
           pageActuelle = 1;
           renderGrid();
@@ -1518,9 +1516,9 @@
       filtersRoot.innerHTML = "";
       themesConnus = [];
       themesSelectionnes.clear();
-      filtreActif = { type: "toutes" };
       [toutesLesPhotos].concat(themes).forEach(addThemeFilter);
       rebuildPhotographeFilter();
+      appliquerEtatPastilles();
     }
 
     rebuildThemeFilters(CLUB_DATA.themes);
