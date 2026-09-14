@@ -22,6 +22,7 @@ require_once __DIR__ . '/inc/documents_categories.php';
 require_once __DIR__ . '/inc/galerie_categories.php';
 require_once __DIR__ . '/inc/blog.php';
 require_once __DIR__ . '/inc/albums.php';
+require_once __DIR__ . '/inc/mail.php';
 
 exige_administrateur();
 $pdo = base_de_donnees();
@@ -36,6 +37,36 @@ const CHAMPS = [
     'horaires_creneau'    => 'Jour et créneau des réunions',
     'horaires_frequence'  => 'Fréquence',
 ];
+
+/*
+ * Prévient tous les adhérents validés par e-mail qu'un nouvel album a été
+ * ajouté à « Nos Sorties » (choix explicite de l'utilisatrice, 14/09/2026)
+ * — même principe que la notification de nouvelle sortie
+ * (sorties-a-venir.php) et de nouvel article de blog (blog.php) : un e-mail
+ * par adhérent valide=1 actif=1 avec une adresse renseignée, échoue
+ * silencieusement (voir envoyer_mail(), inc/mail.php).
+ */
+function notifier_nouvel_album(PDO $pdo, string $nom): void
+{
+    $expediteur = valeur_parametre($pdo, 'email') ?: 'cooky44.sl@gmail.com';
+    $lien       = SITE_URL . '/nos-sorties.html';
+
+    $destinataires = $pdo->query(
+        "SELECT nom, email FROM adherents WHERE valide = 1 AND actif = 1 AND email IS NOT NULL AND email <> ''"
+    )->fetchAll();
+    foreach ($destinataires as $destinataire) {
+        envoyer_mail(
+            $destinataire['email'],
+            $expediteur,
+            'Nouvel album : ' . $nom,
+            "Bonjour {$destinataire['nom']},\n\n"
+            . "Un nouvel album vient d'être ajouté à « Nos Sorties » :\n\n"
+            . "**{$nom}**\n\n"
+            . "Retrouvez les photos ici :\n{$lien}\n\n"
+            . "À bientôt,\nLe Focal Club Turballais"
+        );
+    }
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verifier_csrf();
@@ -188,7 +219,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $ordre = (int) $pdo->query('SELECT COALESCE(MAX(ordre), -1) FROM albums_sorties')->fetchColumn() + 1;
                     $pdo->prepare('INSERT INTO albums_sorties (nom, dossier_drive, type, ordre) VALUES (?, ?, ?, ?)')
                         ->execute([$nom, $dossier, $type, $ordre]);
-                    definir_message('succes', "Album « {$nom} » ajouté.");
+                    notifier_nouvel_album($pdo, $nom);
+                    definir_message('succes', "Album « {$nom} » ajouté. Un e-mail a été envoyé aux adhérents.");
                 } else {
                     $pdo->prepare('UPDATE albums_sorties SET nom = ?, type = ? WHERE id = ?')
                         ->execute([$nom, $type, $id]);
@@ -210,7 +242,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $ordre = (int) $pdo->query('SELECT COALESCE(MAX(ordre), -1) FROM albums_sorties')->fetchColumn() + 1;
                     $pdo->prepare('INSERT INTO albums_sorties (nom, dossier_drive, type, ordre) VALUES (?, ?, ?, ?)')
                         ->execute([$nom, $dossier, $type, $ordre]);
-                    definir_message('succes', "Album « {$nom} » ajouté.");
+                    notifier_nouvel_album($pdo, $nom);
+                    definir_message('succes', "Album « {$nom} » ajouté. Un e-mail a été envoyé aux adhérents.");
                 } else {
                     $pdo->prepare('UPDATE albums_sorties SET nom = ?, dossier_drive = ?, type = ? WHERE id = ?')
                         ->execute([$nom, $dossier, $type, $id]);

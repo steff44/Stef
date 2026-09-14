@@ -4059,6 +4059,42 @@ catégorie et photographe sans recoupement cochés ensemble, et réinitialisatio
 complète via « Toutes ». Comptes de cartes affichées et pastilles actives
 corrects à chaque étape ; aucune erreur JavaScript.
 
+## Nos Sorties : notification par e-mail à l'ajout d'un nouvel album
+
+**Choix explicite de l'utilisatrice, 14/09/2026** : « je voudrais que quand
+je rajoute une galerie tous les adhérents soient prévenus » — même principe
+que les notifications déjà en place pour une nouvelle sortie
+(`sorties-a-venir.php`) et un nouvel article de blog (`espace/blog.php`) :
+dès qu'un responsable ajoute un album à « Nos Sorties » depuis
+`parametres.php` (action `ajouter_album`, qu'il soit hébergé sur Google
+Drive ou directement sur ce site — les deux passent par le même bloc de
+code), un e-mail est envoyé à tous les adhérents `valide=1 actif=1` ayant
+une adresse renseignée (`envoyer_mail()`, un e-mail par adhérent, échoue
+silencieusement comme les autres notifications du site — voir
+`inc/mail.php`).
+
+Nouvelle fonction `notifier_nouvel_album($pdo, $nom)` dans
+`parametres.php` (reprend l'expéditeur/Reply-To depuis
+`parametres_site.email`, comme les deux autres notifications), appelée
+juste après l'`INSERT` réussi dans les deux branches d'`ajouter_album`
+(local et Drive) — jamais sur `modifier_album`, un renommage ou un
+changement de type d'un album existant n'ayant rien de nouveau à annoncer.
+Le message renvoie vers `https://focalclub.fr/nos-sorties.html` (page
+d'accueil des albums, pas un lien direct vers l'album — contrairement à
+une sortie ou un article, un album de « Nos Sorties » n'a pas d'ancre
+dédiée sur cette page). Le message de confirmation affiché au responsable
+(« Album « {nom} » ajouté. Un e-mail a été envoyé aux adhérents. ») reprend
+le même principe que les deux autres notifications.
+
+Testé hors ligne (14/09/2026) avec PHP+SQLite : e-mail envoyé exactement
+aux adhérents `valide=1 actif=1` avec une adresse renseignée (sur un jeu
+de six comptes couvrant chaque cas d'exclusion — en attente, inactif, sans
+e-mail, e-mail vide), sujet et lien corrects, contenu en gras du nom de
+l'album bien transformé (`**...**`), aucun envoi et aucune erreur quand
+personne n'est éligible, repli sur l'adresse par défaut quand aucun
+réglage `parametres_site.email` n'existe. `php -l` sur `parametres.php`
+après modification.
+
 ## Conventions
 
 - Tout le contenu visible est en **français**.
