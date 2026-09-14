@@ -3991,6 +3991,56 @@ isolation (28 photos sur deux pages, changement de page, remise à 1 à
 l'ouverture d'un nouveau dossier) ; `node --check` sur `js/main.js` après
 chaque modification.
 
+## Notre Galerie : filtre par catégorie en sélection multiple
+
+**Choix explicite de l'utilisatrice, 14/09/2026** : « est-il possible de
+pouvoir choisir plusieurs catégories dans "Notre Galerie" ». Jusqu'ici,
+les pastilles de catégorie (`galerie.html`) étaient exclusives — cliquer
+sur l'une désactivait automatiquement les autres, comme des boutons radio.
+
+`js/main.js` (bloc « Page galerie ») introduit `themesSelectionnes` (un
+`Set`, plutôt qu'une simple chaîne `filtreActif.valeur`) : cliquer sur une
+pastille de catégorie **coche ou décoche** cette seule catégorie, sans
+toucher aux autres déjà cochées. `filtreActif` passe de `{type: "theme",
+valeur}` à `{type: "themes", valeurs: [...]}` (pluriel) tant qu'au moins
+une catégorie est cochée ; dès que la dernière est décochée, on retombe
+sur `{type: "toutes"}`, comme cliquer sur la pastille « Toutes » elle-même
+(qui vide directement la sélection). `photosFiltrees()` calcule alors une
+**union** : une photo s'affiche dès qu'elle appartient à **au moins une**
+des catégories cochées, pas à toutes à la fois (une photo « Portrait » ET
+« Noir & Blanc » n'a pas besoin des deux pastilles cochées pour
+apparaître — cocher l'une ou l'autre suffit déjà à la montrer).
+
+`selectionnerPastille()` (qui n'activait visuellement qu'une seule
+pastille à la fois) est remplacée par `appliquerEtatPastilles()`, qui
+relit l'état de `filtreActif` à chaque clic pour cocher/décocher les
+pastilles en conséquence — plus robuste qu'ajouter/retirer la classe
+`is-active` au coup par coup dans chaque gestionnaire, et réutilisable
+aussi bien pour les catégories (plusieurs actives) que pour le
+photographe (une seule).
+
+**Le filtre « Photographe » reste exclusif**, hors du périmètre de cette
+demande (qui ne portait que sur les catégories) : sélectionner un nom
+vide la sélection de catégories (`themesSelectionnes.clear()`) et
+inversement, cocher une catégorie ferme le sous-panneau des photographes
+(`fermerPhotographes()`, déjà en place) — les deux filtres restent donc
+mutuellement exclusifs comme avant, seule la sélection *entre catégories*
+devient multiple. Portée volontairement limitée à `galerie.html`, comme
+demandé — ni la Galerie du Club (`espace/galerie-club.php`, qui affiche
+déjà chaque catégorie comme un groupe séparé) ni la sélection de photos
+récentes de l'accueil ne sont concernées.
+
+Testé hors ligne (14/09/2026) avec un serveur HTTP local et Playwright
+(un vrai `fetch()` vers `infos-galerie-club.php` échoue silencieusement
+en `file://`, un serveur était nécessaire) : cocher une catégorie filtre
+correctement, en cocher une seconde élargit l'affichage (union, pas
+intersection), décocher l'une des deux ne laisse que l'autre active,
+décocher la dernière revient à « Toutes » (toutes les photos, pastille
+« Toutes » réactivée) ; sélectionner un photographe alors qu'une
+catégorie était cochée bascule proprement sur le filtre exclusif
+(catégorie décochée), et recocher ensuite une catégorie désélectionne
+le photographe. Aucune erreur JavaScript.
+
 ## Conventions
 
 - Tout le contenu visible est en **français**.
