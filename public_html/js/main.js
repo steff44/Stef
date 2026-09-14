@@ -518,8 +518,38 @@
     frame.classList.add("is-fading");
     window.setTimeout(function () {
       if (jeton !== jetonFondu) return;
-      appliquer();
-      frame.classList.remove("is-fading");
+
+      // Précharge la nouvelle photo avant de la révéler (correctif
+      // 14/09/2026, signalé par l'utilisatrice : « entre deux photos
+      // l'écran devient noir [...] et la nouvelle photo apparaît »)
+      // : sans ça, `.is-fading` était retirée dès la fin du minuteur,
+      // avant même que le navigateur ait fini de télécharger l'image —
+      // le cadre redevenait opaque sur une <img> encore vide, laissant
+      // voir le fond sombre de la lightbox (avec le bouton « Pause »
+      // déjà affiché au-dessus) jusqu'à la fin du chargement réseau,
+      // plus visible sur les photos lourdes (Nos Sorties, Google Drive)
+      // ou une connexion lente. Un objet Image() séparé (jamais inséré
+      // dans le DOM) déclenche le téléchargement sans montrer de vide ;
+      // une fois prête, appliquer() pose la vraie <img> (même source,
+      // donc déjà en cache navigateur) et le fondu peut se dérouler sans
+      // accroc.
+      const source = photo.imageGrande || photo.image;
+      let revele = false;
+      function reveler() {
+        if (revele || jeton !== jetonFondu) return;
+        revele = true;
+        appliquer();
+        frame.classList.remove("is-fading");
+      }
+      if (!source) {
+        reveler();
+        return;
+      }
+      const precharge = new Image();
+      precharge.onload = reveler;
+      precharge.onerror = reveler;
+      precharge.src = source;
+      if (precharge.complete) reveler();
     }, DUREE_FONDU_MS);
   }
 
@@ -879,6 +909,7 @@
     const grilleDossiers = page.querySelector("[data-expo-dossiers]");
     const vuePhotos = page.querySelector("[data-expo-vue-photos]");
     const grillePhotos = page.querySelector("[data-expo-photos]");
+    const paginationPhotos = page.querySelector("[data-expo-pagination]");
     const titrePhotos = page.querySelector("[data-expo-titre-adherent]");
     const retour = page.querySelector("[data-expo-retour]");
     const retourAlbums = page.querySelector("[data-expo-retour-albums]");
@@ -896,11 +927,57 @@
     // visité ne redemande rien au serveur.
     const albumsCharges = {};
 
+    // Pagination des photos d'un dossier (choix explicite de l'utilisatrice,
+    // 14/09/2026 : « je veux aussi que les galeries de "Nos Sorties" aient
+    // 28 photos par page ») — même repère que « Notre Galerie »
+    // (`galerie.html`, voir PHOTOS_PAR_PAGE plus bas), même construction de
+    // la pagination numérotée. `photosDossierActuel` garde le tableau
+    // complet du dossier ouvert : la lightbox/le diaporama continuent d'y
+    // naviguer en entier, seule la grille à l'écran est plafonnée par page.
+    const PHOTOS_PAR_PAGE_EXPO = 28;
+    let pageActuelleExpo = 1;
+    let photosDossierActuel = [];
+
+    function renderPaginationExpo(totalPages) {
+      if (!paginationPhotos) return;
+      paginationPhotos.innerHTML = "";
+      if (totalPages <= 1) {
+        paginationPhotos.hidden = true;
+        return;
+      }
+      paginationPhotos.hidden = false;
+      for (let i = 1; i <= totalPages; i++) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "gallery-pagination-btn" + (i === pageActuelleExpo ? " is-active" : "");
+        btn.textContent = String(i);
+        if (i === pageActuelleExpo) btn.setAttribute("aria-current", "page");
+        btn.addEventListener("click", function () {
+          pageActuelleExpo = i;
+          renderPhotosDossier();
+          grillePhotos.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+        paginationPhotos.appendChild(btn);
+      }
+    }
+
+    function renderPhotosDossier() {
+      const totalPages = Math.max(1, Math.ceil(photosDossierActuel.length / PHOTOS_PAR_PAGE_EXPO));
+      if (pageActuelleExpo > totalPages) pageActuelleExpo = totalPages;
+      const debut = (pageActuelleExpo - 1) * PHOTOS_PAR_PAGE_EXPO;
+      grillePhotos.innerHTML = "";
+      photosDossierActuel.slice(debut, debut + PHOTOS_PAR_PAGE_EXPO).forEach(function (photo) {
+        grillePhotos.appendChild(buildPhotoCard(photo, 0, photo.membreNom, 0, photosDossierActuel, true));
+      });
+      renderPaginationExpo(totalPages);
+    }
+
     function montrerAlbums() {
       vuePhotos.hidden = true;
       vueDossiers.hidden = true;
       grilleAlbums.hidden = false;
       grillePhotos.innerHTML = "";
+      if (paginationPhotos) paginationPhotos.hidden = true;
       if (titre) titre.textContent = TITRE_PAR_DEFAUT;
       if (accroche) accroche.textContent = ACCROCHE_PAR_DEFAUT;
     }
@@ -910,10 +987,10 @@
       grilleAlbums.hidden = true;
       vueDossiers.hidden = false;
       grillePhotos.innerHTML = "";
+      if (paginationPhotos) paginationPhotos.hidden = true;
     }
 
     function ouvrirDossier(adherent) {
-      grillePhotos.innerHTML = "";
       if (titrePhotos) titrePhotos.textContent = adherent.nom;
 
       // Mêmes champs que les autres appelants de buildPhotoCard : le nom de
@@ -925,7 +1002,12 @@
       // masquerTitreAgrandi : même principe pour le titre (nom de fichier
       // brut, ex. « BRT-01_34X50_ »), également illisible une fois agrandi
       // (choix explicite de l'utilisateur, 25/08/2026).
-      const photos = adherent.photos.map(function (p) {
+      // Le titre de chaque photo reprend le nom de son fichier tel
+      // qu'envoyé par l'adhérent (ex. « mgl_1_1_62x33 ») : illisible sur
+      // une vignette, donc masqué ici — seul le nom du dossier (déjà
+      // affiché via membreNom) reste visible. Le titre garde son rôle
+      // ailleurs (Galerie du Club, accueil), où il est saisi à la main.
+      photosDossierActuel = adherent.photos.map(function (p) {
         return {
           titre: p.titre, theme: "", membreNom: adherent.nom,
           image: p.image,               // 1000px, pour la vignette
@@ -935,14 +1017,8 @@
           masquerTitreAgrandi: true,
         };
       });
-      // Le titre de chaque photo reprend le nom de son fichier tel
-      // qu'envoyé par l'adhérent (ex. « mgl_1_1_62x33 ») : illisible sur
-      // une vignette, donc masqué ici — seul le nom du dossier (déjà
-      // affiché via membreNom) reste visible. Le titre garde son rôle
-      // ailleurs (Galerie du Club, accueil), où il est saisi à la main.
-      photos.forEach(function (photo) {
-        grillePhotos.appendChild(buildPhotoCard(photo, 0, adherent.nom, 0, photos, true));
-      });
+      pageActuelleExpo = 1;
+      renderPhotosDossier();
 
       vueDossiers.hidden = true;
       vuePhotos.hidden = false;

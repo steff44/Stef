@@ -3921,6 +3921,76 @@ Les deux diagnostics temporaires (`diag-album-mesquer.yml`,
 `diag-vider-cache-albums.php`) ont été supprimés une fois la cause
 confirmée.
 
+## Nos Sorties : pagination des dossiers, fondu du diaporama et repère de défilement mobile
+
+Trois demandes de l'utilisatrice, 14/09/2026, traitées ensemble.
+
+**Les photos d'un dossier d'adhérent sont désormais paginées, 28 par page**
+(choix explicite : « je veux aussi que les galeries de "Nos Sorties" aient
+28 photos par page ») — même repère que « Notre Galerie »
+(`galerie.html`, voir plus haut). `js/main.js` (bloc « Nos Sorties »)
+reprend le même principe que la pagination de `galerie.html` :
+`photosDossierActuel` garde le tableau complet des photos du dossier
+ouvert, `renderPhotosDossier()` n'en affiche qu'une tranche de
+`PHOTOS_PAR_PAGE_EXPO` (28) à la fois, `renderPaginationExpo()` construit
+les boutons numérotés dans un nouveau `<nav class="gallery-pagination"
+data-expo-pagination hidden>` sous la grille (`nos-sorties.html`), masqué
+tant qu'il n'y a qu'une seule page. Comme sur `galerie.html`, la lightbox
+et le diaporama continuent de porter sur `photosDossierActuel` en entier
+(passé tel quel à `buildPhotoCard()`), pas seulement sur la page affichée
+à l'écran — seule la grille est plafonnée par page. `pageActuelleExpo` est
+remise à 1 à chaque nouveau dossier ouvert (`ouvrirDossier()`), et la
+pagination est masquée en revenant aux dossiers ou aux albums
+(`montrerDossiers()`/`montrerAlbums()`), pour ne jamais l'afficher sur la
+mauvaise vue. Portée limitée à ce niveau 3 (les photos d'un adhérent) — la
+grille des albums et celle des dossiers d'un album n'ont pas besoin de
+pagination, leur nombre restant limité par construction (un album par
+sortie, un dossier par adhérent).
+
+**Le diaporama affichait un écran noir avec le bouton « Pause » entre deux
+photos, avant que la photo suivante n'apparaisse** (signalé par
+l'utilisatrice : « entre deux photos l'écran devient noir et affiche
+Pause et la nouvelle photo apparaît »). Cause : `renderLightbox(fondu)`
+(`js/main.js`) retirait la classe `.is-fading` (donc révélait le cadre,
+opacité 1) dès la fin du minuteur de 600 ms, **avant** que le navigateur
+ait fini de télécharger l'image suivante — l'`<img>` posée par
+`poserPhotoAgrandie()` restait alors vide le temps du chargement réseau,
+laissant voir le fond sombre de la lightbox à travers un cadre pourtant
+redevenu opaque, avec le bouton « Diaporama »/« Pause » déjà visible
+au-dessus (lui n'a jamais été concerné par le fondu). D'autant plus
+visible sur les photos de « Nos Sorties » (hébergées sur Google Drive,
+souvent plus lourdes que celles de la Galerie du Club) ou sur une
+connexion mobile plus lente. **Corrigé** en précargeant la photo suivante
+avant de la révéler : un objet `Image()` séparé (jamais inséré dans le
+DOM) reçoit la même source, et seul son évènement `load` (ou `error`, pour
+ne jamais rester bloqué sur une image cassée) déclenche `appliquer()` puis
+le retrait de `.is-fading` — si l'image est déjà en cache navigateur
+(`precharge.complete`), la révélation a lieu immédiatement, sans attente
+perceptible. Portée générique : `renderLightbox()` est partagée par tous
+les diaporamas du site (`index.html`, `galerie.html`, `nos-sorties.html`,
+`espace/galerie-club.php`), donc un seul correctif les couvre tous.
+
+**Sur mobile, ouvrir un album ou un dossier d'adhérent affichait la vue
+avec le haut caché sous l'en-tête** (signalé par l'utilisatrice : « lorsque
+je clique sur l'album que je désire, l'album qui apparaît a la partie
+haute cachée »). Cause : `peindreDossiers()` et `ouvrirDossier()`
+(`js/main.js`) font défiler la page vers la vue nouvellement affichée avec
+`scrollIntoView({ block: "start" })`, qui amène le haut de l'élément
+**pile** au bord supérieur de la fenêtre — or `.site-header` est collant
+(`position: sticky`, voir plus haut) et recouvre alors ce haut, plus
+gênant sur mobile où l'en-tête occupe une plus grande part de l'écran.
+Même piège déjà rencontré et corrigé pour les ancres de `documents.php`/
+`galerie-club.php` (`.rubrique-documents`, `.groupe-galerie`) : `[data-
+expo-vue-dossiers]` et `[data-expo-vue-photos]` (`css/style.css`) gagnent
+le même `scroll-margin-top: 120px`, qui laisse `scrollIntoView()` réserver
+la hauteur de l'en-tête avant de considérer l'élément « en haut » de
+l'écran.
+
+Vérifié hors ligne (14/09/2026) : logique de pagination testée en
+isolation (28 photos sur deux pages, changement de page, remise à 1 à
+l'ouverture d'un nouveau dossier) ; `node --check` sur `js/main.js` après
+chaque modification.
+
 ## Conventions
 
 - Tout le contenu visible est en **français**.

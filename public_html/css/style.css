@@ -1871,6 +1871,16 @@ button.lien-retour {
   margin: 0 0 36px;
   scroll-margin-top: 120px;
 }
+/* Niveaux 2 et 3 de « Nos Sorties » (dossiers d'un album, puis photos d'un
+   adhérent) : sans ce repère, scrollIntoView() les amenait pile sous
+   l'en-tête collant (.site-header), qui masquait leur haut — surtout gênant
+   sur mobile, où l'en-tête prend une plus grande part de l'écran (signalé
+   par l'utilisatrice, 14/09/2026, sur l'ouverture d'un album). Même
+   principe que .rubrique-documents/.groupe-galerie ci-dessus. */
+[data-expo-vue-dossiers],
+[data-expo-vue-photos] {
+  scroll-margin-top: 120px;
+}
 .rubrique-documents h2,
 .groupe-galerie h2 {
   font-family: var(--font-heading);
