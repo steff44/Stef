@@ -13,6 +13,42 @@ declare(strict_types=1);
 require_once __DIR__ . '/inc/page.php';
 require_once __DIR__ . '/inc/televersement.php';
 require_once __DIR__ . '/inc/documents_categories.php';
+require_once __DIR__ . '/inc/mail.php';
+
+/*
+ * Prévient tous les adhérents validés par e-mail qu'un ou plusieurs
+ * documents ont été déposés dans « Documents du Club » (choix explicite de
+ * l'utilisatrice, 14/09/2026) — même principe que les notifications déjà en
+ * place pour une nouvelle sortie, un nouvel article de blog ou un nouvel
+ * album de « Nos Sorties » : un e-mail par adhérent valide=1 actif=1 avec
+ * une adresse renseignée, échoue silencieusement (voir envoyer_mail(),
+ * inc/mail.php). Un seul e-mail par dépôt, même si plusieurs fichiers ont
+ * été envoyés d'un coup — jamais un e-mail par fichier.
+ */
+function notifier_nouveaux_documents(PDO $pdo, string $categorie_nom, array $titres): void
+{
+    $expediteur = valeur_parametre($pdo, 'email') ?: 'cooky44.sl@gmail.com';
+    $lien       = SITE_URL . '/espace/documents.php';
+    $liste      = implode("\n", array_map(static fn($titre) => "- {$titre}", $titres));
+    $pluriel    = count($titres) > 1;
+
+    $destinataires = $pdo->query(
+        "SELECT nom, email FROM adherents WHERE valide = 1 AND actif = 1 AND email IS NOT NULL AND email <> ''"
+    )->fetchAll();
+    foreach ($destinataires as $destinataire) {
+        envoyer_mail(
+            $destinataire['email'],
+            $expediteur,
+            ($pluriel ? 'Nouveaux documents' : 'Nouveau document') . ' : ' . $categorie_nom,
+            "Bonjour {$destinataire['nom']},\n\n"
+            . ($pluriel ? "De nouveaux documents ont été ajoutés" : "Un nouveau document a été ajouté")
+            . " dans « {$categorie_nom} » :\n\n"
+            . "{$liste}\n\n"
+            . "Retrouvez-les ici :\n{$lien}\n\n"
+            . "À bientôt,\nLe Focal Club Turballais"
+        );
+    }
+}
 
 $adherent = exige_connexion();
 $pdo      = base_de_donnees();
@@ -48,6 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $reussis = 0;
             $erreurs = [];
+            $titres_reussis = [];
 
             foreach ($fichiers as $fichier) {
                 $resultat = enregistrer_fichier_envoye($fichier, __DIR__ . '/fichiers', 'document');
@@ -78,12 +115,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $adherent['id'],
                 ]);
                 $reussis++;
+                $titres_reussis[] = $titre !== '' ? $titre : $nom_origine;
+            }
+
+            if ($titres_reussis !== []) {
+                notifier_nouveaux_documents($pdo, $categorie['categorie_nom'], $titres_reussis);
             }
 
             $parts = [];
             if ($reussis > 0) {
                 $parts[] = "{$reussis} document" . ($reussis > 1 ? 's' : '')
-                    . " ajouté" . ($reussis > 1 ? 's' : '') . " dans « {$categorie['categorie_nom']} ».";
+                    . " ajouté" . ($reussis > 1 ? 's' : '') . " dans « {$categorie['categorie_nom']} ». Un e-mail a été envoyé aux adhérents.";
             }
             array_push($parts, ...$erreurs);
             definir_message($erreurs ? 'erreur' : 'succes', implode(' ', $parts));

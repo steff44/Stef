@@ -4095,6 +4095,42 @@ personne n'est éligible, repli sur l'adresse par défaut quand aucun
 réglage `parametres_site.email` n'existe. `php -l` sur `parametres.php`
 après modification.
 
+## Documents du club : notification par e-mail au dépôt
+
+**Choix explicite de l'utilisatrice, 14/09/2026** : « je voudrais aussi
+envoyer un mail à chaque fois que je rajoute un document dans "Documents
+du club" » — même principe que les notifications déjà en place pour une
+nouvelle sortie, un nouvel article de blog et un nouvel album de « Nos
+Sorties » : dès qu'un responsable ou un éditeur dépose un ou plusieurs
+documents (`espace/documents.php`), un e-mail est envoyé à tous les
+adhérents `valide=1 actif=1` ayant une adresse renseignée (`envoyer_mail()`,
+un e-mail par adhérent, échoue silencieusement comme les autres
+notifications du site — voir `inc/mail.php`).
+
+Nouvelle fonction `notifier_nouveaux_documents($pdo, $categorie_nom,
+$titres)` dans `documents.php` (reprend l'expéditeur/Reply-To depuis
+`parametres_site.email`, comme les trois autres notifications). Le
+formulaire de dépôt acceptant **plusieurs fichiers à la fois**
+(`documents[]`, voir plus haut) — un seul e-mail par dépôt est envoyé,
+listant tous les titres réussis (`$titres_reussis`, alimenté dans la
+boucle `foreach` existante), jamais un e-mail par fichier. Un fichier
+refusé (mauvais format, trop lourd) n'entre pas dans cette liste — même
+principe que le message de confirmation affiché à l'écran, qui ne compte
+que les dépôts réussis. Aucun e-mail n'est envoyé si tous les fichiers du
+lot ont échoué. Le message renvoie vers `espace/documents.php` et nomme la
+catégorie de dépôt, avec l'accord singulier/pluriel selon le nombre de
+documents (« Nouveau document » / « Nouveaux documents »). Le message de
+confirmation affiché au responsable/éditeur reprend le même principe que
+les trois autres notifications (« … Un e-mail a été envoyé aux
+adhérents. »).
+
+Testé hors ligne (14/09/2026) avec PHP+SQLite : un seul document ajouté
+(un e-mail par adhérent éligible, texte au singulier), plusieurs documents
+ajoutés d'un coup (un seul e-mail par adhérent listant tous les titres, pas
+un e-mail par fichier, accord au pluriel), aucun envoi et aucune erreur
+quand personne n'est éligible. `php -l` sur `documents.php` après
+modification.
+
 ## Conventions
 
 - Tout le contenu visible est en **français**.
