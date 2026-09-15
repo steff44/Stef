@@ -21,11 +21,23 @@ require_once __DIR__ . '/inc/agenda.php';
 
 $pdo = base_de_donnees();
 
-$sorties = $pdo->query('SELECT id, titre, categorie, debut FROM sorties ORDER BY debut ASC')->fetchAll();
+$sorties = $pdo->query('SELECT id, titre, categorie, debut, fin FROM sorties ORDER BY debut ASC')->fetchAll();
 
+// Une sortie sur plusieurs jours (choix explicite de l'utilisatrice,
+// 15/09/2026) apparaît sur chacun des jours qu'elle couvre, pas seulement
+// celui de son début — aussi bien en pastille (vues mois/semaine) qu'en
+// point « a-un-evenement » (vue année). Plafonné à 60 jours d'affilée : une
+// sortie du club n'a pas vocation à durer plus longtemps, et ça évite qu'une
+// date de fin mal saisie très lointaine ne peuple le calendrier des années
+// durant.
 $sorties_par_jour = [];
 foreach ($sorties as $s) {
-    $sorties_par_jour[date('Y-m-d', strtotime($s['debut']))][] = $s;
+    $jour_debut = strtotime(date('Y-m-d', strtotime($s['debut'])));
+    $jour_fin   = $s['fin'] ? strtotime(date('Y-m-d', strtotime($s['fin']))) : $jour_debut;
+    $jour_fin   = min($jour_fin, strtotime('+60 days', $jour_debut));
+    for ($jour = $jour_debut; $jour <= $jour_fin; $jour += 86400) {
+        $sorties_par_jour[date('Y-m-d', $jour)][] = $s;
+    }
 }
 
 $aujourdhui = date('Y-m-d');

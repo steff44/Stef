@@ -62,9 +62,15 @@ const COLONNES_ATTENDUES = [
 // restent classées. `photo` est facultative : nom de fichier dans
 // espace/photos/, posée par sorties-a-venir.php, redimensionnée en carré
 // 400×400 à l'envoi.
+// `fin` (choix explicite de l'utilisatrice, 15/09/2026 : « je voudrais
+// pouvoir mettre une date de début et une date de fin si la sortie est sur
+// plusieurs jours ») reste NULL pour une sortie d'un seul jour/instant, comme
+// avant l'ajout de cette colonne — seule sa présence change le comportement
+// d'affichage (voir periode_sortie_en_francais(), inc/page.php).
 const COLONNES_SORTIES_ATTENDUES = [
     'categorie' => "VARCHAR(30) NOT NULL DEFAULT 'Sortie photo'",
     'photo'     => 'VARCHAR(190) DEFAULT NULL',
+    'fin'       => 'DATETIME DEFAULT NULL',
 ];
 
 // Colonnes attendues sur `documents`. `categorie` (VARCHAR) est l'ancien

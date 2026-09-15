@@ -204,6 +204,28 @@ function date_en_francais(string $date_sql, bool $avec_heure = true): string
 }
 
 /*
+ * Formate la période d'une sortie (espace/sorties-a-venir.php) : une simple
+ * date_en_francais() du début si la sortie tient sur un seul jour ($fin_sql
+ * absent, ou tombant le même jour civil que $debut_sql — l'heure de fin
+ * n'entre pas en ligne de compte, seule la date), sinon « Du {début} au
+ * {fin} » — choix explicite de l'utilisatrice, 15/09/2026, pour les sorties
+ * sur plusieurs jours.
+ */
+function periode_sortie_en_francais(string $debut_sql, ?string $fin_sql, bool $avec_heure = true): string
+{
+    if ($fin_sql === null || $fin_sql === '') {
+        return date_en_francais($debut_sql, $avec_heure);
+    }
+
+    $meme_jour = date('Y-m-d', strtotime($debut_sql)) === date('Y-m-d', strtotime($fin_sql));
+    if ($meme_jour) {
+        return date_en_francais($debut_sql, $avec_heure);
+    }
+
+    return 'Du ' . date_en_francais($debut_sql, $avec_heure) . ' au ' . date_en_francais($fin_sql, $avec_heure);
+}
+
+/*
  * Date compacte « 16/08/26 », pour les tableaux où la forme longue prendrait
  * toute la largeur. L'heure est renvoyée à part par heure_courte().
  */

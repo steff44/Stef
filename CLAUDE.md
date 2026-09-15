@@ -4131,6 +4131,82 @@ un e-mail par fichier, accord au pluriel), aucun envoi et aucune erreur
 quand personne n'est éligible. `php -l` sur `documents.php` après
 modification.
 
+## Sorties sur plusieurs jours : date de fin facultative
+
+**Choix explicite de l'utilisatrice, 15/09/2026** : « je voudrais que quand
+je rajoute une nouvelle sortie je puisse mettre une date de début et une
+date de fin si la sortie est sur plusieurs jours ». Jusqu'ici, `sorties`
+n'avait qu'un seul instant (`debut`) — une sortie sur plusieurs jours
+(week-end photo, séjour…) n'avait aucun moyen de le signaler.
+
+Nouvelle colonne `fin DATETIME DEFAULT NULL` sur `sorties`
+(`COLONNES_SORTIES_ATTENDUES`, `inc/migration.php` — appliquée
+automatiquement à la base déjà en ligne — et `inc/schema.sql` pour une
+prochaine installation) : `NULL` pour une sortie d'un seul jour/instant,
+comportement strictement inchangé ; renseignée seulement si la sortie
+dure plusieurs jours. Aucun nouveau témoin de version nécessaire —
+`signature_schema()` hache déjà les clés de `COLONNES_SORTIES_ATTENDUES`,
+l'ajout de `fin` suffit à lui seul à invalider le témoin existant.
+
+**Formulaires « Ajouter une sortie » et « Modifier »**
+(`espace/sorties-a-venir.php`) gagnent un second champ « Date et heure de
+fin (facultatif — si la sortie dure plusieurs jours) », juste après
+« Date et heure de début » (renommé pour la symétrie). Validation côté
+serveur, dans les deux actions `creer` et `modifier` : si une fin est
+saisie, elle doit être postérieure ou égale au début, sinon message
+d'erreur dédié — « La date de fin doit être postérieure ou égale à la
+date de début. » — et rien n'est enregistré.
+
+**`periode_sortie_en_francais($debut_sql, $fin_sql, $avec_heure = true)`**
+(nouvelle fonction, `inc/page.php`, à côté de `date_en_francais()`) :
+sans fin, ou avec une fin tombant le **même jour civil** que le début
+(l'heure de fin seule ne compte pas — une sortie qui se termine à 22h le
+jour même reste un « seul jour »), renvoie simplement
+`date_en_francais($debut)`, comme avant cette fonctionnalité ; avec une
+fin un autre jour, renvoie « Du {début} au {fin} ». Remplace
+`date_en_francais($sortie['debut'])` aux quatre endroits qui affichaient
+la date d'une sortie : la carte « à venir », la carte « passée »
+(sans heure), le corps de l'e-mail de notification et le message
+WhatsApp — un seul changement de fonction suffit donc à propager
+l'affichage de la période partout où une sortie est mentionnée.
+
+**Une sortie sur plusieurs jours reste « à venir » jusqu'à sa fin, pas
+seulement jusqu'à son début** : `$a_venir`/`$passees`
+(`sorties-a-venir.php`) comparent désormais `$s['fin'] ?: $s['debut']`
+à l'instant présent plutôt que `$s['debut']` seul — sans `fin`,
+comportement inchangé (repli sur `debut`). Une sortie de trois jours
+commencée hier et pas encore terminée continue donc d'apparaître dans
+« À venir », avec le bouton d'inscription actif, plutôt que de basculer
+prématurément dans « Sorties passées » dès son premier jour écoulé.
+
+**Le calendrier (`espace/agenda.php`) affiche la sortie sur chacun des
+jours qu'elle couvre**, pas seulement celui de son début — en pastille
+(vues mois/semaine) comme en point « au moins un événement » (vue année) :
+`$sorties_par_jour` est désormais peuplé par une boucle du jour de début
+au jour de fin (inclus), plafonnée à 60 jours d'affilée — une sortie du
+club n'a pas vocation à durer plus longtemps, et ce plafond évite qu'une
+date de fin mal saisie très lointaine (faute de frappe d'année) ne peuple
+le calendrier des années durant. Sans `fin`, la boucle ne fait qu'un tour
+— comportement identique à avant.
+
+La petite pastille jour/mois en tête de chaque carte « à venir »
+(`.sortie-date`) continue d'afficher uniquement le jour et le mois du
+**début** — la période complète, elle, est dans le texte
+`periode_sortie_en_francais()` juste en dessous.
+
+Testé hors ligne (15/09/2026) : `periode_sortie_en_francais()` (sans fin,
+fin le même jour, fin un autre jour, avec/sans heure) ; validation
+début/fin (fin absente acceptée, fin après début acceptée, fin égale au
+début acceptée, fin avant début refusée, fin invalide refusée) ; calcul
+à-venir/passées (une sortie en cours au milieu de sa période reste à
+venir) ; propagation sur le calendrier (sortie de 3 jours présente sur
+ses 3 jours, plafond à 60 jours vérifié sur une fin délibérément
+lointaine). Migration rejouée sur SQLite (ALTER TABLE idempotent sur une
+table `sorties` sans la colonne, INSERT/UPDATE avec et sans `fin`,
+relecture correcte y compris `NULL`). `php -l` sur les quatre fichiers
+modifiés (`sorties-a-venir.php`, `agenda.php`, `inc/page.php`,
+`inc/migration.php`).
+
 ## Conventions
 
 - Tout le contenu visible est en **français**.

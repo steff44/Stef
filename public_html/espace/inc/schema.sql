@@ -179,6 +179,10 @@ CREATE TABLE IF NOT EXISTS sorties (
   description  TEXT         DEFAULT NULL,
   lieu         VARCHAR(190) DEFAULT NULL,
   debut        DATETIME     NOT NULL,
+  -- Facultative : NULL pour une sortie d'un seul jour/instant, renseignée si
+  -- la sortie dure plusieurs jours (voir COLONNES_SORTIES_ATTENDUES,
+  -- inc/migration.php, pour la base déjà en ligne).
+  fin          DATETIME     DEFAULT NULL,
   rendez_vous  VARCHAR(190) DEFAULT NULL,
   covoiturage  TINYINT(1)   NOT NULL DEFAULT 0,
   -- Nom de fichier dans espace/photos/ (même dépôt que photos_privees),

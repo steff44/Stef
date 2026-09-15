@@ -57,15 +57,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exige_gestionnaire();
         $titre     = trim((string) ($_POST['titre'] ?? ''));
         $debut     = trim((string) ($_POST['debut'] ?? ''));
+        $fin       = trim((string) ($_POST['fin'] ?? ''));
         $categorie = (string) ($_POST['categorie'] ?? '');
         if (!in_array($categorie, CATEGORIES_SORTIES, true)) {
             $categorie = CATEGORIES_SORTIES[0];
         }
 
-        $horodatage = strtotime($debut);
+        $horodatage     = strtotime($debut);
+        $horodatage_fin = $fin !== '' ? strtotime($fin) : null;
 
         if ($titre === '' || $horodatage === false) {
             definir_message('erreur', "Le titre et la date sont obligatoires.");
+        } elseif ($fin !== '' && ($horodatage_fin === false || $horodatage_fin < $horodatage)) {
+            definir_message('erreur', "La date de fin doit être postérieure ou égale à la date de début.");
         } else {
             $requete = $pdo->prepare('SELECT photo FROM sorties WHERE id = ?');
             $requete->execute([$id]);
@@ -93,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
 
                 $pdo->prepare(
-                    'UPDATE sorties SET titre = ?, categorie = ?, description = ?, lieu = ?, debut = ?, rendez_vous = ?, covoiturage = ?, photo = ?
+                    'UPDATE sorties SET titre = ?, categorie = ?, description = ?, lieu = ?, debut = ?, fin = ?, rendez_vous = ?, covoiturage = ?, photo = ?
                      WHERE id = ?'
                 )->execute([
                     $titre,
@@ -101,6 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     trim((string) ($_POST['description'] ?? '')) ?: null,
                     trim((string) ($_POST['lieu'] ?? '')) ?: null,
                     date('Y-m-d H:i:s', $horodatage),
+                    $horodatage_fin !== null ? date('Y-m-d H:i:s', $horodatage_fin) : null,
                     trim((string) ($_POST['rendez_vous'] ?? '')) ?: null,
                     isset($_POST['covoiturage']) ? 1 : 0,
                     $photo,
@@ -114,16 +119,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exige_gestionnaire();
         $titre     = trim((string) ($_POST['titre'] ?? ''));
         $debut     = trim((string) ($_POST['debut'] ?? ''));
+        $fin       = trim((string) ($_POST['fin'] ?? ''));
         $categorie = (string) ($_POST['categorie'] ?? '');
         if (!in_array($categorie, CATEGORIES_SORTIES, true)) {
             $categorie = CATEGORIES_SORTIES[0];
         }
 
-        // Le champ datetime-local renvoie « 2026-09-12T14:30 ».
-        $horodatage = strtotime($debut);
+        // Le champ datetime-local renvoie « 2026-09-12T14:30 ». La date de fin
+        // est facultative — seulement pour une sortie sur plusieurs jours
+        // (choix explicite de l'utilisatrice, 15/09/2026) — et doit alors
+        // tomber après (ou en même temps que) le début.
+        $horodatage     = strtotime($debut);
+        $horodatage_fin = $fin !== '' ? strtotime($fin) : null;
 
         if ($titre === '' || $horodatage === false) {
             definir_message('erreur', "Le titre et la date sont obligatoires.");
+        } elseif ($fin !== '' && ($horodatage_fin === false || $horodatage_fin < $horodatage)) {
+            definir_message('erreur', "La date de fin doit être postérieure ou égale à la date de début.");
         } else {
             // La photo est facultative : un fichier absent n'est pas une erreur.
             $photo       = null;
@@ -143,14 +155,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $lieu        = trim((string) ($_POST['lieu'] ?? '')) ?: null;
 
             $pdo->prepare(
-                'INSERT INTO sorties (titre, categorie, description, lieu, debut, rendez_vous, covoiturage, photo)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+                'INSERT INTO sorties (titre, categorie, description, lieu, debut, fin, rendez_vous, covoiturage, photo)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
             )->execute([
                 $titre,
                 $categorie,
                 $description,
                 $lieu,
                 date('Y-m-d H:i:s', $horodatage),
+                $horodatage_fin !== null ? date('Y-m-d H:i:s', $horodatage_fin) : null,
                 trim((string) ($_POST['rendez_vous'] ?? '')) ?: null,
                 isset($_POST['covoiturage']) ? 1 : 0,
                 $photo,
@@ -161,8 +174,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // de l'utilisateur, 27/08/2026) — un e-mail qui échoue à partir
             // ne doit jamais faire échouer la création de la sortie elle-même
             // (envoyer_mail() échoue déjà silencieusement, voir inc/mail.php).
-            $date_francaise = date_en_francais(date('Y-m-d H:i:s', $horodatage));
-            $resume_sortie  = "**{$titre}**\n{$date_francaise}"
+            $periode_francaise = periode_sortie_en_francais(
+                date('Y-m-d H:i:s', $horodatage),
+                $horodatage_fin !== null ? date('Y-m-d H:i:s', $horodatage_fin) : null
+            );
+            $resume_sortie  = "**{$titre}**\n{$periode_francaise}"
                 . ($lieu ? "\nLieu : {$lieu}" : '')
                 . ($description ? "\n\n{$description}" : '');
             $lien_sortie    = SITE_URL . '/espace/sorties-a-venir.php#sortie-' . $nouvelle_id;
@@ -216,9 +232,13 @@ foreach ($pdo->query(
     $participants[(int) $ligne['sortie_id']][] = $ligne['nom'];
 }
 
+// Une sortie sur plusieurs jours reste « à venir » tant qu'elle n'est pas
+// terminée, pas seulement tant qu'elle n'a pas commencé (choix explicite de
+// l'utilisatrice, 15/09/2026, avec l'ajout de la date de fin) — sans `fin`,
+// comportement inchangé : basé sur le seul `debut`.
 $maintenant = time();
-$a_venir    = array_filter($sorties, static fn($s) => strtotime($s['debut']) >= $maintenant);
-$passees    = array_reverse(array_filter($sorties, static fn($s) => strtotime($s['debut']) < $maintenant));
+$a_venir    = array_filter($sorties, static fn($s) => strtotime($s['fin'] ?: $s['debut']) >= $maintenant);
+$passees    = array_reverse(array_filter($sorties, static fn($s) => strtotime($s['fin'] ?: $s['debut']) < $maintenant));
 
 debut_page("Sorties à venir", 'sorties');
 titre_page("Sorties à venir", "Les prochaines sorties du club, et qui y participe.", false, true);
@@ -250,8 +270,12 @@ titre_page("Sorties à venir", "Les prochaines sorties du club, et qui y partici
           </select>
         </div>
         <div class="field">
-          <label for="debut">Date et heure</label>
+          <label for="debut">Date et heure de début</label>
           <input type="datetime-local" id="debut" name="debut" required>
+        </div>
+        <div class="field">
+          <label for="fin">Date et heure de fin (facultatif — si la sortie dure plusieurs jours)</label>
+          <input type="datetime-local" id="fin" name="fin">
         </div>
         <div class="field">
           <label for="lieu">Lieu</label>
@@ -302,7 +326,7 @@ titre_page("Sorties à venir", "Les prochaines sorties du club, et qui y partici
             <h3><?= e($sortie['titre']) ?>
               <span class="categorie-badge categorie-badge--<?= classe_categorie($sortie['categorie']) ?>"><?= e($sortie['categorie']) ?></span>
             </h3>
-            <p class="sortie-quand"><?= e(date_en_francais($sortie['debut'])) ?></p>
+            <p class="sortie-quand"><?= e(periode_sortie_en_francais($sortie['debut'], $sortie['fin'])) ?></p>
             <?php if ($sortie['lieu']): ?>
               <p class="sortie-detail">📍 <?= e($sortie['lieu']) ?></p>
             <?php endif; ?>
@@ -347,7 +371,7 @@ titre_page("Sorties à venir", "Les prochaines sorties du club, et qui y partici
                   // l'utilisateur, 27/08/2026.
                   $texte_partage = "📸 Nouvelle sortie du Focal Club Turballais\n\n"
                       . '*' . $sortie['titre'] . "*\n"
-                      . '🗓 ' . date_en_francais($sortie['debut']) . "\n"
+                      . '🗓 ' . periode_sortie_en_francais($sortie['debut'], $sortie['fin']) . "\n"
                       . ($sortie['lieu'] ? '📍 ' . $sortie['lieu'] . "\n" : '')
                       . ($sortie['description'] ? "\n" . $sortie['description'] . "\n" : '')
                       . "\nInfos et inscription : " . SITE_URL . '/espace/sorties-a-venir.php#sortie-' . (int) $sortie['id'];
@@ -374,9 +398,14 @@ titre_page("Sorties à venir", "Les prochaines sorties du club, et qui y partici
                       </select>
                     </div>
                     <div class="field">
-                      <label for="debut-<?= (int) $sortie['id'] ?>">Date et heure</label>
+                      <label for="debut-<?= (int) $sortie['id'] ?>">Date et heure de début</label>
                       <input type="datetime-local" id="debut-<?= (int) $sortie['id'] ?>" name="debut" required
                              value="<?= e(date('Y-m-d\TH:i', strtotime($sortie['debut']))) ?>">
+                    </div>
+                    <div class="field">
+                      <label for="fin-<?= (int) $sortie['id'] ?>">Date et heure de fin (facultatif — si la sortie dure plusieurs jours)</label>
+                      <input type="datetime-local" id="fin-<?= (int) $sortie['id'] ?>" name="fin"
+                             value="<?= $sortie['fin'] ? e(date('Y-m-d\TH:i', strtotime($sortie['fin']))) : '' ?>">
                     </div>
                     <div class="field">
                       <label for="lieu-<?= (int) $sortie['id'] ?>">Lieu</label>
@@ -429,7 +458,7 @@ titre_page("Sorties à venir", "Les prochaines sorties du club, et qui y partici
             <h3><?= e($sortie['titre']) ?>
               <span class="categorie-badge categorie-badge--<?= classe_categorie($sortie['categorie']) ?>"><?= e($sortie['categorie']) ?></span>
             </h3>
-            <p class="sortie-quand"><?= e(date_en_francais($sortie['debut'], false)) ?>
+            <p class="sortie-quand"><?= e(periode_sortie_en_francais($sortie['debut'], $sortie['fin'], false)) ?>
               <?= $sortie['lieu'] ? ' — ' . e($sortie['lieu']) : '' ?></p>
           </div>
         </li>
