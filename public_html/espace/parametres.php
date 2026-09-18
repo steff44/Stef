@@ -24,8 +24,8 @@ require_once __DIR__ . '/inc/blog.php';
 require_once __DIR__ . '/inc/albums.php';
 require_once __DIR__ . '/inc/mail.php';
 
-exige_administrateur();
-$pdo = base_de_donnees();
+$adherent = exige_administrateur();
+$pdo      = base_de_donnees();
 
 const CHAMPS = [
     'nom_lieu'            => 'Nom du lieu de réunion',
@@ -66,6 +66,25 @@ function notifier_nouvel_album(PDO $pdo, string $nom): void
             . "À bientôt,\nLe Focal Club Turballais"
         );
     }
+}
+
+/*
+ * Confirmation personnelle au responsable qui vient d'ajouter l'album
+ * (choix explicite de l'utilisatrice, 18/09/2026, voir
+ * envoyer_confirmation_personnelle(), inc/mail.php).
+ */
+function confirmer_nouvel_album(PDO $pdo, array $adherent, string $nom): void
+{
+    envoyer_confirmation_personnelle(
+        $pdo,
+        $adherent,
+        'Confirmation : album ' . $nom,
+        "Bonjour {$adherent['nom']},\n\n"
+        . "Ceci confirme l'ajout de l'album « {$nom} » à « Nos Sorties ».\n\n"
+        . "Si vous constatez une erreur, vous pouvez le corriger ou le supprimer ici :\n"
+        . SITE_URL . "/espace/parametres.php\n\n"
+        . "À bientôt,\nLe Focal Club Turballais"
+    );
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -220,6 +239,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $pdo->prepare('INSERT INTO albums_sorties (nom, dossier_drive, type, ordre) VALUES (?, ?, ?, ?)')
                         ->execute([$nom, $dossier, $type, $ordre]);
                     notifier_nouvel_album($pdo, $nom);
+                    confirmer_nouvel_album($pdo, $adherent, $nom);
                     definir_message('succes', "Album « {$nom} » ajouté. Un e-mail a été envoyé aux adhérents.");
                 } else {
                     $pdo->prepare('UPDATE albums_sorties SET nom = ?, type = ? WHERE id = ?')
@@ -243,6 +263,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $pdo->prepare('INSERT INTO albums_sorties (nom, dossier_drive, type, ordre) VALUES (?, ?, ?, ?)')
                         ->execute([$nom, $dossier, $type, $ordre]);
                     notifier_nouvel_album($pdo, $nom);
+                    confirmer_nouvel_album($pdo, $adherent, $nom);
                     definir_message('succes', "Album « {$nom} » ajouté. Un e-mail a été envoyé aux adhérents.");
                 } else {
                     $pdo->prepare('UPDATE albums_sorties SET nom = ?, dossier_drive = ?, type = ? WHERE id = ?')

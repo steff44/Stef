@@ -200,6 +200,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 );
             }
 
+            envoyer_confirmation_personnelle(
+                $pdo,
+                $adherent,
+                'Confirmation : ' . $titre,
+                "Bonjour {$adherent['nom']},\n\n"
+                . "Ceci confirme votre ajout à l'agenda :\n\n"
+                . "{$resume_sortie}\n\n"
+                . "Si vous constatez une erreur, vous pouvez la corriger ou supprimer la sortie ici :\n"
+                . "{$lien_sortie}\n\n"
+                . "À bientôt,\nLe Focal Club Turballais"
+            );
+
             definir_message('succes', "Ajouté à l'agenda. Un e-mail a été envoyé aux adhérents.");
         }
     }

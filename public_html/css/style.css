@@ -1325,6 +1325,69 @@ button.lien-retour {
 .categories-a-cocher .case-a-cocher {
   flex: 0 0 auto;
 }
+/* Sélecteur de rubrique/catégorie du dépôt de documents (choix explicite de
+   l'utilisatrice, 18/09/2026 : « sépare mieux les rubriques... lettres plus
+   grosses, un encadrement plus visible, un titre, des couleurs
+   différentes ») — remplace le <select>/<optgroup> d'avant, peu lisible.
+   Un bloc encadré par rubrique, chacun dans une couleur différente
+   (--rubrique-couleur, posée en ligne par documents.php depuis une petite
+   palette cyclique — s'adapte donc à n'importe quel nombre de rubriques
+   créées depuis Réglages du site, sans couleur figée par nom). */
+.choix-rubrique-groupe {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+.choix-rubrique-bloc {
+  border: 1px solid var(--border);
+  border-left: 5px solid var(--rubrique-couleur, var(--accent));
+  border-radius: var(--radius);
+  background: var(--bg-alt);
+  padding: 16px 18px;
+}
+.choix-rubrique-titre {
+  margin: 0 0 12px;
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  color: var(--rubrique-couleur, var(--accent));
+}
+.choix-rubrique-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+/* `.field .choix-rubrique-categorie` (deux classes), pas juste
+   `.choix-rubrique-categorie` seule : il faut battre en spécificité
+   `.field label` un peu plus haut (classe + type), qui sinon impose
+   `display: block` à ce `<label>` et casse l'alignement radio/texte —
+   piège découvert par capture d'écran avant mise en ligne (le radio,
+   étiré par `.field input` juste en dessous, s'affichait alors au-dessus
+   du texte au lieu d'à côté). Même raisonnement pour l'input, qui doit
+   battre `.field input` (classe + type) — `[type="radio"]` y suffit. */
+.field .choix-rubrique-categorie {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  font-size: 1rem;
+  color: var(--text);
+  cursor: pointer;
+  margin-bottom: 0;
+}
+.choix-rubrique-categorie input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  accent-color: var(--rubrique-couleur, var(--accent));
+  cursor: pointer;
+}
 .field input,
 .field select,
 .field textarea {

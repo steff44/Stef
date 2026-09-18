@@ -92,6 +92,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             );
         }
 
+        envoyer_confirmation_personnelle(
+            $pdo,
+            $adherent,
+            'Confirmation de publication : ' . $titre,
+            "Bonjour {$adherent['nom']},\n\n"
+            . "Ceci confirme la publication de votre article sur le blog du club :\n\n"
+            . "**{$titre}**\n{$extrait_notif}\n\n"
+            . "Si vous constatez une erreur, vous pouvez le modifier ici :\n"
+            . "{$lien_article}\n\n"
+            . "À bientôt,\nLe Focal Club Turballais"
+        );
+
         definir_message('succes', "Article publié. Un e-mail a été envoyé aux adhérents.");
     }
 

@@ -84,6 +84,27 @@ function envoyer_mail(string $destinataire, string $expediteur, string $sujet, s
 }
 
 /*
+ * Confirmation personnelle envoyée à l'adhérent qui vient d'ajouter un
+ * contenu au site — document, sortie, article de blog, album de « Nos
+ * Sorties » (choix explicite de l'utilisatrice, 18/09/2026 : « je veux
+ * aussi recevoir un mail pour être sûr de ne pas avoir fait de sottise »).
+ * Distincte de la notification envoyée à tous les adhérents (voir les
+ * quatre appelants) même si l'auteur en fait déjà partie : un sujet et un
+ * ton dédiés, pour qu'elle se reconnaisse immédiatement dans la boîte mail
+ * plutôt que de se fondre parmi les notifications générales. Silencieuse
+ * si l'adhérent connecté n'a pas d'adresse e-mail renseignée (le tout
+ * premier compte du site, créé par installation.php, peut ne pas en avoir).
+ */
+function envoyer_confirmation_personnelle(PDO $pdo, array $adherent, string $sujet, string $corps): void
+{
+    if (empty($adherent['email'])) {
+        return;
+    }
+    $expediteur = valeur_parametre($pdo, 'email') ?: 'cooky44.sl@gmail.com';
+    envoyer_mail($adherent['email'], $expediteur, $sujet, $corps);
+}
+
+/*
  * $corps reste écrit en texte brut par les appelants (comme avant) — pas de
  * HTML à la main dans chaque message. Une seule convention Markdown minimale
  * est reconnue ici : **texte** devient du gras (choix explicite de

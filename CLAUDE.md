@@ -4207,6 +4207,113 @@ relecture correcte y compris `NULL`). `php -l` sur les quatre fichiers
 modifiés (`sorties-a-venir.php`, `agenda.php`, `inc/page.php`,
 `inc/migration.php`).
 
+## Confirmation personnelle par e-mail à chaque ajout de contenu
+
+**Choix explicite de l'utilisatrice, 18/09/2026** : « je veux aussi
+recevoir un mail pour être sûr de ne pas avoir fait de sottise » — en
+plus de la notification déjà envoyée à tous les adhérents (sortie,
+article de blog, album de « Nos Sorties », document), la personne qui
+vient d'ajouter le contenu reçoit désormais un e-mail **personnel** de
+confirmation, distinct de la notification générale, pour vérifier
+tranquillement son propre dépôt.
+
+Nouvelle fonction `envoyer_confirmation_personnelle($pdo, $adherent,
+$sujet, $corps)` (`inc/mail.php`) : envoie à `$adherent['email']` (les
+informations de l'adhérent connecté, déjà disponibles en session — voir
+`$_SESSION['adherent']` dans `inc/auth.php`, jamais une nouvelle requête
+SQL) via `envoyer_mail()`, comme les autres notifications du site — sans
+effet si l'adhérent connecté n'a pas d'adresse e-mail renseignée (le tout
+premier compte, créé par `installation.php`, peut ne pas en avoir). Le
+sujet et le corps sont **volontairement différents** de la notification
+générale (« Confirmation : … » plutôt que « Nouvelle sortie : … »), pour
+que l'auteur reconnaisse immédiatement dans sa boîte mail qu'il s'agit de
+sa propre confirmation et non d'une notification comme les autres
+adhérents.
+
+Branché à la suite de chacune des quatre notifications déjà en place,
+sans jamais les remplacer :
+- `espace/documents.php` — après `notifier_nouveaux_documents()`, liste
+  les mêmes titres réussis, avec un lien vers `documents.php` pour
+  corriger ou supprimer en cas d'erreur ;
+- `espace/sorties-a-venir.php` (action `creer`) — reprend `$resume_sortie`
+  et `$lien_sortie` déjà construits pour la notification générale ;
+- `espace/blog.php` — reprend `$titre`, `$extrait_notif` et
+  `$lien_article` déjà construits ;
+- `espace/parametres.php` (action `ajouter_album`, les deux branches
+  Drive et local) — nouvelle fonction `confirmer_nouvel_album($pdo,
+  $adherent, $nom)`, à côté de `notifier_nouvel_album()`. `parametres.php`
+  capture désormais `$adherent = exige_administrateur();` (bare appel
+  auparavant) pour disposer de son identité.
+
+Portée volontairement limitée à ces quatre actions de création — celles
+déjà notifiées à tous les adhérents — pas aux modifications/suppressions,
+ni aux dépôts de photo dans les galeries (Galerie privée/du Club, non
+notifiées aux autres adhérents non plus, donc hors du principe « je veux
+aussi recevoir ce que les autres reçoivent »).
+
+Testé hors ligne (18/09/2026) : `envoyer_confirmation_personnelle()` en
+isolation — un e-mail envoyé à l'adhérent connecté avec l'expéditeur/
+Reply-To attendu, aucun envoi ni erreur si son adresse est absente ou
+vide. `php -l` sur les cinq fichiers modifiés.
+
+## Documents du club : rubriques mieux séparées dans le formulaire de dépôt
+
+**Choix explicite de l'utilisatrice, 18/09/2026** : « sépare mieux les
+rubriques qu'on peut choisir... lettres plus grosses, un encadrement plus
+visible, un titre, des couleurs différentes ». Le champ « Rubrique » du
+formulaire « Ajouter un document » était un simple `<select>` avec un
+`<optgroup>` par rubrique — peu lisible, texte minuscule au rendu par
+défaut du navigateur.
+
+Remplacé par une grille de blocs encadrés (`.choix-rubrique-groupe`,
+`display:grid; grid-template-columns: repeat(auto-fill, minmax(220px,
+1fr))` — une colonne sur mobile, plusieurs sur ordinateur, sans media
+query dédiée) : un bloc par rubrique (`.choix-rubrique-bloc`), bordure de
+couleur à gauche (5px) et titre (`<h3>`) dans la même couleur, plus grand
+que le texte courant (1.15rem, police du site) ; à l'intérieur, chaque
+catégorie est une pastille cliquable (`.choix-rubrique-categorie`, radio
++ texte, 1rem — plus grand qu'un `<option>` de `<select>`) plutôt qu'une
+ligne de menu déroulant. Reste un simple groupe de boutons radio
+(`name="categorie_id"`, un par catégorie, `required` sur chacun — la
+sémantique HTML native d'un groupe radio) : `categorie_id` posté au
+serveur exactement comme avant, aucun changement de
+`documents.php` côté validation/traitement.
+
+**Couleur par rubrique via une petite palette cyclique**
+(`$palette_rubriques` dans `documents.php`, six teintes déjà présentes
+ailleurs sur le site — accents, catégories de sorties), pas une couleur
+figée par nom de rubrique : s'adapte donc à n'importe quel nombre de
+rubriques créées ou renommées depuis Réglages du site, sans réglage
+supplémentaire à maintenir. La couleur est posée en `style="--rubrique-
+couleur: …"` sur chaque bloc, lue par le CSS (`var(--rubrique-couleur,
+var(--accent))`, repli sur l'accent du site si jamais la variable
+manquait).
+
+**Piège de spécificité CSS rencontré et corrigé avant mise en ligne**
+(capture d'écran) : les règles génériques `.field label` et `.field
+input` (classe + type, spécificité (0,1,1)) s'appliquaient aussi à ce
+nouveau `<label>`/`<input>` imbriqués dans le même `.field`, et
+l'emportaient sur mes premières règles à une seule classe
+(`.choix-rubrique-categorie`, spécificité (0,1,0) — plus faible quel que
+soit l'ordre dans le fichier) : `.field label` imposait `display:block`
+(cassant l'alignement radio/texte, qui se retrouvaient l'un au-dessus de
+l'autre plutôt que côte à côte) et `.field input` étirait le radio à
+`width:100%` avec son propre padding/bordure, le rendant énorme.
+Corrigé en portant les sélecteurs à deux classes
+(`.field .choix-rubrique-categorie`, spécificité (0,2,0)) et en ciblant
+l'input par son type (`.choix-rubrique-categorie input[type="radio"]`,
+classe + attribut + type) — les deux battent alors `.field label`/`.field
+input` quel que soit l'ordre des règles dans le fichier, plus robuste
+qu'un réordonnancement qui se recasserait au moindre ajout futur.
+
+Testé hors ligne (18/09/2026) avec un rendu PHP+Playwright isolé
+(quatre rubriques, dont une sur deux lignes de titre) : blocs bien
+séparés avec bordure et titre colorés distincts par rubrique, radio et
+texte alignés côte à côte dans chaque pastille (piège de spécificité
+confirmé corrigé par capture d'écran avant/après), aucun débordement
+horizontal à 1280px ni à 390px (grille repassée en une seule colonne).
+`php -l` sur `documents.php`.
+
 ## Conventions
 
 - Tout le contenu visible est en **français**.

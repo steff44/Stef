@@ -120,6 +120,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if ($titres_reussis !== []) {
                 notifier_nouveaux_documents($pdo, $categorie['categorie_nom'], $titres_reussis);
+
+                $liste_confirmation = implode("\n", array_map(static fn($titre) => "- {$titre}", $titres_reussis));
+                envoyer_confirmation_personnelle(
+                    $pdo,
+                    $adherent,
+                    'Confirmation de votre dépôt : ' . $categorie['categorie_nom'],
+                    "Bonjour {$adherent['nom']},\n\n"
+                    . "Ceci confirme votre dépôt dans « {$categorie['categorie_nom']} » :\n\n"
+                    . "{$liste_confirmation}\n\n"
+                    . "Si vous constatez une erreur, vous pouvez le corriger ou le supprimer ici :\n"
+                    . SITE_URL . "/espace/documents.php\n\n"
+                    . "À bientôt,\nLe Focal Club Turballais"
+                );
             }
 
             $parts = [];
@@ -211,17 +224,32 @@ titre_page("Documents du club", "Comptes rendus, statuts, bulletins et ressource
       <form method="post" enctype="multipart/form-data" class="form-card" style="margin-top:16px;">
         <?= champ_csrf() ?>
         <div class="field">
-          <label for="categorie_id">Rubrique</label>
-          <select id="categorie_id" name="categorie_id">
+          <span class="label-comme">Rubrique et catégorie</span>
+          <?php
+            // Palette cyclique — une couleur par rubrique, réutilisée dès
+            // que le nombre de rubriques dépasse la palette. Choisie parmi
+            // les teintes déjà présentes ailleurs sur le site (accents,
+            // catégories de sorties), pour rester dans la même famille.
+            $palette_rubriques = ['#ec4899', '#0ea5e9', '#f59e0b', '#22c55e', '#a855f7', '#0e7490'];
+            $index_couleur     = 0;
+          ?>
+          <div class="choix-rubrique-groupe">
             <?php foreach ($rubriques as $rubrique): ?>
               <?php if (!$rubrique['categories']) continue; ?>
-              <optgroup label="<?= e($rubrique['nom']) ?>">
-                <?php foreach ($rubrique['categories'] as $categorie_id => $nom_categorie): ?>
-                  <option value="<?= $categorie_id ?>"><?= e($nom_categorie) ?></option>
-                <?php endforeach; ?>
-              </optgroup>
+              <?php $couleur_rubrique = $palette_rubriques[$index_couleur % count($palette_rubriques)]; $index_couleur++; ?>
+              <div class="choix-rubrique-bloc" style="--rubrique-couleur: <?= e($couleur_rubrique) ?>;">
+                <h3 class="choix-rubrique-titre"><?= e($rubrique['nom']) ?></h3>
+                <div class="choix-rubrique-categories">
+                  <?php foreach ($rubrique['categories'] as $categorie_id => $nom_categorie): ?>
+                    <label class="choix-rubrique-categorie">
+                      <input type="radio" name="categorie_id" value="<?= $categorie_id ?>" required>
+                      <span><?= e($nom_categorie) ?></span>
+                    </label>
+                  <?php endforeach; ?>
+                </div>
+              </div>
             <?php endforeach; ?>
-          </select>
+          </div>
         </div>
         <div class="field">
           <label for="description">Description (facultatif, s'applique à tous les fichiers déposés ici)</label>
