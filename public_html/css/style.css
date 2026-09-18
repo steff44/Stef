@@ -1897,16 +1897,30 @@ button.lien-retour {
   padding: 20px 24px;
   margin: 0 0 36px;
 }
-.documents-index-rubrique {
-  margin-bottom: 18px;
+/* Même habillage que .choix-rubrique-groupe/-bloc/-titre du formulaire
+   « Ajouter un document » (choix explicite de l'utilisatrice, 18/09/2026) —
+   un bloc encadré par rubrique, bordure et titre dans la couleur de la
+   rubrique (--rubrique-couleur, posée en style="" par documents.php, la
+   même valeur que dans le formulaire juste au-dessus). Classes propres au
+   sommaire plutôt qu'un partage direct des classes .choix-rubrique-* : le
+   contenu est ici une liste de liens, pas des cases à cocher. */
+.documents-index-groupe {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
 }
-.documents-index-rubrique:last-child {
-  margin-bottom: 0;
+.documents-index-rubrique {
+  border: 1px solid var(--border);
+  border-left: 5px solid var(--rubrique-couleur, var(--accent));
+  border-radius: var(--radius);
+  background: var(--bg-alt);
+  padding: 16px 18px;
 }
 .documents-index-rubrique h2 {
   font-family: var(--font-heading);
-  font-size: 1.02rem;
-  margin: 0 0 10px;
+  font-size: 1.15rem;
+  margin: 0 0 12px;
+  color: var(--rubrique-couleur, var(--accent));
 }
 .documents-index-categories {
   list-style: none;
@@ -1914,20 +1928,21 @@ button.lien-retour {
   padding: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
 }
 .documents-index-categories a {
   display: inline-block;
-  padding: 6px 14px;
-  border-radius: var(--radius-btn);
+  padding: 9px 16px;
+  border-radius: 999px;
   border: 1px solid var(--border);
-  color: var(--text-muted);
-  font-size: 0.86rem;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 1rem;
   transition: border-color 0.2s ease, color 0.2s ease;
 }
 .documents-index-categories a:hover {
-  border-color: var(--accent-3);
-  color: var(--text);
+  border-color: var(--rubrique-couleur, var(--accent-3));
+  color: var(--rubrique-couleur, var(--text));
 }
 .rubrique-documents,
 .groupe-galerie {

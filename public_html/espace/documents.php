@@ -151,6 +151,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $rubriques = rubriques_documents($pdo);
 
+// Une couleur par rubrique, calculée une seule fois ici et réutilisée à la
+// fois par le formulaire de dépôt et par le sommaire ci-dessous (choix
+// explicite de l'utilisatrice, 18/09/2026 : « fait la même chose ici »,
+// à propos du sommaire, après le même traitement sur le formulaire) — pour
+// qu'une rubrique porte toujours la même couleur aux deux endroits de la
+// page, plutôt que deux calculs indépendants qui pourraient diverger selon
+// le sous-ensemble de rubriques que chaque bloc affiche ($rubriques pour le
+// formulaire, $rubriques_peuplees pour le sommaire, voir plus bas).
+$palette_rubriques  = ['#ec4899', '#0ea5e9', '#f59e0b', '#22c55e', '#a855f7', '#0e7490'];
+$couleurs_rubriques = [];
+$index_couleur      = 0;
+foreach ($rubriques as $rubrique_id => $rubrique) {
+    $couleurs_rubriques[$rubrique_id] = $palette_rubriques[$index_couleur % count($palette_rubriques)];
+    $index_couleur++;
+}
+
 $documents = $pdo->query(
     'SELECT d.id, d.titre, d.description, d.nom_origine, d.taille, d.categorie_id, d.cree_le, a.nom AS auteur
        FROM documents d
@@ -225,19 +241,10 @@ titre_page("Documents du club", "Comptes rendus, statuts, bulletins et ressource
         <?= champ_csrf() ?>
         <div class="field">
           <span class="label-comme">Rubrique et catégorie</span>
-          <?php
-            // Palette cyclique — une couleur par rubrique, réutilisée dès
-            // que le nombre de rubriques dépasse la palette. Choisie parmi
-            // les teintes déjà présentes ailleurs sur le site (accents,
-            // catégories de sorties), pour rester dans la même famille.
-            $palette_rubriques = ['#ec4899', '#0ea5e9', '#f59e0b', '#22c55e', '#a855f7', '#0e7490'];
-            $index_couleur     = 0;
-          ?>
           <div class="choix-rubrique-groupe">
-            <?php foreach ($rubriques as $rubrique): ?>
+            <?php foreach ($rubriques as $rubrique_id => $rubrique): ?>
               <?php if (!$rubrique['categories']) continue; ?>
-              <?php $couleur_rubrique = $palette_rubriques[$index_couleur % count($palette_rubriques)]; $index_couleur++; ?>
-              <div class="choix-rubrique-bloc" style="--rubrique-couleur: <?= e($couleur_rubrique) ?>;">
+              <div class="choix-rubrique-bloc" style="--rubrique-couleur: <?= e($couleurs_rubriques[$rubrique_id]) ?>;">
                 <h3 class="choix-rubrique-titre"><?= e($rubrique['nom']) ?></h3>
                 <div class="choix-rubrique-categories">
                   <?php foreach ($rubrique['categories'] as $categorie_id => $nom_categorie): ?>
@@ -296,19 +303,26 @@ titre_page("Documents du club", "Comptes rendus, statuts, bulletins et ressource
         // (voir $rubriques_peuplees ci-dessus, choix explicite de
         // l'utilisatrice, 08/09/2026, pour la lisibilité — revient sur le
         // choix du 01/09/2026 qui gardait toutes les catégories visibles
-        // même vides).
+        // même vides). Même habillage que le formulaire « Ajouter un
+        // document » juste au-dessus — bloc encadré coloré par rubrique,
+        // titre agrandi — et même couleur par rubrique ($couleurs_rubriques,
+        // calculée une seule fois plus haut) pour rester cohérent d'un bout
+        // à l'autre de la page (choix explicite de l'utilisatrice,
+        // 18/09/2026).
       ?>
       <nav class="documents-index" aria-label="Sommaire des documents">
-        <?php foreach ($rubriques_peuplees as $rubrique_id => $rubrique): ?>
-          <div class="documents-index-rubrique">
-            <h2><?= e($rubrique['nom']) ?></h2>
-            <ul class="documents-index-categories">
-              <?php foreach ($rubrique['categories'] as $categorie_id => $nom_categorie): ?>
-                <li><a href="#categorie-<?= $categorie_id ?>"><?= e($nom_categorie) ?></a></li>
-              <?php endforeach; ?>
-            </ul>
-          </div>
-        <?php endforeach; ?>
+        <div class="documents-index-groupe">
+          <?php foreach ($rubriques_peuplees as $rubrique_id => $rubrique): ?>
+            <div class="documents-index-rubrique" style="--rubrique-couleur: <?= e($couleurs_rubriques[$rubrique_id]) ?>;">
+              <h2><?= e($rubrique['nom']) ?></h2>
+              <ul class="documents-index-categories">
+                <?php foreach ($rubrique['categories'] as $categorie_id => $nom_categorie): ?>
+                  <li><a href="#categorie-<?= $categorie_id ?>"><?= e($nom_categorie) ?></a></li>
+                <?php endforeach; ?>
+              </ul>
+            </div>
+          <?php endforeach; ?>
+        </div>
       </nav>
 
       <?php foreach ($rubriques_peuplees as $rubrique_id => $rubrique): ?>

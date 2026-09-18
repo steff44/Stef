@@ -4314,6 +4314,56 @@ confirmé corrigé par capture d'écran avant/après), aucun débordement
 horizontal à 1280px ni à 390px (grille repassée en une seule colonne).
 `php -l` sur `documents.php`.
 
+## Documents du club : même habillage sur le sommaire
+
+**Choix explicite de l'utilisatrice, 18/09/2026** : « C'est parfait donc
+j'aimerais que tu fasse la même chose ici », capture d'écran à l'appui du
+« Sommaire des documents » (le bloc de navigation cliquable en haut de
+`documents.php`, distinct du formulaire « Ajouter un document » juste
+au-dessus, déjà redessiné le même jour — voir la section précédente).
+Jusqu'ici, ce sommaire restait un simple encart uniforme
+(`.documents-index`) sans distinction visuelle entre rubriques : titres de
+`1.02rem` sans couleur, pastilles de lien grises identiques d'une rubrique
+à l'autre.
+
+Même traitement que le formulaire de dépôt : chaque rubrique devient un
+bloc encadré (`.documents-index-rubrique`, bordure gauche de 5px + fond
+`--bg-alt`), avec un titre agrandi et coloré (`.documents-index-rubrique
+h2`, `1.15rem`, couleur = celle de la rubrique) et ses pastilles de
+catégorie en couleur assortie au survol (`.documents-index-categories a`,
+agrandies à `1rem`/`9px 16px` de padding). Les blocs sont posés dans une
+grille responsive (`.documents-index-groupe`, `repeat(auto-fill,
+minmax(220px, 1fr))` — une colonne sur mobile, plusieurs sur ordinateur,
+sans media query dédiée), même principe que `.choix-rubrique-groupe` du
+formulaire.
+
+**La couleur de chaque rubrique est calculée une seule fois, partagée par
+les deux blocs** : `$couleurs_rubriques` (`documents.php`, juste après
+`$rubriques = rubriques_documents($pdo);`) reprend la même palette
+cyclique que le formulaire (`$palette_rubriques`, six teintes) mais
+l'indexe une seule fois sur `$rubriques` en entier — le formulaire (qui
+saute les rubriques vides) et le sommaire (`$rubriques_peuplees`, qui ne
+garde que les catégories déjà peuplées, voir plus haut « Documents du
+club : catégories vides masquées ») lisent tous deux
+`$couleurs_rubriques[$rubrique_id]` plutôt que de recalculer chacun leur
+propre index — sans ce partage, une même rubrique aurait pu recevoir deux
+couleurs différentes selon que le formulaire ou le sommaire l'affichait
+en premier, les deux blocs n'itérant pas sur exactement le même
+sous-ensemble de rubriques.
+
+**Classes propres au sommaire (`.documents-index-*`), pas un partage
+direct de `.choix-rubrique-*`** : le contenu y est une liste de vrais
+liens `<a href="#categorie-{id}">`, pas des cases à cocher radio — les
+deux blocs ont donc chacun leur jeu de classes, avec la même variable CSS
+`--rubrique-couleur` posée en `style=""` sur chaque bloc pour rester
+cohérents visuellement sans dupliquer de règle.
+
+Testé hors ligne (18/09/2026) avec une page HTML isolée reproduisant les
+deux blocs côte à côte (quatre rubriques de couleurs distinctes, dont une
+sur deux lignes de titre) et Playwright : aucun débordement horizontal à
+1280px ni à 390px, couleurs cohérentes entre le sommaire et le formulaire
+pour une même rubrique. `php -l` sur `documents.php`.
+
 ## Conventions
 
 - Tout le contenu visible est en **français**.
