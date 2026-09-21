@@ -4406,6 +4406,24 @@ une fois ce correctif en ligne, puisque l'adresse est relue en base à
 chaque envoi. Vérifier aussi, depuis l'Annuaire, que le compte utilisé
 pour le test porte bien une adresse e-mail.
 
+**Toujours aucune confirmation reçue après ce correctif** — l'utilisatrice
+a retesté et signalé « je ne reçois pas de confirmation » le jour même.
+Plutôt que de continuer à deviner (le correctif ci-dessus est solide sur
+le papier, testé hors ligne), un diagnostic temporaire
+`espace/diag-confirmation.php` (réservé au responsable via
+`exige_administrateur()`, même principe que `diag-reset-mail.php` du
+11/09/2026 — à supprimer une fois la cause confirmée) affiche, dans
+l'ordre : l'e-mail tel que connu de la session (`$_SESSION['adherent']`),
+l'e-mail réellement enregistré en base pour ce compte, puis tente deux
+envois de test — l'un par `mail()` natif appelé directement, l'autre par
+la vraie fonction `envoyer_confirmation_personnelle()` — pour isoler
+laquelle des trois causes possibles est en jeu : un compte réellement
+sans e-mail en base, un problème propre à la fonction, ou un problème de
+délivrabilité générale (comme l'épisode SPF/Gmail du 10/09/2026, sans
+rapport avec ce code). L'utilisatrice doit ouvrir
+`https://focalclub.fr/espace/diag-confirmation.php` connectée en
+responsable, et rapporter ce qui s'affiche.
+
 ## Conventions
 
 - Tout le contenu visible est en **français**.
