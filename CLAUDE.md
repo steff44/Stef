@@ -4539,6 +4539,34 @@ aucun débordement horizontal à 1280px ni à 390px malgré les noms de
 rubrique les plus longs (« Ateliers techniques du club »). `php -l` sur
 `documents.php`.
 
+**Retour en arrière partiel le jour même, sur le formulaire uniquement** :
+l'utilisatrice a signalé, capture d'écran à l'appui (les trois blocs
+colorés du formulaire « Ajouter un document », tels qu'affichés après ce
+premier changement) : « Je ne voulais pas que tu augmente la taille des
+lettres dans ce que je te montre en fichier attaché. Je n'ai pas été
+assez précis. » Sa demande initiale, formulée en une seule phrase pour
+« la partie document du club », a été appliquée aux trois occurrences des
+noms de rubrique (formulaire, sommaire, liste détaillée) — mais elle ne
+visait en réalité que le Sommaire et la liste détaillée, pas ce formulaire
+de dépôt, qu'elle utilise seule pour déposer un document et qui n'a pas
+besoin d'un texte aussi grand. Confirmé par question explicite
+(`AskUserQuestion`, trois portées possibles proposées) : « Le formulaire
+seulement ».
+
+**Corrigé** : `.choix-rubrique-titre` revient à `1.15rem`, `.field
+.choix-rubrique-categorie` à `9px 16px`/`1rem` (gap `7px`), et
+`.choix-rubrique-categorie input[type="radio"]` à `18px` — exactement les
+valeurs d'avant ce changement. `.documents-index-rubrique h2`,
+`.documents-index-categories a`, `.rubrique-documents h2` et
+`.sous-categorie-documents h3` (Sommaire et liste détaillée) **restent**
+à `1.7rem`/`1.3rem`, inchangés par ce retour en arrière.
+
+Revérifié hors ligne (21/09/2026, même jour) avec la même méthode
+(page HTML isolée + Playwright) : `.choix-rubrique-titre`/`.field
+.choix-rubrique-categorie` mesurés à `18,4px`/`16px` (soit `1.15rem`/
+`1rem`), `.documents-index-rubrique h2`/`.rubrique-documents h2` toujours
+à `27,2px` (`1.7rem`), aucun débordement horizontal à 1280px ni à 390px.
+
 ## Conventions
 
 - Tout le contenu visible est en **français**.

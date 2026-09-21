@@ -1348,11 +1348,14 @@ button.lien-retour {
 .choix-rubrique-titre {
   margin: 0 0 12px;
   font-family: var(--font-heading);
-  /* 1.7rem depuis le 21/09/2026 (choix explicite de l'utilisatrice : « la
-     police soit beaucoup plus grande »), contre 1.15rem à l'origine — même
-     valeur que .documents-index-rubrique h2 et .rubrique-documents h2, pour
-     que tous les titres de rubrique de la page restent de la même taille. */
-  font-size: 1.7rem;
+  /* Revenu à 1.15rem le 21/09/2026, même jour que le passage à 1.7rem :
+     l'utilisatrice a précisé, capture d'écran à l'appui, que sa demande
+     d'agrandissement visait le Sommaire et la liste détaillée plus bas sur
+     la page — pas ce formulaire d'ajout, qu'elle n'utilise que pour
+     déposer un document et qui n'a pas besoin d'un aussi gros texte.
+     .documents-index-rubrique h2 et .rubrique-documents h2, plus bas dans
+     ce fichier, restent eux à 1.7rem. */
+  font-size: 1.15rem;
   color: var(--rubrique-couleur, var(--accent));
 }
 .choix-rubrique-categories {
@@ -1371,23 +1374,23 @@ button.lien-retour {
 .field .choix-rubrique-categorie {
   display: inline-flex;
   align-items: center;
-  gap: 9px;
-  /* Pastille agrandie depuis le 21/09/2026 (choix explicite de
-     l'utilisatrice : « les catégories soient aussi beaucoup plus grandes »),
-     de 9px 16px/1rem à 13px 24px/1.3rem — même taille de texte que
-     .documents-index-categories a, pour rester cohérent avec le sommaire. */
-  padding: 13px 24px;
+  gap: 7px;
+  /* Revenu à 9px 16px/1rem le 21/09/2026, même jour que le passage à
+     13px 24px/1.3rem — voir le commentaire de .choix-rubrique-titre
+     ci-dessus : l'agrandissement visait le Sommaire (.documents-index-
+     categories a, resté à 1.3rem), pas ce formulaire d'ajout. */
+  padding: 9px 16px;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: var(--bg);
-  font-size: 1.3rem;
+  font-size: 1rem;
   color: var(--text);
   cursor: pointer;
   margin-bottom: 0;
 }
 .choix-rubrique-categorie input[type="radio"] {
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   flex: 0 0 auto;
   padding: 0;
   border: none;
@@ -1926,8 +1929,11 @@ button.lien-retour {
 }
 .documents-index-rubrique h2 {
   font-family: var(--font-heading);
-  /* 1.7rem depuis le 21/09/2026 (choix explicite de l'utilisatrice), même
-     valeur que .choix-rubrique-titre — voir ce commentaire pour le détail. */
+  /* 1.7rem depuis le 21/09/2026 (choix explicite de l'utilisatrice) — reste
+     à cette taille après le retour en arrière du même jour sur le
+     formulaire (.choix-rubrique-titre, revenu à 1.15rem) : la demande
+     d'agrandissement visait ce Sommaire et la liste détaillée plus bas,
+     pas le formulaire d'ajout. */
   font-size: 1.7rem;
   margin: 0 0 12px;
   color: var(--rubrique-couleur, var(--accent));
@@ -1943,8 +1949,10 @@ button.lien-retour {
 .documents-index-categories a {
   display: inline-block;
   /* Pastille agrandie depuis le 21/09/2026 (choix explicite de
-     l'utilisatrice), même taille que .field .choix-rubrique-categorie —
-     voir ce commentaire pour le détail. */
+     l'utilisatrice) — reste à cette taille après le retour en arrière du
+     même jour sur le formulaire (.field .choix-rubrique-categorie, revenu
+     à 9px 16px/1rem) : voir le commentaire de .documents-index-rubrique h2
+     juste au-dessus. */
   padding: 13px 24px;
   border-radius: 999px;
   border: 1px solid var(--border);
