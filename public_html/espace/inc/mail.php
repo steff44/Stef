@@ -94,14 +94,26 @@ function envoyer_mail(string $destinataire, string $expediteur, string $sujet, s
  * plutôt que de se fondre parmi les notifications générales. Silencieuse
  * si l'adhérent connecté n'a pas d'adresse e-mail renseignée (le tout
  * premier compte du site, créé par installation.php, peut ne pas en avoir).
+ *
+ * L'adresse est relue en base par $adherent['id'], jamais prise dans
+ * $adherent['email'] (piège trouvé le 21/09/2026 : cette clé vient de
+ * $_SESSION['adherent'], posée une seule fois à la connexion — inc/auth.php
+ * — et jamais rafraîchie ensuite ; le cookie de session durant 30 jours,
+ * une adresse ajoutée ou corrigée après la dernière connexion restait
+ * invisible ici jusqu'à une reconnexion, faisant échouer la confirmation en
+ * silence sans rapport avec l'état réel du compte).
  */
 function envoyer_confirmation_personnelle(PDO $pdo, array $adherent, string $sujet, string $corps): void
 {
-    if (empty($adherent['email'])) {
+    $requete = $pdo->prepare('SELECT email FROM adherents WHERE id = ?');
+    $requete->execute([$adherent['id']]);
+    $email = $requete->fetchColumn();
+
+    if (empty($email)) {
         return;
     }
     $expediteur = valeur_parametre($pdo, 'email') ?: 'cooky44.sl@gmail.com';
-    envoyer_mail($adherent['email'], $expediteur, $sujet, $corps);
+    envoyer_mail($email, $expediteur, $sujet, $corps);
 }
 
 /*

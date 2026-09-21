@@ -4364,6 +4364,48 @@ sur deux lignes de titre) et Playwright : aucun débordement horizontal à
 1280px ni à 390px, couleurs cohérentes entre le sommaire et le formulaire
 pour une même rubrique. `php -l` sur `documents.php`.
 
+## Confirmation personnelle par e-mail : adresse périmée en session
+
+**Signalé par l'utilisatrice le 21/09/2026** : après un dépôt de documents,
+le message habituel « … Un e-mail a été envoyé aux adhérents. » s'affichait
+bien, mais elle n'a reçu aucune confirmation personnelle — pourtant ajoutée
+la veille (18/09/2026, voir plus haut).
+
+**Cause** : `envoyer_confirmation_personnelle()` lisait l'adresse dans
+`$adherent['email']`, où `$adherent` vient de `exige_connexion()` →
+`$_SESSION['adherent']`. Cette clé n'est écrite **qu'à la connexion**
+(`tenter_connexion()`, `inc/auth.php`) et jamais rafraîchie ensuite —
+`signaler_presence()`, appelée à chaque page, ne met à jour que
+`derniere_activite` en base, jamais la session elle-même. Or le cookie de
+session dure **30 jours** (voir plus haut, « Le cookie de session dure 30
+jours »). Toute correction ou ajout d'adresse e-mail sur un compte
+**après** sa dernière connexion reste donc invisible pour ce mécanisme
+jusqu'à une reconnexion complète — la confirmation échouait alors
+silencieusement (`empty($adherent['email'])`), sans rapport avec l'état
+réel du compte en base, exactement le genre de cache figé déjà rencontré
+plusieurs fois sur ce site (favicon, CSS/JS, cache des albums Drive…).
+
+**Corrigé** : `envoyer_confirmation_personnelle()` (`inc/mail.php`) relit
+désormais l'adresse **en base**, par `$adherent['id']` (toujours fiable —
+c'est la clé primaire du compte, jamais périmée), plutôt que de faire
+confiance à `$adherent['email']` mis en cache dans la session. Aucun
+changement côté appelants (`documents.php`, `sorties-a-venir.php`,
+`blog.php`, `parametres.php`) : ils continuent de passer `$adherent` tel
+quel, seul `$adherent['id']` compte désormais pour cette fonction.
+
+Testé hors ligne (21/09/2026) : logique de relecture rejouée isolément sur
+SQLite — adresse réelle utilisée malgré un `$adherent['email']` vide ou
+même absent du tableau (reproduisant une session périmée), aucun envoi
+tenté pour un compte réellement sans e-mail en base. `php -l` sur
+`inc/mail.php`.
+
+**Si le problème persiste malgré ce correctif** : se déconnecter puis se
+reconnecter renouvelle immédiatement la session avec l'adresse à jour,
+sans attendre un futur déploiement — mais ne devrait plus être nécessaire
+une fois ce correctif en ligne, puisque l'adresse est relue en base à
+chaque envoi. Vérifier aussi, depuis l'Annuaire, que le compte utilisé
+pour le test porte bien une adresse e-mail.
+
 ## Conventions
 
 - Tout le contenu visible est en **français**.
