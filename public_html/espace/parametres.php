@@ -1,6 +1,12 @@
 <?php
 /*
- * Réglages du site public — réservé aux responsables.
+ * Réglages du site public — ouvert aux responsables et aux éditeurs depuis
+ * le 21/09/2026 (choix explicite de l'utilisatrice : « je veux que pour le
+ * rédacteur tu donnes les mêmes possibilités que moi au Réglage du site »)
+ * — revient sur le choix initial du 23/08/2026 qui réservait cette page au
+ * seul responsable. exige_gestionnaire() remplace exige_administrateur() :
+ * un éditeur a donc désormais accès à l'intégralité de cette page, sans
+ * aucune section restée admin-only.
  *
  * Modifie les coordonnées et le texte de présentation affichés sur les pages
  * publiques (accueil, contact, galerie, événements, le club) : ce sont les
@@ -24,7 +30,7 @@ require_once __DIR__ . '/inc/blog.php';
 require_once __DIR__ . '/inc/albums.php';
 require_once __DIR__ . '/inc/mail.php';
 
-$adherent = exige_administrateur();
+$adherent = exige_gestionnaire();
 $pdo      = base_de_donnees();
 
 const CHAMPS = [

@@ -4435,6 +4435,69 @@ changements de `.htaccess`, probablement valable aussi pour un simple
 changement de code PHP juste après un push. `espace/diag-confirmation.php`
 a été supprimé, la cause étant confirmée.
 
+## Le rôle Éditeur gagne Réglages du site et la modération de la Galerie du Club
+
+**Choix explicite de l'utilisatrice, 21/09/2026** : « je veux que pour le
+rédacteur tu donnes les mêmes possibilités que moi au "Réglage du site",
+"Galerie du club" et "Agenda des sorties" » — le rôle qu'elle appelle
+« rédacteur » est l'Éditeur (`editeur = 1`, voir plus haut). Revient sur
+deux exclusions explicites du 23/08/2026 qui réservaient ces possibilités
+au seul responsable.
+
+**Réglages du site (`parametres.php`)** : gate remplacée,
+`exige_administrateur()` → `exige_gestionnaire()` — un éditeur a donc
+désormais accès à l'intégralité de la page (coordonnées du club,
+rubriques/catégories de documents, catégories des galeries, catégories du
+blog, albums de « Nos Sorties »), sans aucune section restée réservée au
+responsable. Le lien « Réglages du site » du menu déroulant
+« {pseudo} connecté » — jusque-là groupé avec « Statistiques » sous un
+seul `if (est_administrateur())` (`espace/inc/page.php`, `debut_page()`)
+— est sorti dans son propre `if (est_gestionnaire())`, posé **après** le
+bloc Statistiques pour garder l'ordre historique du menu (Adhérents,
+Statistiques, Réglages du site) inchangé pour un responsable. Même
+correctif dans la reconstruction JavaScript du menu pour les pages
+statiques (`js/main.js`, alimentée par `statut-connexion.php`, qui
+renvoie déjà `editeur` dans son JSON). **Restent réservés au seul
+responsable, non demandés ici** : l'export Excel des adhérents
+(`export-adherents.php`) et les statistiques de fréquentation
+(`statistiques.php`).
+
+**Galerie du Club (`galerie-club.php`)** : la modération (supprimer ou
+reclasser la photo d'un autre adhérent) passe de `est_administrateur()` à
+`est_gestionnaire()` aux deux actions POST (`supprimer`, `modifier_photo`)
+et au message d'aide qui renvoie vers Réglages du site quand aucune
+catégorie n'existe encore. Le bouton Supprimer/✎ lui-même, partagé avec la
+Galerie privée via `inc/photo-carte.php`, est désormais conditionné par le
+type de galerie : `est_gestionnaire()` sur la Galerie du Club
+(`$type === 'galerie_club'`), mais `est_administrateur()` reste inchangé
+sur la Galerie privée (`$type === 'photo'`) — **volontairement exclue**
+de cette demande, chaque adhérent y gardant des photos personnelles,
+comme le précisait déjà l'exclusion du 23/08/2026 (« voir toutes les
+photos privées, supprimer la photo d'un autre adhérent »). `album.php`
+(« Nos Sorties », albums hébergés sur ce site) a sa propre logique de
+permission indépendante, non touchée non plus — non demandé.
+
+**Agenda des sorties** : aucun changement de code n'était nécessaire —
+vérifié qu'aucune des pages concernées (`espace/agenda.php`, le
+calendrier ; `inc/agenda.php`) ne porte la moindre restriction
+`est_administrateur()`/`exige_administrateur()` : le calendrier est déjà
+entièrement public à la consultation. Créer, modifier ou supprimer une
+sortie (`espace/sorties-a-venir.php`) utilise déjà `exige_gestionnaire()`/
+`est_gestionnaire()` partout depuis la création du rôle Éditeur le
+23/08/2026 — un éditeur y a donc déjà exactement les mêmes possibilités
+qu'un responsable, avant même cette demande.
+
+Testé hors ligne (21/09/2026) : les fonctions de rôle de `inc/auth.php`
+(`est_administrateur()`/`est_editeur()`/`est_gestionnaire()`) et les
+expressions conditionnelles exactes des trois fichiers modifiés, rejouées
+en isolation avec trois profils (adhérent simple, éditeur, responsable) —
+un éditeur accède à Réglages du site, peut modérer une photo d'un autre
+adhérent sur la Galerie du Club mais pas sur la Galerie privée, et
+conserve toujours le droit de gérer ses propres photos ; un adhérent
+simple reste refusé partout sauf sur son propre contenu ; le comportement
+d'un responsable reste strictement inchangé. `php -l` sur les cinq
+fichiers PHP modifiés, `node --check` sur `js/main.js`.
+
 ## Conventions
 
 - Tout le contenu visible est en **français**.

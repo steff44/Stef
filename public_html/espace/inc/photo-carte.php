@@ -38,6 +38,13 @@
  * photo déjà déposée ») ; attend en plus dans la portée appelante :
  *   - $categoriesParPhoto : le résultat de categories_par_photo(), pour
  *     connaître les catégories déjà cochées de cette photo.
+ *
+ * Modération (Supprimer/✎) ouverte à l'éditeur en plus du responsable
+ * uniquement sur la Galerie du Club ($type === 'galerie_club', depuis le
+ * 21/09/2026 — choix explicite de l'utilisatrice) : la Galerie privée
+ * ($type === 'photo') reste réservée au seul responsable, chaque adhérent
+ * y gardant des photos personnelles — voir est_gestionnaire() dans
+ * inc/auth.php.
  */
 declare(strict_types=1);
 
@@ -56,7 +63,7 @@ $image       = 'telecharger.php?type=' . $type . '&id=' . (int) $photo['id'];
             <strong class="title"><?= e($photo['titre']) ?></strong>
             <span class="meta"><?= e($meta) ?></span>
           </figcaption>
-          <?php if ((int) $photo['depose_par'] === $adherent['id'] || est_administrateur()): ?>
+          <?php if ((int) $photo['depose_par'] === $adherent['id'] || ($type === 'galerie_club' ? est_gestionnaire() : est_administrateur())): ?>
             <form method="post" class="photo-supprimer" onsubmit="return confirm('Supprimer cette photo ?');">
               <?= champ_csrf() ?>
               <input type="hidden" name="action" value="supprimer">

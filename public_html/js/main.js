@@ -315,8 +315,13 @@
             ? '<li><a href="espace/adherents.php">Adhérents</a></li>'
             : "") +
           (donnees.administrateur
-            ? '<li><a href="espace/statistiques.php">Statistiques</a></li>' +
-              '<li><a href="espace/parametres.php">Réglages du site</a></li>'
+            ? '<li><a href="espace/statistiques.php">Statistiques</a></li>'
+            : "") +
+          // « Réglages du site » ouvert à l'éditeur depuis le 21/09/2026
+          // (choix explicite de l'utilisatrice) — Statistiques, juste
+          // au-dessus, reste elle réservée au seul responsable.
+          (donnees.administrateur || donnees.editeur
+            ? '<li><a href="espace/parametres.php">Réglages du site</a></li>'
             : "");
         menu.innerHTML =
           '<li class="nav-dropdown-heading">Bonjour <strong>' + echapperHtml(donnees.nom) + "</strong>" + badge + "</li>" +

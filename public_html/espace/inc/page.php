@@ -51,7 +51,12 @@ function debut_page(string $titre, string $page_active = ''): void
     }
     if (est_administrateur()) {
         $onglets['statistiques'] = ['Statistiques', 'statistiques.php'];
-        $onglets['parametres']   = ['Réglages du site', 'parametres.php'];
+    }
+    // « Réglages du site » ouvert à l'éditeur depuis le 21/09/2026 (choix
+    // explicite de l'utilisatrice) — Statistiques, juste au-dessus, reste
+    // elle réservée au seul responsable.
+    if (est_gestionnaire()) {
+        $onglets['parametres'] = ['Réglages du site', 'parametres.php'];
     }
     ?>
 <!DOCTYPE html>

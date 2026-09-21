@@ -5,7 +5,13 @@
  * Contrairement à la Galerie privée (galerie.php), ces photos sont
  * PUBLIQUES une fois en ligne — reprises sur la page publique galerie.html
  * (choix explicite de l'utilisateur, 20/08/2026). Tout adhérent peut
- * déposer ; seul l'auteur ou un responsable peut supprimer.
+ * déposer ; l'auteur, un responsable OU un éditeur peut supprimer ou
+ * reclasser une photo (est_gestionnaire(), depuis le 21/09/2026 — choix
+ * explicite de l'utilisatrice, qui a demandé les mêmes possibilités pour
+ * l'éditeur sur cette page ; revient sur l'exclusion explicite du
+ * 23/08/2026 qui réservait cette modération au seul responsable). La
+ * Galerie privée (galerie.php), elle, reste hors de ce changement — chaque
+ * adhérent y garde ses photos personnelles, non demandé pour ce rôle.
  *
  * Présentation calquée sur la page publique galerie.html (choix explicite
  * de l'utilisateur, 26/08/2026) : bandeau .gallery-hero, pastilles de
@@ -42,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $requete->execute([$id]);
         $photo = $requete->fetch();
 
-        if ($photo && ((int) $photo['depose_par'] === $adherent['id'] || est_administrateur())) {
+        if ($photo && ((int) $photo['depose_par'] === $adherent['id'] || est_gestionnaire())) {
             $pdo->prepare('DELETE FROM photos_club WHERE id = ?')->execute([$id]);
             @unlink(__DIR__ . '/photos_club/' . basename((string) $photo['fichier']));
             definir_message('succes', "Photo supprimée.");
@@ -68,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             array_keys($categories)
         ));
 
-        if (!$photo || ((int) $photo['depose_par'] !== $adherent['id'] && !est_administrateur())) {
+        if (!$photo || ((int) $photo['depose_par'] !== $adherent['id'] && !est_gestionnaire())) {
             definir_message('erreur', "Vous ne pouvez modifier que vos propres photos.");
         } elseif (!$categorie_ids) {
             definir_message('erreur', "Choisissez au moins une catégorie.");
@@ -287,7 +293,7 @@ debut_page("Galerie (Galerie du Club)", 'galerie-club');
     <div class="empty-state">
       <p>
         Aucune catégorie n'est encore définie.
-        <?php if (est_administrateur()): ?>
+        <?php if (est_gestionnaire()): ?>
           Créez-en une depuis <a href="parametres.php">Réglages du site</a> avant de pouvoir déposer une photo.
         <?php endif; ?>
       </p>

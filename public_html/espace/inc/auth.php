@@ -73,8 +73,13 @@ function est_editeur(): bool
 /*
  * Éditeur : rôle du 23/08/2026 (choix explicite de l'utilisateur), mêmes
  * droits que responsable sur les comptes (adherents.php), les documents
- * (documents.php) et l'agenda (sorties-a-venir.php), mais sans accès aux
- * réglages du site (parametres.php reste réservé à exige_administrateur()).
+ * (documents.php), l'agenda (sorties-a-venir.php), les réglages du site
+ * (parametres.php, depuis le 21/09/2026 — voir ce fichier) et la
+ * modération de la Galerie du Club (galerie-club.php, également depuis le
+ * 21/09/2026). Reste réservé au seul responsable : l'export Excel des
+ * adhérents (export-adherents.php), les statistiques de fréquentation
+ * (statistiques.php) et la modération de la Galerie privée (galerie.php,
+ * qui reste personnelle à chaque adhérent) — non demandés pour ce rôle.
  */
 function est_gestionnaire(): bool
 {
