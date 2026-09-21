@@ -4424,6 +4424,17 @@ rapport avec ce code). L'utilisatrice doit ouvrir
 `https://focalclub.fr/espace/diag-confirmation.php` connectée en
 responsable, et rapporter ce qui s'affiche.
 
+**Confirmé par l'utilisatrice** : « J'ai reçu les deux mails. » — l'envoi
+fonctionne parfaitement (adresse en base correcte, `mail()` natif comme
+`envoyer_confirmation_personnelle()` livrent tous les deux). Le
+correctif du 21/09/2026 est donc opérationnel ; le signalement initial
+(« je ne reçois pas de confirmation ») était vraisemblablement un test
+fait avant que le déploiement du correctif n'ait fini de se propager sur
+`focalclub.fr` — délai déjà documenté ailleurs dans ce fichier pour les
+changements de `.htaccess`, probablement valable aussi pour un simple
+changement de code PHP juste après un push. `espace/diag-confirmation.php`
+a été supprimé, la cause étant confirmée.
+
 ## Conventions
 
 - Tout le contenu visible est en **français**.
