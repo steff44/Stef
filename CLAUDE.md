@@ -4498,6 +4498,47 @@ simple reste refusé partout sauf sur son propre contenu ; le comportement
 d'un responsable reste strictement inchangé. `php -l` sur les cinq
 fichiers PHP modifiés, `node --check` sur `js/main.js`.
 
+## Documents du club : titres de rubrique et catégories agrandis
+
+**Choix explicite de l'utilisatrice, 21/09/2026** : « je veux que dans la
+partie document du club la police de "Débuter la photo" "Ateliers
+techniques du club" "Administration du club" etc soit beaucoup plus
+grande et que les catégories soient aussi beaucoup plus grandes ».
+
+Concerne les trois endroits de `documents.php` où ces noms de rubrique
+apparaissent, tous agrandis à la même taille pour rester cohérents entre
+eux — `1.15rem` → **`1.7rem`** :
+- `.choix-rubrique-titre` (titre de bloc dans le formulaire « Ajouter un
+  document ») ;
+- `.documents-index-rubrique h2` (titre de bloc dans le sommaire, tout en
+  haut de la page) ;
+- `.rubrique-documents h2` (titre au-dessus de chaque rubrique, dans la
+  liste détaillée plus bas sur la page) — **scindé** de la règle partagée
+  `.rubrique-documents h2, .groupe-galerie h2` pour ne pas agrandir aussi
+  les titres de catégorie de la Galerie du Club (`.groupe-galerie h2`),
+  non concernée par cette demande, restée à `1.3rem`.
+
+Les pastilles de catégorie, `1rem` → **`1.3rem`** (padding `9px 16px` →
+`13px 24px`, rond radio `18px` → `22px`) :
+- `.field .choix-rubrique-categorie` (case à cocher radio du formulaire
+  de dépôt) ;
+- `.documents-index-categories a` (lien du sommaire).
+
+Le nom de catégorie affiché au-dessus de chaque liste de documents, dans
+la liste détaillée (`.sous-categorie-documents h3`, ex. « Guides
+simplifiés » juste avant les fichiers), également agrandi à la même
+taille que les pastilles — `0.95rem` → `1.3rem` — pour rester cohérent
+avec le reste de la page ; sa couleur atténuée (`--text-muted`) et son
+absence de gras restent inchangées, seule sa taille change.
+
+Testé hors ligne (21/09/2026) avec une page HTML isolée reproduisant les
+trois blocs de la page (sommaire, formulaire, liste détaillée) et
+Playwright : tailles réellement appliquées mesurées par
+`getComputedStyle` (1,7rem/27,2px et 1,3rem/20,8px confirmés partout),
+aucun débordement horizontal à 1280px ni à 390px malgré les noms de
+rubrique les plus longs (« Ateliers techniques du club »). `php -l` sur
+`documents.php`.
+
 ## Conventions
 
 - Tout le contenu visible est en **français**.

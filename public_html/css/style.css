@@ -1348,7 +1348,11 @@ button.lien-retour {
 .choix-rubrique-titre {
   margin: 0 0 12px;
   font-family: var(--font-heading);
-  font-size: 1.15rem;
+  /* 1.7rem depuis le 21/09/2026 (choix explicite de l'utilisatrice : « la
+     police soit beaucoup plus grande »), contre 1.15rem à l'origine — même
+     valeur que .documents-index-rubrique h2 et .rubrique-documents h2, pour
+     que tous les titres de rubrique de la page restent de la même taille. */
+  font-size: 1.7rem;
   color: var(--rubrique-couleur, var(--accent));
 }
 .choix-rubrique-categories {
@@ -1367,19 +1371,23 @@ button.lien-retour {
 .field .choix-rubrique-categorie {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 9px 16px;
+  gap: 9px;
+  /* Pastille agrandie depuis le 21/09/2026 (choix explicite de
+     l'utilisatrice : « les catégories soient aussi beaucoup plus grandes »),
+     de 9px 16px/1rem à 13px 24px/1.3rem — même taille de texte que
+     .documents-index-categories a, pour rester cohérent avec le sommaire. */
+  padding: 13px 24px;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: var(--bg);
-  font-size: 1rem;
+  font-size: 1.3rem;
   color: var(--text);
   cursor: pointer;
   margin-bottom: 0;
 }
 .choix-rubrique-categorie input[type="radio"] {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   flex: 0 0 auto;
   padding: 0;
   border: none;
@@ -1918,7 +1926,9 @@ button.lien-retour {
 }
 .documents-index-rubrique h2 {
   font-family: var(--font-heading);
-  font-size: 1.15rem;
+  /* 1.7rem depuis le 21/09/2026 (choix explicite de l'utilisatrice), même
+     valeur que .choix-rubrique-titre — voir ce commentaire pour le détail. */
+  font-size: 1.7rem;
   margin: 0 0 12px;
   color: var(--rubrique-couleur, var(--accent));
 }
@@ -1928,16 +1938,19 @@ button.lien-retour {
   padding: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 12px;
 }
 .documents-index-categories a {
   display: inline-block;
-  padding: 9px 16px;
+  /* Pastille agrandie depuis le 21/09/2026 (choix explicite de
+     l'utilisatrice), même taille que .field .choix-rubrique-categorie —
+     voir ce commentaire pour le détail. */
+  padding: 13px 24px;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--text);
-  font-size: 1rem;
+  font-size: 1.3rem;
   transition: border-color 0.2s ease, color 0.2s ease;
 }
 .documents-index-categories a:hover {
@@ -1967,12 +1980,24 @@ button.lien-retour {
   padding-bottom: 10px;
   border-bottom: 1px solid var(--border);
 }
+/* Sur Documents du club uniquement, titre de rubrique agrandi à 1.7rem
+   depuis le 21/09/2026 (choix explicite de l'utilisatrice), même taille que
+   .choix-rubrique-titre/.documents-index-rubrique h2 plus haut sur la page
+   — scindé de .groupe-galerie h2 ci-dessus pour ne pas toucher la Galerie
+   du Club, non concernée par cette demande. */
+.rubrique-documents h2 {
+  font-size: 1.7rem;
+}
 .sous-categorie-documents {
   margin: 22px 0 0;
 }
 .sous-categorie-documents h3 {
   font-family: var(--font-heading);
-  font-size: 0.95rem;
+  /* 1.3rem depuis le 21/09/2026 (choix explicite de l'utilisatrice : « les
+     catégories soient aussi beaucoup plus grandes »), contre 0.95rem à
+     l'origine — même taille que les pastilles de catégorie plus haut sur
+     la page, pour rester cohérent. */
+  font-size: 1.3rem;
   font-weight: normal;
   color: var(--text-muted);
   margin: 0 0 10px;
