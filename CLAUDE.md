@@ -4679,6 +4679,49 @@ et spams). Les deux diagnostics temporaires
 (`espace/diag-doc-mail.php`, `.github/workflows/diag-dns-mail.yml`)
 restent en place jusqu'à cette confirmation, comme prévu.
 
+**Ce premier correctif a empiré la situation, même jour** — l'utilisatrice
+a déployé, revérifié le déploiement (confirmé réussi vers les deux
+domaines), puis testé deux fois : un vrai dépôt de document
+(`documents.php`, aucun e-mail reçu) et mail-tester.com avec une nouvelle
+adresse temporaire (le vérificateur de score restait bloqué en boucle,
+signe qu'aucun message n'atteignait leur serveur). Plus révélateur encore :
+`diag-doc-mail.php` montre `mail()` continuant de renvoyer **vrai**
+(« le serveur a accepté le message ») pour l'appel direct — donc l'échec
+n'est ni un rejet immédiat ni une erreur PHP, mais se produit plus loin,
+entre l'acceptation locale et la relève sortante de Hostinger. Or
+**avant** ce correctif, les e-mails de test atteignaient bel et bien
+mail-tester.com (avec un mauvais score, mais reçus — c'est ce qui avait
+permis le diagnostic initial) : passer de « reçus mais mal authentifiés »
+à « plus rien reçu nulle part » après l'ajout de `-f` pointe vers le
+paramètre `-f` lui-même comme nouvelle cause de blocage, pas comme
+correctif.
+
+**Cause la plus probable** : beaucoup d'hébergements mutualisés
+(Hostinger compris) n'acceptent une adresse `-f` en enveloppe que si elle
+correspond à une **vraie boîte mail existante** sur le compte — sécurité
+destinée à empêcher un script PHP d'usurper n'importe quelle adresse du
+domaine en enveloppe. Or `noreply@focalclub.fr` n'a jamais été créée
+comme boîte réelle dans hPanel : c'était seulement l'adresse d'affichage
+du `From:`, jamais un compte mail effectif. Le relais local accepte donc
+le message (`mail()` renvoie vrai) puis l'abandonne silencieusement à la
+relève sortante, faute d'enveloppe légitime — sans jamais remonter
+d'erreur PHP, ce qui explique pourquoi rien dans les tests précédents
+n'avait permis de le voir venir.
+
+**Corrigé (22/09/2026, même jour)** : l'enveloppe passe de
+`-f noreply@focalclub.fr` à **`-f admin@focalclub.fr`** — une vraie boîte
+du compte, déjà confirmée fonctionnelle le 10/09/2026 (« je reçois les
+avertissements de création et aussi les demandes de réinitialisation de
+mot de passe »). Le `From:` affiché reste `noreply@focalclub.fr`
+(purement cosmétique) : DMARC vérifie un alignement de **domaine**, pas
+d'adresse exacte, entre l'enveloppe et le `From:` — les deux restent sur
+`focalclub.fr`, donc l'alignement tient malgré l'adresse locale
+différente. Non testable hors ligne (dépend à nouveau de l'infrastructure
+mail réelle de Hostinger) — **à confirmer par l'utilisatrice**, par un
+nouveau dépôt de document réel puis vérification Gmail (réception et
+spams), ou un nouvel essai mail-tester.com. Les deux diagnostics
+temporaires restent en place jusqu'à cette confirmation.
+
 ## Conventions
 
 - Tout le contenu visible est en **français**.

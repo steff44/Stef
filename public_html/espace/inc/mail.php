@@ -83,10 +83,31 @@ function valeur_parametre(PDO $pdo, string $cle): ?string
  * SPF qui authentifiait bien *quelque chose*, mais jamais `focalclub.fr`,
  * une signature DKIM jamais appliquée (Hostinger ne signe que ce qu'il
  * reconnaît comme envoyé pour un domaine du compte) et un DMARC en échec
- * (aucun des deux n'aligne avec le `From:` affiché). `-f` ajouté pour
- * forcer l'enveloppe sur `noreply@focalclub.fr`, un domaine réellement
- * configuré sur ce compte Hostinger (MX/SPF/DKIM déjà en place) — ce qui
- * devrait aligner SPF et laisser Hostinger signer en DKIM du même coup.
+ * (aucun des deux n'aligne avec le `From:` affiché).
+ *
+ * **Un premier essai avec `-f noreply@focalclub.fr` a empiré la
+ * situation (22/09/2026, même jour)** : après déploiement confirmé, plus
+ * aucun e-mail n'arrivait nulle part — pas même à mail-tester.com, qui
+ * recevait pourtant les envois d'avant ce correctif (avec un mauvais
+ * score, mais reçus). `mail()` continuait de renvoyer vrai (le message
+ * est accepté par le serveur local), donc l'échec se produit plus loin,
+ * entre l'acceptation locale et la relève sortante de Hostinger — sans
+ * jamais remonter d'erreur PHP. Cause la plus probable : beaucoup
+ * d'hébergements mutualisés (Hostinger compris) n'acceptent une adresse
+ * `-f` en enveloppe que si elle correspond à une **vraie boîte mail
+ * existante** sur le compte, pour empêcher un script d'usurper n'importe
+ * quelle adresse du domaine — `noreply@focalclub.fr` n'a jamais été créée
+ * comme boîte réelle dans hPanel, seulement utilisée comme adresse
+ * d'affichage dans l'en-tête `From:`. Le relais accepte donc le message en
+ * local (d'où `mail()` qui renvoie vrai) puis l'abandonne silencieusement
+ * en sortie faute d'enveloppe légitime. `admin@focalclub.fr`, en
+ * revanche, est une **vraie boîte** du compte, déjà confirmée
+ * fonctionnelle (10/09/2026, « je reçois les avertissements de création
+ * et aussi les demandes de réinitialisation de mot de passe » — voir plus
+ * haut). L'enveloppe passe donc à `-f admin@focalclub.fr` ; le `From:`
+ * affiché reste `noreply@focalclub.fr` (purement cosmétique, DMARC vérifie
+ * un alignement de **domaine**, pas d'adresse exacte, entre l'enveloppe et
+ * le `From:` — les deux restent sur `focalclub.fr`).
  */
 function envoyer_mail(string $destinataire, string $expediteur, string $sujet, string $corps): void
 {
@@ -95,7 +116,7 @@ function envoyer_mail(string $destinataire, string $expediteur, string $sujet, s
              . "Content-Type: text/html; charset=UTF-8\r\n";
     $sujet_encode = '=?UTF-8?B?' . base64_encode($sujet) . '?=';
 
-    if (!@mail($destinataire, $sujet_encode, corps_html($corps), $entetes, '-f noreply@focalclub.fr')) {
+    if (!@mail($destinataire, $sujet_encode, corps_html($corps), $entetes, '-f admin@focalclub.fr')) {
         error_log("Espace adhérents — échec d'envoi de mail à {$destinataire} : {$sujet}");
     }
 }
