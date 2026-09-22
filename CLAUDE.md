@@ -4567,6 +4567,64 @@ Revérifié hors ligne (21/09/2026, même jour) avec la même méthode
 `1rem`), `.documents-index-rubrique h2`/`.rubrique-documents h2` toujours
 à `27,2px` (`1.7rem`), aucun débordement horizontal à 1280px ni à 390px.
 
+## Documents du club : de nouveau aucun e-mail reçu sur Gmail (DKIM absent)
+
+**Signalé par l'utilisatrice le 22/09/2026** : après un dépôt réel dans
+Documents du Club (document #12, bien enregistré en base à 06h58), aucun
+e-mail reçu — ni la notification générale, ni la confirmation
+personnelle — alors que ce même mécanisme avait été confirmé fonctionnel
+la veille (21/09, voir plus haut « Confirmation personnelle par e-mail :
+adresse périmée en session »).
+
+**Diagnostic en deux temps**, réservé au responsable (même principe que
+les diagnostics précédents) :
+1. `espace/diag-doc-mail.php` (temporaire) : confirme que le dépôt a bien
+   réussi en base (donc `documents.php` a bien dû exécuter les deux appels
+   d'e-mail juste après), liste les adhérents éligibles à la notification
+   générale (l'utilisatrice y figure bien), confirme son propre compte
+   valide/actif avec une adresse correcte, puis envoie deux e-mails de
+   test isolés (`envoyer_confirmation_personnelle()` et un `mail()` natif
+   direct) à sa seule adresse. **Aucun des deux n'est arrivé, ni en boîte
+   de réception ni en spam** — le même symptôme que l'incident SPF/Gmail
+   du 10/09/2026 (voir plus haut), déjà corrigé une fois, mais qui semble
+   être revenu.
+2. `.github/workflows/diag-dns-mail.yml` (temporaire, `workflow_dispatch`)
+   revérifie SPF/DMARC/MX/DKIM depuis zéro via DNS-over-HTTPS (le sandbox
+   ne peut pas interroger le DNS public directement) : **SPF, DMARC et MX
+   sont toujours corrects et inchangés** (`v=spf1
+   include:_spf.mail.hostinger.com ~all`, `v=DMARC1; p=none`,
+   `mx1`/`mx2.hostinger.com`) — le correctif du 10/09 n'a donc pas régressé.
+   En revanche, **aucun sélecteur DKIM n'a été trouvé**, parmi une
+   quinzaine de noms courants essayés (`default`, `google`, `mail`,
+   `hostinger`, `dkim`, `s1`/`s2`, `selector1`/`2`, `k1`, `smtp`…) — déjà
+   noté comme un angle mort possible le 10/09/2026 (« aucun sélecteur DKIM
+   courant trouvé... à vérifier dans hPanel si le problème persiste
+   malgré le correctif SPF »), jamais creusé depuis faute de symptôme.
+   Avec SPF seul (`~all`, échec souple) et DMARC en mode `p=none`
+   (observation seule, aucune politique appliquée), l'authentification du
+   domaine reste incomplète aux yeux de Gmail — l'absence de DKIM est le
+   suspect le plus concret pour expliquer un rejet silencieux redevenu
+   systématique.
+
+**Non corrigible depuis ce dépôt** : DKIM se configure côté hébergeur
+(génération de la paire de clés + publication du sélecteur en DNS), pas
+dans le code du site. **À faire par l'utilisatrice dans hPanel** :
+ouvrir la section Emails du domaine `focalclub.fr`, chercher une option
+d'authentification/DKIM (génération automatique proposée par Hostinger
+la plupart du temps) et l'activer si elle ne l'est pas déjà. Une fois
+fait, relancer `diag-dns-mail.yml` (Actions → workflow_dispatch) pour
+confirmer qu'un sélecteur DKIM répond désormais, puis retester
+`diag-doc-mail.php`. Les deux diagnostics restent en place le temps de
+cette vérification — à supprimer une fois confirmée.
+
+**Nettoyage au passage** : `.github/workflows/diag-reset-form.yml`, un
+diagnostic temporaire de l'épisode « réinitialisation du mot de passe »
+(11/09/2026), était resté dans le dépôt alors que le reste de cette
+série de diagnostics (`diag-reset-mail.php`, `diag-jeton.php`,
+`diag-jeton-e2e.yml`, `diag-dns-spf.yml`) avait bien été supprimé une
+fois la cause confirmée — oubli corrigé le 22/09/2026, sans rapport avec
+l'incident ci-dessus.
+
 ## Conventions
 
 - Tout le contenu visible est en **français**.
