@@ -1,0 +1,57 @@
+name: Diagnostic temporaire - DNS mail (SPF/DMARC/DKIM/MX)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  checks: write
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Interroger le DNS public via DNS-over-HTTPS (Google)
+        run: |
+          {
+            resoudre() {
+              local nom="$1" type="$2"
+              echo "--- ${type} ${nom} ---"
+              curl -sS "https://dns.google/resolve?name=${nom}&type=${type}" | jq -r '
+                if .Answer then .Answer[] | "\(.type) \(.data)" else "(aucune réponse — NXDOMAIN ou vide, Status=\(.Status))" end
+              '
+              echo ""
+            }
+
+            echo "=== SPF (TXT racine) ==="
+            resoudre "focalclub.fr" "TXT"
+
+            echo "=== DMARC ==="
+            resoudre "_dmarc.focalclub.fr" "TXT"
+
+            echo "=== MX ==="
+            resoudre "focalclub.fr" "MX"
+
+            echo "=== Sélecteurs DKIM courants (essai systématique) ==="
+            for selecteur in default google mail hostinger hostingermail1 hostingermail2 dkim s1 s2 selector1 selector2 k1 smtp mxvault zmail; do
+              resoudre "${selecteur}._domainkey.focalclub.fr" "TXT"
+            done
+
+            echo "=== Comparaison : mêmes requêtes pour myfocal.online (référence connue sans SPF/DMARC/MX) ==="
+            resoudre "myfocal.online" "TXT"
+            resoudre "_dmarc.myfocal.online" "TXT"
+            resoudre "myfocal.online" "MX"
+          } > /tmp/resultat-diag.txt 2>&1
+          cat /tmp/resultat-diag.txt
+
+      - name: Publier le résultat comme check run (artefacts inaccessibles depuis le sandbox)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          CONTENU=$(cat /tmp/resultat-diag.txt | head -c 60000)
+          curl -sS -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${{ github.repository }}/check-runs \
+            -d "$(jq -n --arg sha "${{ github.sha }}" --arg text "$CONTENU" \
+              '{name: "resultat-diag-dns-mail", head_sha: $sha, status: "completed", conclusion: "neutral", output: {title: "Résultat diagnostic DNS mail", summary: "voir texte", text: $text}}')" \
+            -w "\nHTTP %{http_code}\n"
