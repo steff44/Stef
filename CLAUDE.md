@@ -4634,6 +4634,51 @@ série de diagnostics (`diag-reset-mail.php`, `diag-jeton.php`,
 fois la cause confirmée — oubli corrigé le 22/09/2026, sans rapport avec
 l'incident ci-dessus.
 
+**DKIM seul n'a pas suffi non plus** — l'utilisatrice a retesté après
+activation, « 0/10 » sur mail-tester.com. Plutôt que de continuer à
+deviner, `diag-doc-mail.php?destinataire=…` a permis d'envoyer un e-mail
+de test vers une adresse temporaire mail-tester.com, dont le rapport
+technique a tranché sans ambiguïté : le message n'était **authentifié
+sur aucun des trois mécanismes** malgré un `From:` correct et un DKIM
+bien publié en DNS. Détail décisif du rapport — SPF authentifiait
+`noreply@srv1427.main-hosting.eu`, jamais `focalclub.fr`, et aucune
+signature DKIM n'était appliquée au message.
+
+**Cause réelle : l'enveloppe SMTP (Return-Path) de `mail()`, jamais
+fixée, distincte du `From:` visible.** SPF/DKIM/DMARC n'authentifient
+pas l'en-tête `From:` qu'un destinataire voit, mais l'**enveloppe**
+(la commande `MAIL FROM` du protocole SMTP, invisible dans le message
+lui-même) — un détail resté hors de portée des deux correctifs
+précédents (23/08 et 10/09/2026), qui n'avaient corrigé que le `From:`.
+PHP `mail()` ne fixe cette enveloppe sur le domaine voulu que si on la
+lui passe explicitement, en 5ᵉ paramètre (`-f adresse@domaine`) — sans
+lui, le serveur mutualisé Hostinger retombe sur son propre nom
+générique (`srv1427.main-hosting.eu`, le nom de la machine physique
+partagée par de nombreux sites, pas seulement celui-ci), quel que soit
+le `From:` affiché. Conséquence en cascade : SPF authentifiait bien
+*quelque chose*, mais un domaine sans rapport avec `focalclub.fr` ;
+Hostinger ne signe en DKIM que ce qu'il reconnaît comme envoyé « pour »
+un domaine réellement configuré sur le compte, donc aucune signature
+n'était posée ; DMARC échouait puisque ni SPF ni DKIM n'alignaient avec
+le `From:` affiché. Explique enfin l'asymétrie observée depuis le
+début de cette série d'incidents : `admin@focalclub.fr` (remise locale
+chez le même hébergeur, moins strict) recevait toujours tout, Gmail
+(vérification DMARC stricte côté externe) rejetait tout en silence.
+
+**Corrigé** (`envoyer_mail()`, `inc/mail.php`) : ajout du 5ᵉ paramètre
+`-f noreply@focalclub.fr` à l'appel `mail()` — force l'enveloppe SMTP
+sur un domaine réellement configuré sur ce compte Hostinger (MX, SPF et
+désormais DKIM déjà en place), ce qui devrait aligner SPF et laisser
+Hostinger appliquer sa signature DKIM du même coup. Non testable hors
+ligne (dépend de l'infrastructure mail réelle de Hostinger, comme tout
+ce fil) — **à confirmer par l'utilisatrice** : un nouvel envoi réel via
+`diag-doc-mail.php` vers une nouvelle adresse temporaire
+mail-tester.com pour un rapport chiffré, ou plus simplement un vrai
+dépôt de document suivi d'une vérification de la boîte Gmail (réception
+et spams). Les deux diagnostics temporaires
+(`espace/diag-doc-mail.php`, `.github/workflows/diag-dns-mail.yml`)
+restent en place jusqu'à cette confirmation, comme prévu.
+
 ## Conventions
 
 - Tout le contenu visible est en **français**.

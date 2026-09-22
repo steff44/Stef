@@ -70,6 +70,23 @@ function valeur_parametre(PDO $pdo, string $cle): ?string
  * hébergeur (d'où « ça marche sur admin@focalclub.fr, jamais sur Gmail »).
  * `From:` pointe donc maintenant vers `noreply@focalclub.fr`, le domaine
  * réellement authentifié.
+ *
+ * **Ce correctif n'a pas suffi non plus (22/09/2026)** : même après
+ * activation de DKIM pour focalclub.fr, un test réel via mail-tester.com
+ * a montré que le message continuait d'être envoyé avec une **enveloppe
+ * SMTP** (Return-Path, ce que SPF/DKIM/DMARC vérifient réellement — pas
+ * l'en-tête `From:` visible) sur `noreply@srv1427.main-hosting.eu`, le
+ * nom générique du serveur mutualisé Hostinger, jamais revu depuis. PHP
+ * `mail()` ne fixe l'enveloppe sur le domaine voulu que si on la lui
+ * passe explicitement (5ᵉ paramètre, `-f`) : sans lui, le serveur retombe
+ * sur son adresse par défaut, quel que soit le `From:` affiché — d'où un
+ * SPF qui authentifiait bien *quelque chose*, mais jamais `focalclub.fr`,
+ * une signature DKIM jamais appliquée (Hostinger ne signe que ce qu'il
+ * reconnaît comme envoyé pour un domaine du compte) et un DMARC en échec
+ * (aucun des deux n'aligne avec le `From:` affiché). `-f` ajouté pour
+ * forcer l'enveloppe sur `noreply@focalclub.fr`, un domaine réellement
+ * configuré sur ce compte Hostinger (MX/SPF/DKIM déjà en place) — ce qui
+ * devrait aligner SPF et laisser Hostinger signer en DKIM du même coup.
  */
 function envoyer_mail(string $destinataire, string $expediteur, string $sujet, string $corps): void
 {
@@ -78,7 +95,7 @@ function envoyer_mail(string $destinataire, string $expediteur, string $sujet, s
              . "Content-Type: text/html; charset=UTF-8\r\n";
     $sujet_encode = '=?UTF-8?B?' . base64_encode($sujet) . '?=';
 
-    if (!@mail($destinataire, $sujet_encode, corps_html($corps), $entetes)) {
+    if (!@mail($destinataire, $sujet_encode, corps_html($corps), $entetes, '-f noreply@focalclub.fr')) {
         error_log("Espace adhérents — échec d'envoi de mail à {$destinataire} : {$sujet}");
     }
 }
