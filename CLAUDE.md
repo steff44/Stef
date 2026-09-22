@@ -4722,6 +4722,32 @@ nouveau dépôt de document réel puis vérification Gmail (réception et
 spams), ou un nouvel essai mail-tester.com. Les deux diagnostics
 temporaires restent en place jusqu'à cette confirmation.
 
+## Documents du club : format PowerPoint accepté
+
+**Signalé par l'utilisatrice, 22/09/2026** : le dépôt d'une présentation
+`.pptx` (« Presentation_Boitiers_Objectifs_Capteurs.pptx ») dans
+Documents du Club était refusé — « Format de document non accepté (PDF,
+Word, Excel, OpenDocument, texte ou image). » **Ce n'était pas une
+régression** : PowerPoint n'a jamais fait partie de la liste
+`DOCUMENTS_ACCEPTES` (`inc/televersement.php`), qui n'accepte que PDF,
+image, texte brut, Word (`.doc`/`.docx`), Excel (`.xls`/`.xlsx`) et
+OpenDocument texte (`.odt`) — la présentation ne s'affichait donc jamais
+dans les dossiers du site, faute d'avoir jamais été enregistrée.
+
+**Corrigé** : trois formats de présentation ajoutés à
+`DOCUMENTS_ACCEPTES` — PowerPoint classique (`application/vnd.
+ms-powerpoint` → `.ppt`), PowerPoint moderne (`application/vnd.
+openxmlformats-officedocument.presentationml.presentation` → `.pptx`) et
+OpenDocument présentation (`application/vnd.oasis.opendocument.
+presentation` → `.odp`, pour rester cohérent avec l'ODT déjà accepté).
+Message d'erreur mis à jour en conséquence (« … PowerPoint,
+OpenDocument… »). Le type réel du fichier continue d'être déduit du
+contenu (`mime_content_type()`), jamais de l'extension — même garde-fou
+que les autres formats déjà acceptés (voir « Points à ne pas casser »).
+`php -l` sur `inc/televersement.php` — non testable plus avant hors
+ligne (dépend de la détection MIME réelle du serveur), à confirmer par
+l'utilisatrice en redéposant le même fichier.
+
 ## Conventions
 
 - Tout le contenu visible est en **français**.

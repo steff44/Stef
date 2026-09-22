@@ -44,6 +44,13 @@ const DOCUMENTS_ACCEPTES = [
     'application/vnd.ms-excel' => 'xls',
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'       => 'xlsx',
     'application/vnd.oasis.opendocument.text' => 'odt',
+    // PowerPoint, ajouté le 22/09/2026 (choix explicite de l'utilisatrice,
+    // après avoir tenté de déposer une présentation .pptx dans Documents du
+    // Club et reçu « Format de document non accepté » — ce format n'avait
+    // jamais fait partie de la liste, ce n'était pas une régression).
+    'application/vnd.ms-powerpoint' => 'ppt',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation' => 'pptx',
+    'application/vnd.oasis.opendocument.presentation' => 'odp',
 ];
 
 /*
@@ -92,7 +99,7 @@ function enregistrer_fichier_envoye(
     if (!isset($autorises[$mime])) {
         return $echec($categorie === 'image'
             ? "Format d'image non accepté. Utilisez JPEG, PNG, WebP ou GIF."
-            : "Format de document non accepté (PDF, Word, Excel, OpenDocument, texte ou image).");
+            : "Format de document non accepté (PDF, Word, Excel, PowerPoint, OpenDocument, texte ou image).");
     }
 
     // Pour une image, on vérifie en plus qu'elle s'ouvre réellement : un
