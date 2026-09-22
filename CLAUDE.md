@@ -4617,6 +4617,15 @@ confirmer qu'un sélecteur DKIM répond désormais, puis retester
 `diag-doc-mail.php`. Les deux diagnostics restent en place le temps de
 cette vérification — à supprimer une fois confirmée.
 
+**DKIM activé le jour même** — l'utilisatrice a activé l'option dans
+hPanel et redemandé le diagnostic. `diag-dns-mail.yml` relancé confirme
+un sélecteur désormais publié : `hostingermail1._domainkey.focalclub.fr`
+répond `v=DKIM1; k=rsa; p=...` (une vraie clé RSA) — SPF/DMARC/MX
+inchangés et toujours corrects. L'authentification du domaine est donc
+maintenant complète (SPF + DKIM + DMARC). **Reste à confirmer par un
+nouvel envoi réel** via `diag-doc-mail.php` (boîte de réception et
+spams) avant de supprimer les deux diagnostics.
+
 **Nettoyage au passage** : `.github/workflows/diag-reset-form.yml`, un
 diagnostic temporaire de l'épisode « réinitialisation du mot de passe »
 (11/09/2026), était resté dans le dépôt alors que le reste de cette
