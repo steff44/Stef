@@ -4824,6 +4824,76 @@ que les autres formats déjà acceptés (voir « Points à ne pas casser »).
 ligne (dépend de la détection MIME réelle du serveur), à confirmer par
 l'utilisatrice en redéposant le même fichier.
 
+## Sorties à venir : ancre cachée sous l'en-tête, boutons « Ajouter au calendrier »
+
+Deux demandes de l'utilisatrice, 24/09/2026, traitées ensemble.
+
+**Cliquer sur une sortie dans le calendrier (agenda.php) ouvrait la bonne
+carte sur `sorties-a-venir.php`, mais son haut restait caché sous
+l'en-tête** (signalé par l'utilisatrice : « si je clique par exemple sur
+La Turballaise... le haut du cartouche est caché par le bandeau du
+haut »). Même piège déjà rencontré et corrigé plusieurs fois sur ce
+site (`documents.php`, `galerie-club.php`, les vues de `nos-sorties.html`) :
+`.site-header` est collant (`position: sticky`), et `scrollIntoView()`/le
+saut d'ancre natif du navigateur amène le haut de l'élément **pile** au
+bord supérieur de la fenêtre, sous cet en-tête. `.sortie-carte`
+(`css/style.css`) gagne le même `scroll-margin-top: 120px` déjà utilisé
+ailleurs — l'ancre `#sortie-{id}` (posée sur chaque carte, à venir comme
+passée) laisse désormais cette marge au navigateur avant de considérer la
+carte « en haut » de l'écran.
+
+**Chaque sortie à venir porte désormais un bouton « Ajouter au
+calendrier »** (Google Agenda, Outlook.com, ou un fichier `.ics` pour
+Apple Calendar/Outlook de bureau/Thunderbird...), visible de tous
+(connecté ou non — contrairement à « Partager sur WhatsApp », réservé au
+responsable/éditeur) : un `<details class="sortie-calendrier">`, même
+principe replié/déplié que `.sortie-modifier` juste à côté (aucun
+JavaScript nécessaire), avec trois liens à l'intérieur.
+
+**Trois fonctions nouvelles dans `inc/agenda.php`** (partagées par
+`sorties-a-venir.php` pour les deux liens et par le nouveau
+`espace/sortie-ics.php` pour le fichier) :
+- `fin_calendrier_sortie()` — la vraie fin de la sortie si elle est
+  renseignée (voir « Sorties sur plusieurs jours », 15/09/2026), sinon un
+  forfait de 2h après le début (aucune autre durée n'existe en base pour
+  une sortie sans fin précisée) ;
+- `lien_calendrier_google()` — un lien `calendar.google.com/calendar/
+  render` avec les dates en heure de Paris et `ctz=Europe/Paris`, pour que
+  Google Agenda ne les réinterprète jamais comme de l'UTC ;
+- `lien_calendrier_outlook()` — même principe vers
+  `outlook.live.com/calendar/.../deeplink/compose`, en ISO 8601 local
+  (interprété dans le fuseau du compte Outlook du visiteur, comme ces
+  liens de composition le font d'habitude).
+
+**`espace/sortie-ics.php`** (nouveau, public comme le reste de l'agenda —
+aucune connexion requise) sert un fichier `.ics` autonome par sortie, pour
+les agendas sans lien de composition web (Apple Calendar en particulier).
+Écrit à la main, sans dépendance externe (même philosophie que
+`inc/xlsx.php`/`inc/smtp.php`) : `ics_evenement_sortie()`,
+`ics_texte_echappe()` (échappe antislash/virgule/point-virgule/retour à la
+ligne, RFC 5545 §3.3.11) et `ics_ligne_pliee()` (« line folding » à 75
+octets, RFC 5545 §3.1 — recule si besoin jusqu'à une frontière de
+caractère UTF-8 valide, pour ne jamais couper une lettre accentuée en
+deux) dans `inc/agenda.php`. Les dates sont converties en UTC (suffixe
+`Z`) plutôt qu'exprimées en heure locale + `TZID`, pour rester conformes
+sans avoir à fournir un bloc `VTIMEZONE` complet.
+
+Testé hors ligne (24/09/2026) : `fin_calendrier_sortie()` (avec/sans fin
+explicite), les deux liens (domaine, dates, fuseau, titre/lieu encodés),
+l'échappement et le pliage ICS (ligne courte inchangée, ligne longue
+repliée avec chaque morceau ≤ 75 octets et l'espace de continuité attendu,
+aucun caractère accentué coupé en deux), le fichier `.ics` complet
+(présence de `LOCATION` seulement si un lieu existe, `DESCRIPTION` retombe
+sur le seul lien de retour si la sortie n'a pas de description, `DTEND`
+correct pour une sortie multi-jours) — assertions PHP pures. Fichier `.ics`
+généré revalidé avec la bibliothèque Python `icalendar` (analyse sans
+erreur, tous les champs relus identiques à l'original, y compris les
+virgules/points-virgules/accents échappés puis dés-échappés correctement).
+Vérifié par rendu Playwright (page HTML isolée reproduisant la carte et le
+bandeau collant, desktop et 390px) : la carte visée par l'ancre reste
+visible sous l'en-tête, le menu « Ajouter au calendrier » s'ouvre avec les
+trois liens présents et corrects, aucun débordement horizontal.
+
 ## Conventions
 
 - Tout le contenu visible est en **français**.

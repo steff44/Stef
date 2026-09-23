@@ -324,7 +324,10 @@ titre_page("Sorties à venir", "Les prochaines sorties du club, et qui y partici
   <?php else: ?>
     <ul class="liste-sorties">
       <?php foreach ($a_venir as $sortie): ?>
-        <?php $inscrit = in_array((int) $sortie['id'], array_map('intval', $mes_inscriptions), true); ?>
+        <?php
+          $inscrit            = in_array((int) $sortie['id'], array_map('intval', $mes_inscriptions), true);
+          $lien_sortie_absolu = SITE_URL . '/espace/sorties-a-venir.php#sortie-' . (int) $sortie['id'];
+        ?>
         <li id="sortie-<?= (int) $sortie['id'] ?>" class="sortie-carte sortie-carte--<?= classe_categorie($sortie['categorie']) ?><?= $inscrit ? ' sortie-inscrite' : '' ?>">
           <div class="sortie-date">
             <span class="sortie-jour"><?= (int) date('j', strtotime($sortie['debut'])) ?></span>
@@ -372,6 +375,14 @@ titre_page("Sorties à venir", "Les prochaines sorties du club, et qui y partici
               <?php else: ?>
                 <a class="btn btn-ghost" href="connexion.php">Se connecter pour participer</a>
               <?php endif; ?>
+              <details class="sortie-calendrier">
+                <summary class="btn btn-ghost">📅 Ajouter au calendrier</summary>
+                <div class="sortie-calendrier-liens">
+                  <a class="btn btn-ghost" href="<?= e(lien_calendrier_google($sortie, $lien_sortie_absolu)) ?>" target="_blank" rel="noopener noreferrer">Google Agenda</a>
+                  <a class="btn btn-ghost" href="<?= e(lien_calendrier_outlook($sortie, $lien_sortie_absolu)) ?>" target="_blank" rel="noopener noreferrer">Outlook.com</a>
+                  <a class="btn btn-ghost" href="sortie-ics.php?id=<?= (int) $sortie['id'] ?>">Télécharger (.ics — Apple, Outlook…)</a>
+                </div>
+              </details>
               <?php if (est_gestionnaire()): ?>
                 <?php
                   // Un envoi automatique dans le groupe WhatsApp du club
@@ -386,7 +397,7 @@ titre_page("Sorties à venir", "Les prochaines sorties du club, et qui y partici
                       . '🗓 ' . periode_sortie_en_francais($sortie['debut'], $sortie['fin']) . "\n"
                       . ($sortie['lieu'] ? '📍 ' . $sortie['lieu'] . "\n" : '')
                       . ($sortie['description'] ? "\n" . $sortie['description'] . "\n" : '')
-                      . "\nInfos et inscription : " . SITE_URL . '/espace/sorties-a-venir.php#sortie-' . (int) $sortie['id'];
+                      . "\nInfos et inscription : " . $lien_sortie_absolu;
                   $lien_whatsapp = 'https://wa.me/?text=' . rawurlencode($texte_partage);
                 ?>
                 <a class="btn btn-ghost" href="<?= e($lien_whatsapp) ?>" target="_blank" rel="noopener noreferrer">Partager sur WhatsApp</a>

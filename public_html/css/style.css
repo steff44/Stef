@@ -2321,6 +2321,11 @@ button.lien-retour {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 20px 24px;
+  /* Cliquer sur une sortie dans le calendrier (agenda.php) amène ici via
+     l'ancre #sortie-{id} — sans ça, .site-header (position: sticky)
+     recouvre le haut de la carte, même piège déjà corrigé sur les ancres
+     de documents.php/galerie-club.php/nos-sorties.html (24/09/2026). */
+  scroll-margin-top: 120px;
 }
 .sortie-inscrite {
   border-color: rgba(168, 85, 247, 0.5);
@@ -2431,6 +2436,28 @@ button.lien-retour {
 }
 .sortie-modifier summary.btn::-webkit-details-marker {
   display: none;
+}
+
+/* Bouton « Ajouter au calendrier » d'une sortie — même principe que
+   .sortie-modifier juste au-dessus (repli/dépli, pleine largeur une fois
+   ouvert). */
+.sortie-calendrier {
+  flex: 0 1 auto;
+}
+.sortie-calendrier[open] {
+  flex-basis: 100%;
+}
+.sortie-calendrier summary.btn {
+  list-style: none;
+}
+.sortie-calendrier summary.btn::-webkit-details-marker {
+  display: none;
+}
+.sortie-calendrier-liens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
 }
 
 /* Onglets Mois/Semaine au-dessus du calendrier */
