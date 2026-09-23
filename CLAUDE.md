@@ -4722,6 +4722,72 @@ nouveau dépôt de document réel puis vérification Gmail (réception et
 spams), ou un nouvel essai mail-tester.com. Les deux diagnostics
 temporaires restent en place jusqu'à cette confirmation.
 
+**`-f` n'a en réalité jamais eu d'effet, quelle que soit l'adresse
+(23/09/2026)** : un dépôt réel a fini par générer sa notification, mais
+un nouveau rapport mail-tester.com (avec l'enveloppe `admin@focalclub.fr`
+en place) a montré **exactement le même échec** qu'avant tout correctif —
+SPF authentifiant toujours `noreply@srv1427.main-hosting.eu`, jamais
+`focalclub.fr`, et aucune signature DKIM. Pourtant `admin@focalclub.fr`
+recevait bien les e-mails de test en local (webmail Hostinger) : la
+délivrabilité locale fonctionnait, seule l'authentification vue de
+l'extérieur restait fausse.
+
+**Cause définitive** : le rapport identifie le relais réel utilisé,
+`dog.cedar.relay.mailchannels.net` — Hostinger fait passer **tout** le
+trafic `mail()` PHP par MailChannels, un relais mutualisé anti-abus
+utilisé par de nombreux hébergeurs. Ce relais **ignore complètement le
+`-f`** transmis par PHP et impose toujours l'identité du serveur partagé,
+quelle que soit l'adresse demandée — expliquant pourquoi ni
+`noreply@focalclub.fr` ni `admin@focalclub.fr` n'ont jamais rien changé
+au niveau SPF/DKIM, seulement à la délivrabilité locale (remise directe
+chez le même hébergeur, indépendante de ce relais).
+
+**Deuxième découverte, en creusant pourquoi aucun e-mail ne semblait
+arriver malgré tout** : les quatre e-mails de diagnostic envoyés la
+veille pendant toute cette investigation (08:18, 15:16, 20:31 le
+22/09, puis 06:06 le 23/09) sont **tous arrivés d'un coup le lendemain
+matin**, avec leurs horodatages d'origine intacts. Aucun n'était donc
+perdu — Gmail les **retardait** de plusieurs heures avant de les
+délivrer, comportement classique face à un expéditeur sans réputation
+établie (renforcé par l'absence de DKIM). C'est ce qui donnait
+l'impression d'un échec total à chaque test : en vérifiant sa boîte
+dans les minutes suivant un envoi, rien n'était encore arrivé.
+
+**Corrigé en sortant complètement de `mail()`** (`inc/mail.php`,
+nouveau fichier `inc/smtp.php`) : `envoyer_mail()` envoie désormais en
+**SMTP authentifié**, avec un client minimal écrit à la main (sans
+PHPMailer/Composer, même philosophie que `inc/xlsx.php`) — connexion
+`STARTTLS`, `AUTH LOGIN`, puis `MAIL FROM`/`RCPT TO`/`DATA` classiques.
+Une connexion SMTP authentifiée avec une vraie boîte échappe entièrement
+au relais MailChannels : Hostinger traite alors le message comme un vrai
+e-mail du compte, avec DKIM appliqué correctement, sans passer par le
+chemin qui causait le retard. Nouvelle boîte créée dans hPanel,
+**`noreply@focalclub.fr`**, dont les identifiants vivent dans
+`espace/inc/config.local.php` (`smtp_utilisateur`/`smtp_mot_de_passe`,
+jamais commités — voir `config.example.php`) ; `smtp_hote`/`smtp_port`
+sont facultatifs, avec un repli sur `smtp.hostinger.com:587`.
+`config_smtp()` (`inc/mail.php`) lit ces identifiants une seule fois par
+requête ; si absents ou si l'envoi SMTP échoue, `envoyer_mail()` se
+replie automatiquement sur l'ancien `mail()` (`-f admin@focalclub.fr`,
+inchangé) — aucune régression pour une installation qui n'aurait pas
+encore cette boîte configurée.
+
+Testé hors ligne (23/09/2026) : un faux serveur SMTP local (certificat
+auto-signé, `stream_socket_server` + `stream_socket_enable_crypto`) a
+rejoué l'intégralité de l'échange — `EHLO` → `STARTTLS` → bascule TLS
+réussie → second `EHLO` (obligatoire après le chiffrement) → `AUTH
+LOGIN` (identifiant/mot de passe décodés correctement côté serveur) →
+`MAIL FROM`/`RCPT TO` → `DATA`, avec vérification explicite du
+« dot-stuffing » (une ligne du corps commençant par un point, piégeuse
+en SMTP, correctement doublée en `..`) → `QUIT`. `envoyer_via_smtp()`
+s'est terminée sans exception, dans l'ordre exact attendu. Non testable
+avec un vrai serveur Hostinger depuis ce sandbox (domaine externe
+bloqué, comme le reste de l'infrastructure mail de ce fichier) — **à
+confirmer par l'utilisatrice** une fois les identifiants ajoutés à
+`config.local.php` sur le serveur : un nouveau dépôt de document réel,
+en observant si la notification arrive maintenant en quelques secondes
+plutôt qu'avec plusieurs heures de retard.
+
 ## Documents du club : format PowerPoint accepté
 
 **Signalé par l'utilisatrice, 22/09/2026** : le dépôt d'une présentation

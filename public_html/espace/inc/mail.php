@@ -108,6 +108,36 @@ function valeur_parametre(PDO $pdo, string $cle): ?string
  * affiché reste `noreply@focalclub.fr` (purement cosmétique, DMARC vérifie
  * un alignement de **domaine**, pas d'adresse exacte, entre l'enveloppe et
  * le `From:` — les deux restent sur `focalclub.fr`).
+ *
+ * **Ce correctif n'a pas non plus résolu le fond (23/09/2026)** : un
+ * dépôt réel de document a fini par recevoir sa notification — mais avec
+ * un rapport mail-tester.com montrant SPF toujours authentifié pour
+ * `noreply@srv1427.main-hosting.eu`, jamais pour `focalclub.fr`, quelle
+ * que soit l'adresse passée en `-f`. Cause trouvée : Hostinger fait
+ * passer tout le trafic `mail()` PHP par un relais mutualisé
+ * (MailChannels, `dog.cedar.relay.mailchannels.net`, visible dans le
+ * rapport) qui **ignore purement et simplement le `-f`** et impose
+ * toujours l'identité du serveur partagé — `-f` n'a donc jamais eu
+ * d'effet, ni avec `noreply@` ni avec `admin@`. Les e-mails de
+ * diagnostic envoyés pendant toute cette investigation ont fini par
+ * arriver, mais en rafale le lendemain (horodatages 08:18, 15:16, 20:31
+ * la veille puis 06:06 le matin suivant, tous reçus dans la même
+ * demi-heure) : Gmail ne les rejetait donc pas, il les mettait en
+ * attente plusieurs heures — comportement classique face à un expéditeur
+ * sans réputation établie, cohérent avec l'absence de DKIM du message.
+ *
+ * **Corrigé en sortant complètement de `mail()`** : `envoyer_mail()`
+ * tente désormais un envoi en **SMTP authentifié** (`inc/smtp.php`,
+ * client minimal écrit à la main) avec une vraie boîte du domaine —
+ * `noreply@focalclub.fr`, créée le 23/09/2026 — dès que
+ * `espace/inc/config.local.php` porte `smtp_utilisateur`/
+ * `smtp_mot_de_passe` (voir `config.example.php`). Une connexion SMTP
+ * authentifiée échappe au relais MailChannels : Hostinger traite alors
+ * le message comme un vrai e-mail du compte, DKIM compris, sans le délai
+ * de mise en attente observé plus haut. `mail()` (avec `-f
+ * admin@focalclub.fr`, inchangé) reste le repli automatique si la
+ * configuration SMTP est absente ou si l'envoi SMTP échoue — jamais de
+ * régression pour une installation qui n'aurait pas encore cette boîte.
  */
 function envoyer_mail(string $destinataire, string $expediteur, string $sujet, string $corps): void
 {
@@ -115,10 +145,62 @@ function envoyer_mail(string $destinataire, string $expediteur, string $sujet, s
              . "Reply-To: {$expediteur}\r\n"
              . "Content-Type: text/html; charset=UTF-8\r\n";
     $sujet_encode = '=?UTF-8?B?' . base64_encode($sujet) . '?=';
+    $corps_html   = corps_html($corps);
 
-    if (!@mail($destinataire, $sujet_encode, corps_html($corps), $entetes, '-f admin@focalclub.fr')) {
+    $smtp = config_smtp();
+    if ($smtp !== null) {
+        try {
+            require_once __DIR__ . '/smtp.php';
+            envoyer_via_smtp(
+                $smtp['hote'],
+                $smtp['port'],
+                $smtp['utilisateur'],
+                $smtp['mot_de_passe'],
+                $destinataire,
+                $entetes,
+                $sujet_encode,
+                $corps_html
+            );
+            return;
+        } catch (Throwable $e) {
+            error_log("Espace adhérents — échec d'envoi SMTP à {$destinataire} : " . $e->getMessage());
+            // Repli sur mail() ci-dessous plutôt que de perdre l'e-mail.
+        }
+    }
+
+    if (!@mail($destinataire, $sujet_encode, $corps_html, $entetes, '-f admin@focalclub.fr')) {
         error_log("Espace adhérents — échec d'envoi de mail à {$destinataire} : {$sujet}");
     }
+}
+
+/*
+ * Lit les identifiants SMTP dans config.local.php — null si absents, pour
+ * laisser envoyer_mail() se replier silencieusement sur mail(). Mise en
+ * cache pour la durée de la requête (plusieurs e-mails peuvent être
+ * envoyés dans une même page, ex. la notification générale à tous les
+ * adhérents).
+ */
+function config_smtp(): ?array
+{
+    static $config = false; // faux témoin « pas encore lu », distinct de null
+
+    if ($config === false) {
+        $chemin  = __DIR__ . '/config.local.php';
+        $donnees = is_file($chemin) ? (require $chemin) : [];
+        $utilisateur  = trim((string) ($donnees['smtp_utilisateur'] ?? ''));
+        $mot_de_passe = (string) ($donnees['smtp_mot_de_passe'] ?? '');
+
+        $config = ($utilisateur !== '' && $mot_de_passe !== '')
+            ? [
+                'hote'         => (string) ($donnees['smtp_hote'] ?? 'smtp.hostinger.com'),
+                'port'         => (int) ($donnees['smtp_port'] ?? 587),
+                'utilisateur'  => $utilisateur,
+                'mot_de_passe' => $mot_de_passe,
+            ]
+            : null;
+    }
+
+    return $config;
 }
 
 /*

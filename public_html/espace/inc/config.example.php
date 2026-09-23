@@ -38,4 +38,16 @@ return [
     // jour, pour en faire le premier album « Expo 2026 » sans intervention —
     // sur une installation neuve, laisser cette clé absente ou vide.
     'google_drive_cle_api'     => '',
+
+    // Facultatif — voir inc/mail.php et inc/smtp.php : identifiants d'une
+    // vraie boîte mail du domaine (créée dans hPanel → Emails), pour
+    // envoyer les notifications en SMTP authentifié plutôt qu'avec le
+    // mail() natif de PHP. Laisser vide fait retomber le site sur mail()
+    // (fonctionne, mais avec un délai de livraison Gmail bien plus
+    // important — voir CLAUDE.md pour l'historique complet de ce
+    // diagnostic, 22-23/09/2026).
+    'smtp_utilisateur'   => '',              // ex. noreply@focalclub.fr
+    'smtp_mot_de_passe'  => '',
+    // 'smtp_hote'        => 'smtp.hostinger.com', // valeur par défaut si omis
+    // 'smtp_port'        => 587,                  // valeur par défaut si omis
 ];
