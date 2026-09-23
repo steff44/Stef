@@ -375,14 +375,17 @@ titre_page("Sorties à venir", "Les prochaines sorties du club, et qui y partici
               <?php else: ?>
                 <a class="btn btn-ghost" href="connexion.php">Se connecter pour participer</a>
               <?php endif; ?>
-              <details class="sortie-calendrier">
-                <summary class="btn btn-ghost">📅 Ajouter au calendrier</summary>
-                <div class="sortie-calendrier-liens">
-                  <a class="btn btn-ghost" href="<?= e(lien_calendrier_google($sortie, $lien_sortie_absolu)) ?>" target="_blank" rel="noopener noreferrer">Google Agenda</a>
-                  <a class="btn btn-ghost" href="<?= e(lien_calendrier_outlook($sortie, $lien_sortie_absolu)) ?>" target="_blank" rel="noopener noreferrer">Outlook.com</a>
-                  <a class="btn btn-ghost" href="sortie-ics.php?id=<?= (int) $sortie['id'] ?>">Télécharger (.ics — Apple, Outlook…)</a>
-                </div>
-              </details>
+              <div class="nav-dropdown sortie-calendrier">
+                <button type="button" class="btn btn-ghost nav-dropdown-trigger" aria-expanded="false">
+                  📅 Ajouter au calendrier
+                  <svg class="nav-dropdown-caret" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+                <ul class="nav-dropdown-menu">
+                  <li><a href="<?= e(lien_calendrier_google($sortie, $lien_sortie_absolu)) ?>" target="_blank" rel="noopener noreferrer">Google Agenda</a></li>
+                  <li><a href="<?= e(lien_calendrier_outlook($sortie, $lien_sortie_absolu)) ?>" target="_blank" rel="noopener noreferrer">Outlook.com</a></li>
+                  <li><a href="sortie-ics.php?id=<?= (int) $sortie['id'] ?>">Télécharger (.ics — Apple, Outlook…)</a></li>
+                </ul>
+              </div>
               <?php if (est_gestionnaire()): ?>
                 <?php
                   // Un envoi automatique dans le groupe WhatsApp du club

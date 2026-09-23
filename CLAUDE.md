@@ -4846,9 +4846,26 @@ carte « en haut » de l'écran.
 calendrier »** (Google Agenda, Outlook.com, ou un fichier `.ics` pour
 Apple Calendar/Outlook de bureau/Thunderbird...), visible de tous
 (connecté ou non — contrairement à « Partager sur WhatsApp », réservé au
-responsable/éditeur) : un `<details class="sortie-calendrier">`, même
-principe replié/déplié que `.sortie-modifier` juste à côté (aucun
-JavaScript nécessaire), avec trois liens à l'intérieur.
+responsable/éditeur) : un bouton avec une flèche, qui ouvre un vrai menu
+déroulant flottant. Premier essai en `<details class="sortie-calendrier">`
+(dépliage inline, sans JavaScript) refusé par l'utilisatrice — « j'aurais
+préféré... une flèche avec un menu déroulant » — **corrigé le jour même**
+en réutilisant tel quel `.nav-dropdown` (le menu de l'en-tête, déjà
+générique : JS dans `js/main.js` sélectionne tous les `.nav-dropdown` de
+la page, clic/clic extérieur/Échap/accordéon sous 760px inclus, aucune
+ligne de JS à ajouter). `.nav-dropdown-trigger` prend en plus `.btn
+btn-ghost` pour ressembler aux autres boutons de la carte — ces règles,
+définies plus loin dans `style.css`, l'emportent à spécificité égale (l'
+ordre dans la feuille tranche) sur le style texte-seul du bouton d'en-tête.
+**Piège rencontré et corrigé avant mise en ligne** : dans l'en-tête,
+`.nav-dropdown` (un `<li>`) est étiré à toute la largeur de `.nav-links`
+(`align-items: stretch`), donc son menu — redevenu `position: static` sous
+760px — tient à côté du bouton sans déborder ; `.sortie-calendrier` n'est
+lui qu'un bouton parmi d'autres dans `.sortie-actions`, pas étiré, et son
+menu ouvert n'avait nulle part où aller que de déborder de la carte à
+droite (débordement horizontal mesuré à 56px à 390px). Corrigé par
+`flex-wrap: wrap` sur `.sortie-calendrier`, dans le même bloc
+`@media (max-width: 760px)` que l'override mobile de `.nav-dropdown-menu`.
 
 **Trois fonctions nouvelles dans `inc/agenda.php`** (partagées par
 `sorties-a-venir.php` pour les deux liens et par le nouveau
@@ -4889,10 +4906,16 @@ correct pour une sortie multi-jours) — assertions PHP pures. Fichier `.ics`
 généré revalidé avec la bibliothèque Python `icalendar` (analyse sans
 erreur, tous les champs relus identiques à l'original, y compris les
 virgules/points-virgules/accents échappés puis dés-échappés correctement).
-Vérifié par rendu Playwright (page HTML isolée reproduisant la carte et le
-bandeau collant, desktop et 390px) : la carte visée par l'ancre reste
-visible sous l'en-tête, le menu « Ajouter au calendrier » s'ouvre avec les
-trois liens présents et corrects, aucun débordement horizontal.
+Vérifié par rendu Playwright (page HTML isolée reproduisant la carte, le
+bandeau collant et le script `.nav-dropdown` de `main.js`, desktop et
+390px) : la carte visée par l'ancre reste visible sous l'en-tête ; sur
+ordinateur, le menu reste fermé au chargement, s'ouvre en un vrai menu
+flottant (`position: absolute`) au clic sur la flèche avec les trois liens
+présents et corrects, le bouton garde l'aspect `.btn` (padding/bordure),
+se ferme au clic extérieur et à Échap, aucun débordement horizontal menu
+ouvert ; sur 390px, le menu redevient un accordéon empilé sous le bouton
+(`position: static`), sans débordement (corrigé par le `flex-wrap: wrap`
+ci-dessus — débordait de 56px avant ce correctif).
 
 ## Conventions
 

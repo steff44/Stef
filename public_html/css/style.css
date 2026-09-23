@@ -1674,6 +1674,15 @@ button.lien-retour {
   .nav-dropdown-heading {
     padding: 0 0 10px;
   }
+  /* Dans l'en-tête, .nav-dropdown (li) est étiré à toute la largeur de
+     .nav-links (align-items: stretch), donc le menu — redevenu "static" au
+     lieu de flottant juste au-dessus — tient à côté du bouton sans déborder.
+     .sortie-calendrier, lui, n'est qu'un bouton parmi d'autres dans
+     .sortie-actions, pas étiré : sans flex-wrap, son menu ouvert n'aurait
+     nulle part où aller que de déborder de la carte à droite. */
+  .sortie-calendrier {
+    flex-wrap: wrap;
+  }
   .hero {
     padding: 70px 0 60px;
   }
@@ -2438,27 +2447,16 @@ button.lien-retour {
   display: none;
 }
 
-/* Bouton « Ajouter au calendrier » d'une sortie — même principe que
-   .sortie-modifier juste au-dessus (repli/dépli, pleine largeur une fois
-   ouvert). */
-.sortie-calendrier {
-  flex: 0 1 auto;
-}
-.sortie-calendrier[open] {
-  flex-basis: 100%;
-}
-.sortie-calendrier summary.btn {
-  list-style: none;
-}
-.sortie-calendrier summary.btn::-webkit-details-marker {
-  display: none;
-}
-.sortie-calendrier-liens {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 12px;
-}
+/* Bouton « Ajouter au calendrier » d'une sortie — réutilise tel quel le
+   menu déroulant flottant .nav-dropdown de l'en-tête (choix explicite de
+   l'utilisatrice, 24/09/2026, après un premier essai en <details> qui
+   dépliait la liste sur place plutôt qu'un vrai menu ; même réutilisation
+   déjà faite pour le chevron de .bandeau-sortie-resume). .nav-dropdown-
+   trigger prend en plus .btn.btn-ghost pour ressembler aux autres boutons
+   de la carte — les règles .btn/.btn-ghost, définies plus bas dans ce
+   fichier, l'emportent sur le style texte-seul de .nav-dropdown-trigger à
+   spécificité égale (l'ordre dans la feuille tranche), sans qu'il soit
+   besoin d'une classe ou d'une règle dédiée. */
 
 /* Onglets Mois/Semaine au-dessus du calendrier */
 .agenda-cal-onglets {
