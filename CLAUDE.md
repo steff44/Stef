@@ -4788,6 +4788,16 @@ confirmer par l'utilisatrice** une fois les identifiants ajoutés à
 en observant si la notification arrive maintenant en quelques secondes
 plutôt qu'avec plusieurs heures de retard.
 
+**Confirmé par l'utilisatrice, 23/09/2026** : la boîte `noreply@focalclub.fr`
+a été créée dans hPanel, ses identifiants ajoutés à `config.local.php`, puis
+testés via `espace/diag-doc-mail.php` (sans dépôt réel — ce diagnostic envoie
+deux e-mails de test à l'adresse de l'adhérent connecté dès l'ouverture de la
+page) — « J'ai testé et j'ai reçu les mails sur cooky » : le SMTP authentifié
+contourne bien le relais MailChannels, **ce qui clôt cette investigation
+commencée le 10/09/2026**. Les deux diagnostics temporaires restants
+(`espace/diag-doc-mail.php`, `.github/workflows/diag-dns-mail.yml`) ont été
+supprimés, comme prévu.
+
 ## Documents du club : format PowerPoint accepté
 
 **Signalé par l'utilisatrice, 22/09/2026** : le dépôt d'une présentation
