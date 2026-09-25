@@ -4983,3 +4983,21 @@ repli, sans attente. **À vérifier en ligne** : après un vrai dépôt, ouvrir
 `journal-mails.php` — si tout est « SMTP OK » et que les adhérents ne
 reçoivent toujours rien, le problème est côté réception (spams) ; sinon le
 message d'échec affiché dit exactement ce que le serveur a refusé.
+
+**Premier relevé du journal (25/09/2026, capture de l'utilisatrice)** : un
+dépôt de document vers 24 adhérents n'a produit **aucune** ligne « SMTP »
+— uniquement « mail() accepté » pour les 10 premiers envois, puis
+« mail() ÉCHEC » pour tous les suivants. Deux conclusions : (1)
+`config_smtp()` a renvoyé `null` dès le départ, donc le
+`config.local.php` réellement lu par focalclub.fr ne contient pas (ou pas
+sous ces noms) `smtp_utilisateur`/`smtp_mot_de_passe` — l'essai réussi du
+23/09 passait vraisemblablement déjà par `mail()`, retardé ; piste la plus
+probable, les identifiants ajoutés dans le `config.local.php` de
+`myfocal.online` (`/home/u912253694/public_html/`, le dossier ouvert par
+défaut dans le Gestionnaire de fichiers hPanel) plutôt que dans celui de
+`focalclub.fr` (`/home/u912253694/domains/focalclub.fr/public_html/`) ;
+(2) le relais `mail()` de Hostinger refuse au-delà d'une dizaine d'envois
+d'affilée — même le repli ne peut donc pas prévenir tout le club. Quand
+aucun SMTP n'est trouvé, `journal-mails.php` affiche maintenant le chemin
+exact du fichier lu et les noms des réglages « smtp » qu'il contient
+(jamais les valeurs), pour trancher sans deviner.

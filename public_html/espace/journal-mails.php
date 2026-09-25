@@ -90,7 +90,24 @@ titre_page('Journal des e-mails', 'Chaque e-mail envoyé par le site, avec le r�
     <?php if ($smtp !== null): ?>
       <p>SMTP authentifié configuré : <strong><?= e($smtp['utilisateur']) ?></strong> via <?= e($smtp['hote']) ?>:<?= (int) $smtp['port'] ?>.</p>
     <?php else: ?>
-      <p><strong>Aucun SMTP configuré</strong> : les e-mails partent par mail() (relais de Hostinger, souvent retardés par Gmail).</p>
+      <p><strong>Aucun SMTP configuré</strong> : les e-mails partent par mail() (relais de Hostinger, souvent retardés par Gmail, et limité à quelques envois d'affilée).</p>
+      <?php
+      // Diagnostic : quel fichier est lu, et quelles clés « smtp » il contient
+      // (les noms seulement, jamais les valeurs).
+      $chemin_config = __DIR__ . '/inc/config.local.php';
+      $cles_smtp = [];
+      if (is_file($chemin_config)) {
+          $donnees_config = require $chemin_config;
+          foreach ((array) $donnees_config as $cle => $valeur) {
+              if (stripos((string) $cle, 'smtp') !== false) {
+                  $cles_smtp[] = $cle . (trim((string) $valeur) === '' ? ' (vide)' : ' (renseignée)');
+              }
+          }
+      }
+      ?>
+      <p class="form-note">Fichier lu : <code><?= e($chemin_config) ?></code><br>
+        Réglages SMTP trouvés dedans : <?= $cles_smtp ? e(implode(', ', $cles_smtp)) : '<strong>aucun</strong>' ?>.<br>
+        Attendus : <code>smtp_utilisateur</code> et <code>smtp_mot_de_passe</code>, tous deux renseignés.</p>
     <?php endif; ?>
     <p><?= $nb_destinataires ?> adhérent<?= $nb_destinataires > 1 ? 's' : '' ?> reçoi<?= $nb_destinataires > 1 ? 'vent' : 't' ?> les notifications (compte validé, actif, avec une adresse e-mail).</p>
 
