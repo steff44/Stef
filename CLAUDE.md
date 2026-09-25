@@ -4922,3 +4922,64 @@ ci-dessus — débordait de 56px avant ce correctif).
 - Tout le contenu visible est en **français**.
 - Ne pas inventer de fonctionnalité qui n'existe pas (pas de faux formulaire de
   connexion, pas de faux blog) — préférer une page « bientôt disponible ».
+
+## Notifications : aucun adhérent ne recevait les e-mails (session SMTP unique, journal des envois)
+
+**Signalé par l'utilisatrice le 25/09/2026** : « malgré tous les essais
+faits quand je rajoute un dossier ou une sortie aucun de mes adhérent ne
+reçoit de mail d'avertissement » — alors que les tests d'un seul e-mail
+vers sa propre adresse passaient depuis le passage au SMTP authentifié
+(23/09/2026, voir plus haut). Une notification part vers **tous** les
+adhérents d'un coup : c'est ce passage à l'échelle, jamais testé, qui
+cassait. Quatre faiblesses corrigées ensemble :
+
+- **Une connexion SMTP par destinataire.** `envoyer_via_smtp()` ouvrait,
+  chiffrait et authentifiait une nouvelle connexion pour chaque adhérent —
+  des dizaines de connexions en quelques secondes, ce que les serveurs
+  d'envoi limitent. `inc/smtp.php` porte désormais une classe
+  `SessionSmtp` (ouvrir/envoyer/fermer) : **une seule connexion par page**,
+  ouverte au premier envoi (`session_smtp()`, `inc/mail.php`), `RSET`
+  entre deux messages, fermée en fin de page (`register_shutdown_function`).
+  `envoyer_via_smtp()` a disparu.
+- **Pas de coupe-circuit.** Chaque échec SMTP attendait jusqu'à 10 s avant
+  de retomber sur `mail()` ; avec plusieurs adhérents, la limite de 30 s de
+  PHP coupait la page après 2 ou 3 envois. Désormais : un échec
+  d'**ouverture** (serveur injoignable, TLS, authentification —
+  `ErreurConnexionSmtp`) coupe le SMTP pour le reste de la page
+  immédiatement ; deux échecs d'envoi consécutifs aussi. Un refus isolé
+  (adresse invalide chez le destinataire) ne prive pas les autres du SMTP.
+  Une connexion déjà ouverte qui casse entre deux envois a droit à un
+  second essai sur une connexion neuve. `set_time_limit(60)` est relancé
+  à chaque envoi et `ignore_user_abort(true)` évite qu'une page fermée
+  trop tôt n'interrompe la boucle.
+- **Message incomplet.** Pas d'en-tête `Date`, `Message-ID` ni `To` dans
+  le message SMTP (seul `mail()` les ajoute tout seul) — plusieurs
+  fournisseurs classent alors en spam ou refusent. Ils sont maintenant
+  posés, et le corps HTML est encodé en base64 (lignes de 76 caractères) :
+  une longue description de sortie produisait sinon une ligne de plus de
+  998 caractères, interdite en SMTP. Retours à la ligne retirés du
+  destinataire/Reply-To (injection d'en-têtes).
+- **Aucune visibilité.** Chaque envoi est consigné dans
+  `espace/inc/.journal-mails.log` (dossier fermé par `.htaccess`, non
+  versionné — `.gitignore` —, ramené à ~1000 lignes au-delà de 300 Ko) :
+  date, destinataire, sujet, résultat (« SMTP OK », « SMTP ÉCHEC : {réponse
+  exacte du serveur} », « mail() accepté… »). Nouvelle page
+  **`espace/journal-mails.php`** (responsable seulement,
+  `exige_administrateur()`, entrée « Journal des e-mails » du menu
+  « {pseudo} connecté » côté PHP et JS — `main.js?v=` relevé sur les
+  7 pages statiques) : état du SMTP (hôte, port, utilisateur — jamais le
+  mot de passe), nombre d'adhérents destinataires, bouton « Tester la
+  connexion SMTP », envoi d'un e-mail de test à une adresse choisie, et
+  les 300 derniers envois, les plus récents en premier.
+
+Testé hors ligne (25/09/2026) avec un faux serveur SMTP local (STARTTLS,
+certificat auto-signé, AUTH LOGIN) : cinq envois dont un refusé (550) —
+les quatre autres « SMTP OK », une seule authentification pour les deux
+premiers, le refus journalisé avec la réponse exacte du serveur puis
+replié sur `mail()` ; en-têtes `Date`/`Message-ID`/`To` présents, corps en
+base64, aucune ligne de plus de 998 caractères. Serveur injoignable : une
+seule tentative SMTP (0,01 s), tous les envois suivants directement en
+repli, sans attente. **À vérifier en ligne** : après un vrai dépôt, ouvrir
+`journal-mails.php` — si tout est « SMTP OK » et que les adhérents ne
+reçoivent toujours rien, le problème est côté réception (spams) ; sinon le
+message d'échec affiché dit exactement ce que le serveur a refusé.

@@ -139,37 +139,151 @@ function valeur_parametre(PDO $pdo, string $cle): ?string
  * configuration SMTP est absente ou si l'envoi SMTP échoue — jamais de
  * régression pour une installation qui n'aurait pas encore cette boîte.
  */
+/*
+ * Correctifs du 25/09/2026 — les notifications n'arrivaient à AUCUN
+ * adhérent alors que les tests d'un seul e-mail passaient :
+ * - une seule connexion SMTP pour toute la page (session_smtp()), au lieu
+ *   d'une connexion + authentification par adhérent ;
+ * - coupe-circuit : si le SMTP échoue deux fois de suite, les envois
+ *   suivants de la page passent directement par mail(), sans réessayer
+ *   (sinon 10 s d'attente par adhérent et PHP coupait la page au bout de
+ *   30 s, après 2 ou 3 envois seulement) ;
+ * - message complet (Date, Message-ID, To, MIME-Version, corps en base64) :
+ *   sans Date/Message-ID, plusieurs fournisseurs classent en spam ou
+ *   refusent ; le base64 évite aussi les lignes de plus de 998 caractères
+ *   interdites en SMTP (longue description d'une sortie) ;
+ * - chaque envoi est consigné dans inc/.journal-mails.log, lisible par le
+ *   responsable sur espace/journal-mails.php (le journal d'erreurs PHP est
+ *   introuvable dans hPanel).
+ */
 function envoyer_mail(string $destinataire, string $expediteur, string $sujet, string $corps): void
 {
+    // Chaque envoi repart avec son propre délai d'exécution : une
+    // notification à tous les adhérents ne doit pas être coupée en route par
+    // la limite de 30 s de PHP, ni par un visiteur qui ferme la page.
+    @set_time_limit(60);
+    ignore_user_abort(true);
+
+    // Jamais de retour à la ligne dans un en-tête (injection d'en-têtes).
+    $destinataire = trim(str_replace(["\r", "\n"], '', $destinataire));
+    $expediteur   = trim(str_replace(["\r", "\n"], '', $expediteur));
+
+    $sujet_encode = '=?UTF-8?B?' . base64_encode($sujet) . '?=';
+    $corps_base64 = rtrim(chunk_split(base64_encode(corps_html($corps)), 76, "\r\n"));
     $entetes = "From: Focal Club Turballais <noreply@focalclub.fr>\r\n"
              . "Reply-To: {$expediteur}\r\n"
-             . "Content-Type: text/html; charset=UTF-8\r\n";
-    $sujet_encode = '=?UTF-8?B?' . base64_encode($sujet) . '?=';
-    $corps_html   = corps_html($corps);
+             . "MIME-Version: 1.0\r\n"
+             . "Content-Type: text/html; charset=UTF-8\r\n"
+             . "Content-Transfer-Encoding: base64\r\n";
 
-    $smtp = config_smtp();
-    if ($smtp !== null) {
+    $session = session_smtp();
+    if ($session !== null) {
+        $message = 'Date: ' . date('r') . "\r\n"
+                 . 'Message-ID: <' . bin2hex(random_bytes(16)) . "@focalclub.fr>\r\n"
+                 . "To: <{$destinataire}>\r\n"
+                 . "Subject: {$sujet_encode}\r\n"
+                 . $entetes
+                 . "\r\n"
+                 . $corps_base64;
+        $deja_ouverte = $session->est_ouverte();
         try {
-            require_once __DIR__ . '/smtp.php';
-            envoyer_via_smtp(
-                $smtp['hote'],
-                $smtp['port'],
-                $smtp['utilisateur'],
-                $smtp['mot_de_passe'],
-                $destinataire,
-                $entetes,
-                $sujet_encode,
-                $corps_html
-            );
+            $session->envoyer($destinataire, $message);
+            session_smtp_resultat(true);
+            journal_mail($destinataire, $sujet, 'SMTP OK');
             return;
+        } catch (ErreurConnexionSmtp $e) {
+            // Serveur injoignable ou authentification refusée : inutile
+            // d'insister pour les adhérents suivants.
+            session_smtp_resultat(false, true);
+            journal_mail($destinataire, $sujet, 'SMTP ÉCHEC (connexion) : ' . $e->getMessage());
         } catch (Throwable $e) {
-            error_log("Espace adhérents — échec d'envoi SMTP à {$destinataire} : " . $e->getMessage());
-            // Repli sur mail() ci-dessous plutôt que de perdre l'e-mail.
+            $erreur = $e;
+            // Une connexion restée ouverte a pu être coupée par le serveur
+            // entre deux envois : un second essai sur une connexion neuve.
+            if ($deja_ouverte) {
+                try {
+                    $session->envoyer($destinataire, $message);
+                    session_smtp_resultat(true);
+                    journal_mail($destinataire, $sujet, 'SMTP OK (2e essai)');
+                    return;
+                } catch (ErreurConnexionSmtp $e2) {
+                    session_smtp_resultat(false, true);
+                    $erreur = $e2;
+                } catch (Throwable $e2) {
+                    $erreur = $e2;
+                }
+            }
+            session_smtp_resultat(false);
+            journal_mail($destinataire, $sujet, 'SMTP ÉCHEC : ' . $erreur->getMessage());
         }
+        // Repli sur mail() ci-dessous plutôt que de perdre l'e-mail.
     }
 
-    if (!@mail($destinataire, $sujet_encode, $corps_html, $entetes, '-f admin@focalclub.fr')) {
-        error_log("Espace adhérents — échec d'envoi de mail à {$destinataire} : {$sujet}");
+    $ok = @mail($destinataire, $sujet_encode, $corps_base64, $entetes, '-f admin@focalclub.fr');
+    journal_mail($destinataire, $sujet, $ok ? 'mail() accepté (relais Hostinger, peut être retardé)' : 'mail() ÉCHEC');
+}
+
+/*
+ * La session SMTP de la page, ouverte au premier envoi et fermée en fin de
+ * page. null si les identifiants SMTP manquent, ou si le SMTP a déjà échoué
+ * deux fois de suite dans cette page (coupe-circuit, voir envoyer_mail()).
+ */
+function session_smtp(): ?SessionSmtp
+{
+    $etat = &etat_smtp();
+    if ($etat['coupe']) {
+        return null;
+    }
+    if ($etat['session'] === null) {
+        $smtp = config_smtp();
+        if ($smtp === null) {
+            return null;
+        }
+        require_once __DIR__ . '/smtp.php';
+        $etat['session'] = new SessionSmtp($smtp['hote'], $smtp['port'], $smtp['utilisateur'], $smtp['mot_de_passe']);
+        $session = $etat['session'];
+        register_shutdown_function(static function () use ($session): void {
+            $session->fermer();
+        });
+    }
+    return $etat['session'];
+}
+
+/* Coupe le SMTP pour le reste de la page après un échec de connexion, ou
+   après deux échecs d'envoi de suite (un refus isolé ne concerne souvent
+   qu'une adresse et ne doit pas priver les autres adhérents du SMTP). */
+function session_smtp_resultat(bool $reussi, bool $echec_connexion = false): void
+{
+    $etat = &etat_smtp();
+    $etat['echecs'] = $reussi ? 0 : $etat['echecs'] + 1;
+    if ($echec_connexion || $etat['echecs'] >= 2) {
+        $etat['coupe'] = true;
+    }
+}
+
+function &etat_smtp(): array
+{
+    static $etat = ['session' => null, 'echecs' => 0, 'coupe' => false];
+    return $etat;
+}
+
+/*
+ * Une ligne par envoi dans inc/.journal-mails.log (dossier fermé par
+ * .htaccess), gardé à ~1000 lignes pour ne pas grossir indéfiniment ni
+ * conserver trop longtemps les adresses des adhérents.
+ */
+const JOURNAL_MAILS = __DIR__ . '/.journal-mails.log';
+
+function journal_mail(string $destinataire, string $sujet, string $resultat): void
+{
+    $ligne = date('Y-m-d H:i:s') . "\t{$destinataire}\t"
+           . str_replace(["\t", "\r", "\n"], ' ', $sujet) . "\t"
+           . str_replace(["\t", "\r", "\n"], ' ', $resultat) . "\n";
+    @file_put_contents(JOURNAL_MAILS, $ligne, FILE_APPEND | LOCK_EX);
+
+    if (@filesize(JOURNAL_MAILS) > 300000) {
+        $lignes = @file(JOURNAL_MAILS) ?: [];
+        @file_put_contents(JOURNAL_MAILS, implode('', array_slice($lignes, -1000)), LOCK_EX);
     }
 }
 

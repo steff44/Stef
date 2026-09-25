@@ -315,7 +315,8 @@
             ? '<li><a href="espace/adherents.php">Adhérents</a></li>'
             : "") +
           (donnees.administrateur
-            ? '<li><a href="espace/statistiques.php">Statistiques</a></li>'
+            ? '<li><a href="espace/statistiques.php">Statistiques</a></li>' +
+              '<li><a href="espace/journal-mails.php">Journal des e-mails</a></li>'
             : "") +
           // « Réglages du site » ouvert à l'éditeur depuis le 21/09/2026
           // (choix explicite de l'utilisatrice) — Statistiques, juste

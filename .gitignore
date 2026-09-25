@@ -36,3 +36,7 @@ steftuto/__pycache__/
 steftuto/build/
 steftuto/dist/
 steftuto/*.spec
+
+# Journal des e-mails envoyés (voir inc/mail.php, espace/journal-mails.php) :
+# contient les adresses des adhérents, écrit par le serveur — jamais versionné.
+public_html/espace/inc/.journal-mails.log
