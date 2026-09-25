@@ -5001,3 +5001,10 @@ d'affilée — même le repli ne peut donc pas prévenir tout le club. Quand
 aucun SMTP n'est trouvé, `journal-mails.php` affiche maintenant le chemin
 exact du fichier lu et les noms des réglages « smtp » qu'il contient
 (jamais les valeurs), pour trancher sans deviner.
+
+**Confirmé par ce diagnostic (25/09/2026, même jour)** : le fichier lu est
+bien `/home/u912253694/domains/focalclub.fr/public_html/espace/inc/config.local.php`
+et il ne contient **aucun** réglage `smtp_*` — les identifiants de la boîte
+`noreply@focalclub.fr` sont à y ajouter à la main (hPanel, site
+focalclub.fr, Gestionnaire de fichiers), puis à vérifier avec le bouton
+« Tester la connexion SMTP » de `journal-mails.php`.
