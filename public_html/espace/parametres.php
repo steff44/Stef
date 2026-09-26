@@ -28,6 +28,7 @@ require_once __DIR__ . '/inc/documents_categories.php';
 require_once __DIR__ . '/inc/galerie_categories.php';
 require_once __DIR__ . '/inc/blog.php';
 require_once __DIR__ . '/inc/albums.php';
+require_once __DIR__ . '/inc/agenda.php';
 require_once __DIR__ . '/inc/mail.php';
 
 $adherent = exige_gestionnaire();
@@ -105,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id  = (int) ($_POST['id'] ?? 0);
         $nom = trim((string) ($_POST['nom'] ?? ''));
 
-        if (in_array($action, ['ajouter_rubrique', 'renommer_rubrique', 'ajouter_categorie', 'renommer_categorie', 'ajouter_categorie_galerie', 'renommer_categorie_galerie', 'ajouter_categorie_blog', 'renommer_categorie_blog'], true) && $nom === '') {
+        if (in_array($action, ['ajouter_rubrique', 'renommer_rubrique', 'ajouter_categorie', 'renommer_categorie', 'ajouter_categorie_galerie', 'renommer_categorie_galerie', 'ajouter_categorie_blog', 'renommer_categorie_blog', 'ajouter_categorie_sortie', 'renommer_categorie_sortie'], true) && $nom === '') {
             definir_message('erreur', "Le nom ne peut pas être vide.");
         } elseif ($action === 'ajouter_rubrique') {
             $ordre = (int) $pdo->query('SELECT COALESCE(MAX(ordre), -1) FROM rubriques_documents')->fetchColumn() + 1;
@@ -188,6 +189,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $pdo->prepare('DELETE FROM categories_galerie WHERE id = ?')->execute([$id]);
                 definir_message('succes', "Catégorie supprimée.");
             }
+
+        } elseif ($action === 'ajouter_categorie_sortie') {
+            $ordre = (int) $pdo->query('SELECT COALESCE(MAX(ordre), -1) FROM categories_sorties')->fetchColumn() + 1;
+            $pdo->prepare('INSERT INTO categories_sorties (nom, ordre) VALUES (?, ?)')->execute([$nom, $ordre]);
+            definir_message('succes', "Catégorie « {$nom} » ajoutée.");
+
+        } elseif ($action === 'renommer_categorie_sortie') {
+            $pdo->prepare('UPDATE categories_sorties SET nom = ? WHERE id = ?')->execute([$nom, $id]);
+            definir_message('succes', "Catégorie renommée en « {$nom} ». Les sorties déjà créées gardent leur ancien intitulé — seules les nouvelles sorties proposeront le nouveau nom.");
+
+        } elseif ($action === 'supprimer_categorie_sortie') {
+            // Contrairement aux catégories de documents/galeries/blog,
+            // sorties.categorie stocke le nom en clair, pas un identifiant
+            // (voir inc/agenda.php) : impossible de compter les sorties
+            // « dans » cette catégorie par identifiant. Aucun garde-fou
+            // n'est donc nécessaire ici — supprimer une catégorie encore
+            // utilisée ne casse rien, les sorties déjà créées gardent
+            // simplement leur texte tel quel (couleur_categorie() bascule
+            // alors sur son repli neutre pour ces sorties-là).
+            $pdo->prepare('DELETE FROM categories_sorties WHERE id = ?')->execute([$id]);
+            definir_message('succes', "Catégorie supprimée.");
 
         } elseif ($action === 'ajouter_categorie_blog') {
             $ordre = (int) $pdo->query('SELECT COALESCE(MAX(ordre), -1) FROM categories_blog')->fetchColumn() + 1;
@@ -358,6 +380,7 @@ foreach ($requete->fetchAll() as $ligne) {
 $rubriques           = rubriques_documents($pdo);
 $categories_galerie  = categories_galerie($pdo);
 $categories_blog     = categories_blog($pdo);
+$categories_sorties  = categories_sorties($pdo);
 $albums              = albums_sorties($pdo);
 
 debut_page("Réglages du site", 'parametres');
@@ -567,6 +590,45 @@ titre_page(
         <form method="post" class="reglage-forme-nom">
           <?= champ_csrf() ?>
           <input type="hidden" name="action" value="ajouter_categorie_blog">
+          <input type="text" name="nom" maxlength="120" required placeholder="Nouvelle catégorie">
+          <button type="submit" class="btn btn-ghost">Ajouter</button>
+        </form>
+      </li>
+    </ul>
+  </div>
+
+  <div class="form-card reglage-rubriques">
+    <h2 style="font-family:var(--font-heading);font-size:1.2rem;margin:0 0 6px;">Catégories de sorties</h2>
+    <p class="form-note" style="margin-top:0;margin-bottom:20px;">
+      Ces catégories s'appliquent à l'Agenda des sorties et à « Sorties à venir » (Sortie
+      photo, Cours, Réunion par défaut). Chacune reçoit automatiquement une couleur
+      distincte dans le calendrier et sur les cartes. Renommer une catégorie ne change pas
+      l'intitulé des sorties déjà créées avec l'ancien nom — seules les nouvelles sorties
+      proposeront le nouveau nom. La supprimer n'efface aucune sortie.
+    </p>
+
+    <ul class="reglage-categories" style="padding-left:0;">
+      <?php foreach ($categories_sorties as $categorie_id => $nom_categorie): ?>
+        <li class="reglage-ligne">
+          <form method="post" class="reglage-forme-nom">
+            <?= champ_csrf() ?>
+            <input type="hidden" name="action" value="renommer_categorie_sortie">
+            <input type="hidden" name="id" value="<?= $categorie_id ?>">
+            <input type="text" name="nom" value="<?= e($nom_categorie) ?>" maxlength="120" required>
+            <button type="submit" class="btn btn-ghost">Renommer</button>
+          </form>
+          <form method="post" onsubmit="return confirm('Supprimer la catégorie « <?= e(addslashes($nom_categorie)) ?> » ?');">
+            <?= champ_csrf() ?>
+            <input type="hidden" name="action" value="supprimer_categorie_sortie">
+            <input type="hidden" name="id" value="<?= $categorie_id ?>">
+            <button type="submit" class="lien-danger">Supprimer</button>
+          </form>
+        </li>
+      <?php endforeach; ?>
+      <li class="reglage-ligne">
+        <form method="post" class="reglage-forme-nom">
+          <?= champ_csrf() ?>
+          <input type="hidden" name="action" value="ajouter_categorie_sortie">
           <input type="text" name="nom" maxlength="120" required placeholder="Nouvelle catégorie">
           <button type="submit" class="btn btn-ghost">Ajouter</button>
         </form>

@@ -68,7 +68,7 @@ const COLONNES_ATTENDUES = [
 // avant l'ajout de cette colonne — seule sa présence change le comportement
 // d'affichage (voir periode_sortie_en_francais(), inc/page.php).
 const COLONNES_SORTIES_ATTENDUES = [
-    'categorie' => "VARCHAR(30) NOT NULL DEFAULT 'Sortie photo'",
+    'categorie' => "VARCHAR(120) NOT NULL DEFAULT 'Sortie photo'",
     'photo'     => 'VARCHAR(190) DEFAULT NULL',
     'fin'       => 'DATETIME DEFAULT NULL',
 ];
@@ -182,6 +182,20 @@ const CATEGORIES_BLOG_PAR_DEFAUT = [
     'Livre photo',
     'Stage',
     "Travail d'auteur",
+];
+
+// Catégories par défaut de l'Agenda des sorties (espace/agenda.php,
+// espace/sorties-a-venir.php), semées une seule fois — la première fois que
+// `categories_sorties` est créée — par appliquer_migrations() ci-dessous.
+// Reprend les trois catégories qui étaient jusqu'ici figées dans le code
+// (CATEGORIES_SORTIES, inc/agenda.php) ; un responsable ou un éditeur les
+// complète ensuite depuis parametres.php (choix explicite de l'utilisatrice,
+// 26/09/2026 : « je veux pouvoir rajouter des nouvelles catégories de
+// sorties »).
+const CATEGORIES_SORTIES_PAR_DEFAUT = [
+    'Sortie photo',
+    'Cours',
+    'Réunion',
 ];
 
 // Réunion hebdomadaire du club, semée une seule fois dans `sorties` — choix
@@ -515,6 +529,56 @@ function appliquer_migrations(PDO $pdo): void
     }
 
     try {
+        // Catégories de sortie (voir CATEGORIES_SORTIES_PAR_DEFAUT plus haut
+        // et categories_sorties()/couleur_categorie() dans inc/agenda.php),
+        // choix explicite de l'utilisatrice, 26/09/2026 — même principe que
+        // categories_galerie/categories_blog ci-dessus : une liste à plat,
+        // gérée depuis parametres.php. `sorties.categorie` continue de
+        // stocker le NOM de la catégorie en clair (pas un identifiant) —
+        // inchangé depuis la création de l'agenda, pour ne pas avoir à
+        // migrer les sorties déjà en base : une catégorie renommée ne
+        // renomme donc pas rétroactivement les sorties déjà créées avec
+        // l'ancien nom (elles gardent l'ancien texte, simplement plus
+        // reconnu par la palette de couleurs).
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS categories_sorties (
+                id    INT AUTO_INCREMENT PRIMARY KEY,
+                nom   VARCHAR(120) NOT NULL,
+                ordre INT          NOT NULL DEFAULT 0
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+
+        // Même principe que categories_galerie/categories_blog plus haut :
+        // semé une seule fois, jamais réintroduit si un responsable a
+        // depuis tout supprimé.
+        if ((int) $pdo->query('SELECT COUNT(*) FROM categories_sorties')->fetchColumn() === 0) {
+            $inserer = $pdo->prepare('INSERT INTO categories_sorties (nom, ordre) VALUES (?, ?)');
+            $ordre   = 0;
+            foreach (CATEGORIES_SORTIES_PAR_DEFAUT as $nom_categorie) {
+                $inserer->execute([$nom_categorie, $ordre++]);
+            }
+        }
+    } catch (PDOException $e) {
+        error_log('Espace adhérents — migration categories_sorties : ' . $e->getMessage());
+        $reussi = false;
+    }
+
+    try {
+        // sorties.categorie était VARCHAR(30) (COLONNES_SORTIES_ATTENDUES ne
+        // fait qu'AJOUTER une colonne absente, jamais élargir un type déjà
+        // en place) — trop court pour un nom de catégorie créé librement
+        // depuis Réglages (categories_galerie/categories_blog.nom vont
+        // jusqu'à 120). Élargi une fois pour toutes ; sans effet sur les
+        // valeurs déjà stockées. Dans son propre bloc try/catch : un échec
+        // ici (moteur qui refuserait ce MODIFY COLUMN) ne doit pas empêcher
+        // la table categories_sorties d'être créée et semée ci-dessus.
+        $pdo->exec("ALTER TABLE sorties MODIFY COLUMN categorie VARCHAR(120) NOT NULL DEFAULT 'Sortie photo'");
+    } catch (PDOException $e) {
+        error_log('Espace adhérents — migration sorties.categorie (élargissement) : ' . $e->getMessage());
+        $reussi = false;
+    }
+
+    try {
         // Albums de « Nos Sorties » (choix explicite de l'utilisateur,
         // 27/08/2026) : un album = une sortie du club = un dossier Google
         // Drive. Les albums suivants se créent depuis Réglages du site,
@@ -655,6 +719,7 @@ function signature_schema(): string
         'reunion_hebdomadaire_v1' . '||' .
         'categories_blog_v1' . '||' .
         'articles_blog_v1' . '||' .
+        'categories_sorties_v1' . '||' .
         'albums_sorties_v3' . '||' .
         'photos_sorties_v1' . '||' .
         'visites_v1' . '||' .

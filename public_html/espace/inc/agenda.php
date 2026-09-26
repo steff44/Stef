@@ -8,17 +8,61 @@
 
 declare(strict_types=1);
 
-const CATEGORIES_SORTIES = ['Sortie photo', 'Cours', 'Réunion'];
-
-/* Nom de classe CSS pour une catégorie — jamais interpolée telle quelle
-   dans le HTML, pour rester indépendant des accents/espaces du libellé. */
-function classe_categorie(string $categorie): string
+/*
+ * Catégories de sortie, éditables par un responsable ou un éditeur depuis
+ * Réglages du site (choix explicite de l'utilisatrice, 26/09/2026 : « je
+ * veux pouvoir rajouter des nouvelles catégories de sorties ») — table
+ * `categories_sorties` (voir schema.sql), même principe que
+ * categories_galerie()/categories_blog() : liste à plat, gérée depuis
+ * parametres.php. Remplace l'ancienne constante figée CATEGORIES_SORTIES.
+ *
+ * `sorties.categorie` continue de stocker le NOM de la catégorie en clair
+ * (pas un identifiant) — inchangé depuis la création de l'agenda, pour ne
+ * pas avoir à migrer les sorties déjà en base : renommer une catégorie
+ * depuis Réglages ne renomme donc pas rétroactivement les sorties déjà
+ * créées avec l'ancien nom (elles gardent l'ancien texte, simplement plus
+ * reconnu par couleur_categorie() ci-dessous).
+ */
+function categories_sorties(PDO $pdo): array
 {
-    return match ($categorie) {
-        'Cours'    => 'cours',
-        'Réunion'  => 'reunion',
-        default    => 'sortie',
-    };
+    static $categories = null;
+    if ($categories !== null) {
+        return $categories;
+    }
+
+    $categories = [];
+    foreach ($pdo->query('SELECT id, nom FROM categories_sorties ORDER BY ordre, id')->fetchAll() as $ligne) {
+        $categories[(int) $ligne['id']] = $ligne['nom'];
+    }
+
+    return $categories;
+}
+
+/* Couleur par catégorie, cyclique sur son rang dans la liste — même
+   principe que $palette_rubriques (documents.php) : s'adapte à n'importe
+   quel nombre de catégories créées depuis Réglages, sans réglage
+   supplémentaire à maintenir ni nouvelle règle CSS à ajouter. */
+const PALETTE_CATEGORIES_SORTIES = ['#ec4899', '#0ea5e9', '#f59e0b', '#22c55e', '#a855f7', '#0e7490'];
+
+/* null si la catégorie ne correspond plus à rien de connu (renommée ou
+   supprimée depuis Réglages) : le CSS retombe alors sur sa couleur par
+   défaut (var(--categorie-couleur, var(--accent-2))). */
+function couleur_categorie(PDO $pdo, string $categorie): ?string
+{
+    $index = array_search($categorie, array_values(categories_sorties($pdo)), true);
+    return $index === false ? null : PALETTE_CATEGORIES_SORTIES[$index % count(PALETTE_CATEGORIES_SORTIES)];
+}
+
+/* Attribut style="" prêt à l'emploi (voir couleur_categorie()) pour teinter
+   une carte de sortie ou une pastille de calendrier selon sa catégorie —
+   chaîne vide si la catégorie est inconnue, pour laisser le CSS appliquer
+   sa couleur par défaut. Posée sur l'élément englobant : la variable CSS
+   est héritée par les éléments enfants (le badge de catégorie notamment),
+   pas besoin de la reposer dessus. */
+function style_categorie_sortie(PDO $pdo, string $categorie): string
+{
+    $couleur = couleur_categorie($pdo, $categorie);
+    return $couleur !== null ? ' style="--categorie-couleur: ' . e($couleur) . ';"' : '';
 }
 
 /* Vacances scolaires, zone B (académie de Nantes), dates officielles

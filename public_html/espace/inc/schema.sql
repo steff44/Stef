@@ -171,11 +171,23 @@ CREATE TABLE IF NOT EXISTS documents (
   CONSTRAINT fk_document_categorie FOREIGN KEY (categorie_id) REFERENCES categories_documents(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Agenda des sorties, cours et réunions (voir CATEGORIES_SORTIES dans inc/agenda.php).
+-- Catégories de sortie (espace/agenda.php, espace/sorties-a-venir.php),
+-- modifiables par un responsable ou un éditeur depuis parametres.php — voir
+-- inc/agenda.php (categories_sorties()) et CATEGORIES_SORTIES_PAR_DEFAUT
+-- (inc/migration.php) pour le semis initial. Une liste à plat, comme
+-- categories_galerie/categories_blog : pas de rubriques.
+CREATE TABLE IF NOT EXISTS categories_sorties (
+  id    INT AUTO_INCREMENT PRIMARY KEY,
+  nom   VARCHAR(120) NOT NULL,
+  ordre INT          NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Agenda des sorties, cours et réunions. `categorie` stocke le nom en clair
+-- (pas un identifiant vers categories_sorties) — voir inc/agenda.php.
 CREATE TABLE IF NOT EXISTS sorties (
   id           INT AUTO_INCREMENT PRIMARY KEY,
   titre        VARCHAR(190) NOT NULL,
-  categorie    VARCHAR(30)  NOT NULL DEFAULT 'Sortie photo',
+  categorie    VARCHAR(120) NOT NULL DEFAULT 'Sortie photo',
   description  TEXT         DEFAULT NULL,
   lieu         VARCHAR(190) DEFAULT NULL,
   debut        DATETIME     NOT NULL,

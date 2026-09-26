@@ -221,7 +221,7 @@ titre_page("Agenda des sorties", "Le calendrier des sorties, cours et réunions 
                <?= $vacance_du_jour ? 'title="' . e($vacance_du_jour['titre']) . '"' : '' ?>>
             <span class="agenda-cal-jour-numero"><?= (int) $jour_courant->format('j') ?></span>
             <?php foreach ($evenements_du_jour as $evenement): ?>
-              <a class="agenda-cal-pastille agenda-cal-pastille--<?= classe_categorie($evenement['categorie']) ?>"
+              <a class="agenda-cal-pastille"<?= style_categorie_sortie($pdo, $evenement['categorie']) ?>
                  href="sorties-a-venir.php#sortie-<?= (int) $evenement['id'] ?>" title="<?= e($evenement['titre']) ?>">
                 <?= e($evenement['titre']) ?>
               </a>
@@ -235,9 +235,9 @@ titre_page("Agenda des sorties", "Le calendrier des sorties, cours et réunions 
       <?php if ($vue === 'annee'): ?>
         <span><span class="agenda-cal-mini-point" style="position:static;"></span> Au moins un événement ce jour-là</span>
       <?php else: ?>
-        <span><span class="agenda-cal-pastille agenda-cal-pastille--sortie" style="display:inline-block;width:12px;height:12px;padding:0;"></span> Sortie photo</span>
-        <span><span class="agenda-cal-pastille agenda-cal-pastille--cours" style="display:inline-block;width:12px;height:12px;padding:0;"></span> Cours</span>
-        <span><span class="agenda-cal-pastille agenda-cal-pastille--reunion" style="display:inline-block;width:12px;height:12px;padding:0;"></span> Réunion</span>
+        <?php foreach (categories_sorties($pdo) as $nom_categorie): ?>
+          <span><span class="agenda-cal-pastille" style="display:inline-block;width:12px;height:12px;padding:0;--categorie-couleur: <?= e(couleur_categorie($pdo, $nom_categorie)) ?>;"></span> <?= e($nom_categorie) ?></span>
+        <?php endforeach; ?>
       <?php endif; ?>
       <span><span class="agenda-cal-vacances-pastille" style="display:inline-block;width:12px;height:12px;padding:0;"></span> Vacances scolaires (zone B)</span>
     </p>

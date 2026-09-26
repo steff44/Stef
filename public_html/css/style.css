@@ -2339,14 +2339,14 @@ button.lien-retour {
 .sortie-inscrite {
   border-color: rgba(168, 85, 247, 0.5);
 }
-.sortie-carte--sortie {
-  border-left: 4px solid var(--accent-2);
-}
-.sortie-carte--cours {
-  border-left: 4px solid #0e7490;
-}
-.sortie-carte--reunion {
-  border-left: 4px solid var(--accent-3);
+/* Couleur de catégorie cyclique, posée en variable CSS par
+   style_categorie_sortie() (inc/agenda.php) — remplace les anciennes
+   classes .sortie-carte--sortie/--cours/--reunion, figées à trois
+   catégories, depuis que les catégories de sortie sont éditables depuis
+   Réglages du site (26/09/2026). Repli sur --accent-2 si la sortie porte
+   une catégorie inconnue (renommée ou supprimée depuis). */
+.sortie-carte {
+  border-left: 4px solid var(--categorie-couleur, var(--accent-2));
 }
 .categorie-badge {
   display: inline-block;
@@ -2357,15 +2357,7 @@ button.lien-retour {
   margin-left: 8px;
   vertical-align: middle;
   color: #fff;
-}
-.categorie-badge--sortie {
-  background: linear-gradient(90deg, var(--accent-2), var(--accent));
-}
-.categorie-badge--cours {
-  background: #0e7490;
-}
-.categorie-badge--reunion {
-  background: linear-gradient(90deg, var(--accent), var(--accent-3));
+  background: var(--categorie-couleur, var(--accent-2));
 }
 .sortie-date {
   flex: 0 0 62px;
@@ -2593,6 +2585,10 @@ button.lien-retour {
   align-items: center;
   justify-content: center;
 }
+/* Couleur cyclique posée en variable CSS par style_categorie_sortie()/le
+   style="" en dur de la légende (agenda.php) — voir la même explication sur
+   .sortie-carte plus haut, remplace .agenda-cal-pastille--sortie/--cours/
+   --reunion. */
 .agenda-cal-pastille {
   display: block;
   font-size: 0.7rem;
@@ -2603,15 +2599,7 @@ button.lien-retour {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.agenda-cal-pastille--sortie {
-  background: linear-gradient(90deg, var(--accent-2), var(--accent));
-}
-.agenda-cal-pastille--cours {
-  background: #0e7490;
-}
-.agenda-cal-pastille--reunion {
-  background: linear-gradient(90deg, var(--accent), var(--accent-3));
+  background: var(--categorie-couleur, var(--accent-2));
 }
 .agenda-cal-legende {
   display: flex;

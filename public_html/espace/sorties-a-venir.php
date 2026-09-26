@@ -23,6 +23,11 @@ const TAILLE_PHOTO_SORTIE = 400;
 $adherent = adherent_connecte();
 $pdo      = base_de_donnees();
 
+// Catégories de sortie, éditables depuis Réglages du site (voir
+// categories_sorties(), inc/agenda.php) — remplace l'ancienne constante
+// figée CATEGORIES_SORTIES.
+$noms_categories_sorties = array_values(categories_sorties($pdo));
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verifier_csrf();
     $action = (string) ($_POST['action'] ?? '');
@@ -59,8 +64,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $debut     = trim((string) ($_POST['debut'] ?? ''));
         $fin       = trim((string) ($_POST['fin'] ?? ''));
         $categorie = (string) ($_POST['categorie'] ?? '');
-        if (!in_array($categorie, CATEGORIES_SORTIES, true)) {
-            $categorie = CATEGORIES_SORTIES[0];
+        if (!in_array($categorie, $noms_categories_sorties, true)) {
+            $categorie = $noms_categories_sorties[0] ?? 'Sortie photo';
         }
 
         $horodatage     = strtotime($debut);
@@ -121,8 +126,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $debut     = trim((string) ($_POST['debut'] ?? ''));
         $fin       = trim((string) ($_POST['fin'] ?? ''));
         $categorie = (string) ($_POST['categorie'] ?? '');
-        if (!in_array($categorie, CATEGORIES_SORTIES, true)) {
-            $categorie = CATEGORIES_SORTIES[0];
+        if (!in_array($categorie, $noms_categories_sorties, true)) {
+            $categorie = $noms_categories_sorties[0] ?? 'Sortie photo';
         }
 
         // Le champ datetime-local renvoie « 2026-09-12T14:30 ». La date de fin
@@ -276,7 +281,7 @@ titre_page("Sorties à venir", "Les prochaines sorties du club, et qui y partici
         <div class="field">
           <label for="categorie">Catégorie</label>
           <select id="categorie" name="categorie">
-            <?php foreach (CATEGORIES_SORTIES as $categorie): ?>
+            <?php foreach ($noms_categories_sorties as $categorie): ?>
               <option value="<?= e($categorie) ?>"><?= e($categorie) ?></option>
             <?php endforeach; ?>
           </select>
@@ -328,7 +333,7 @@ titre_page("Sorties à venir", "Les prochaines sorties du club, et qui y partici
           $inscrit            = in_array((int) $sortie['id'], array_map('intval', $mes_inscriptions), true);
           $lien_sortie_absolu = SITE_URL . '/espace/sorties-a-venir.php#sortie-' . (int) $sortie['id'];
         ?>
-        <li id="sortie-<?= (int) $sortie['id'] ?>" class="sortie-carte sortie-carte--<?= classe_categorie($sortie['categorie']) ?><?= $inscrit ? ' sortie-inscrite' : '' ?>">
+        <li id="sortie-<?= (int) $sortie['id'] ?>" class="sortie-carte<?= $inscrit ? ' sortie-inscrite' : '' ?>"<?= style_categorie_sortie($pdo, $sortie['categorie']) ?>>
           <div class="sortie-date">
             <span class="sortie-jour"><?= (int) date('j', strtotime($sortie['debut'])) ?></span>
             <span class="sortie-mois"><?= e(mois_court($sortie['debut'])) ?></span>
@@ -339,7 +344,7 @@ titre_page("Sorties à venir", "Les prochaines sorties du club, et qui y partici
           <?php endif; ?>
           <div class="sortie-corps">
             <h3><?= e($sortie['titre']) ?>
-              <span class="categorie-badge categorie-badge--<?= classe_categorie($sortie['categorie']) ?>"><?= e($sortie['categorie']) ?></span>
+              <span class="categorie-badge"><?= e($sortie['categorie']) ?></span>
             </h3>
             <p class="sortie-quand"><?= e(periode_sortie_en_francais($sortie['debut'], $sortie['fin'])) ?></p>
             <?php if ($sortie['lieu']): ?>
@@ -418,9 +423,12 @@ titre_page("Sorties à venir", "Les prochaines sorties du club, et qui y partici
                     <div class="field">
                       <label for="categorie-<?= (int) $sortie['id'] ?>">Catégorie</label>
                       <select id="categorie-<?= (int) $sortie['id'] ?>" name="categorie">
-                        <?php foreach (CATEGORIES_SORTIES as $categorie_option): ?>
+                        <?php foreach ($noms_categories_sorties as $categorie_option): ?>
                           <option value="<?= e($categorie_option) ?>" <?= $categorie_option === $sortie['categorie'] ? 'selected' : '' ?>><?= e($categorie_option) ?></option>
                         <?php endforeach; ?>
+                        <?php if (!in_array($sortie['categorie'], $noms_categories_sorties, true)): ?>
+                          <option value="<?= e($sortie['categorie']) ?>" selected><?= e($sortie['categorie']) ?> (ancienne catégorie)</option>
+                        <?php endif; ?>
                       </select>
                     </div>
                     <div class="field">
@@ -479,10 +487,10 @@ titre_page("Sorties à venir", "Les prochaines sorties du club, et qui y partici
     <h2 class="titre-section" style="margin-top:44px;">Sorties passées</h2>
     <ul class="liste-sorties liste-sorties-passees">
       <?php foreach (array_slice($passees, 0, 10) as $sortie): ?>
-        <li id="sortie-<?= (int) $sortie['id'] ?>" class="sortie-carte sortie-carte--<?= classe_categorie($sortie['categorie']) ?>">
+        <li id="sortie-<?= (int) $sortie['id'] ?>" class="sortie-carte"<?= style_categorie_sortie($pdo, $sortie['categorie']) ?>>
           <div class="sortie-corps">
             <h3><?= e($sortie['titre']) ?>
-              <span class="categorie-badge categorie-badge--<?= classe_categorie($sortie['categorie']) ?>"><?= e($sortie['categorie']) ?></span>
+              <span class="categorie-badge"><?= e($sortie['categorie']) ?></span>
             </h3>
             <p class="sortie-quand"><?= e(periode_sortie_en_francais($sortie['debut'], $sortie['fin'], false)) ?>
               <?= $sortie['lieu'] ? ' — ' . e($sortie['lieu']) : '' ?></p>

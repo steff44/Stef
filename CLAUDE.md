@@ -5008,3 +5008,115 @@ et il ne contient **aucun** réglage `smtp_*` — les identifiants de la boîte
 `noreply@focalclub.fr` sont à y ajouter à la main (hPanel, site
 focalclub.fr, Gestionnaire de fichiers), puis à vérifier avec le bouton
 « Tester la connexion SMTP » de `journal-mails.php`.
+
+**Confirmé par l'utilisatrice** : « C'est fait, la connexion SMTP est
+réussie » — les identifiants ont été ajoutés au bon `config.local.php`
+(celui de `focalclub.fr`), le bouton « Tester la connexion SMTP » de
+`journal-mails.php` réussit désormais. Cette longue investigation
+(commencée le 10/09/2026 avec l'incident SPF/Gmail) est donc close.
+
+## Catégories de sortie éditables depuis Réglages du site
+
+**Choix explicite de l'utilisatrice, 26/09/2026** : « Je veux pouvoirs
+rajouter des nouvelles catégories de sorties dans les sorties à venir en
+tant que responsable. » Jusqu'ici, les trois catégories de sortie
+(« Sortie photo », « Cours », « Réunion ») étaient une constante figée
+dans le code (`CATEGORIES_SORTIES`, `inc/agenda.php`) — en ajouter une
+nouvelle exigeait un déploiement, contrairement aux catégories de la
+Galerie du Club/privée et du Blog, éditables depuis `parametres.php`
+depuis longtemps.
+
+**Nouvelle table `categories_sorties`** (`id`, `nom`, `ordre`), exactement
+la même forme que `categories_galerie`/`categories_blog` — semée une
+seule fois avec `CATEGORIES_SORTIES_PAR_DEFAUT` (les trois catégories
+d'origine, dans le même ordre) par `appliquer_migrations()`
+(`inc/migration.php`), pour qu'une base déjà en ligne garde exactement
+son comportement actuel tant qu'un responsable ne touche à rien. Témoin
+de `signature_schema()` passé à `categories_sorties_v1`.
+`categories_sorties($pdo)` (`inc/agenda.php`, même forme que
+`categories_galerie()`/`categories_blog()`) remplace la constante
+`CATEGORIES_SORTIES`, supprimée.
+
+**`sorties.categorie` reste un champ texte libre (VARCHAR), pas une clé
+étrangère** — choix délibéré, différent des galeries/du blog (qui, eux,
+référencent un `categorie_id`) : convertir `sorties.categorie` en FK
+aurait exigé de faire correspondre chaque sortie déjà déposée à une ligne
+de la nouvelle table, une migration de données plus risquée pour un
+changement qui ne le justifiait pas. Seule sa longueur est élargie
+(`VARCHAR(30)` → `VARCHAR(120)`, `ALTER TABLE ... MODIFY COLUMN`, dans son
+propre bloc `try`/`catch` pour qu'un échec de cet `ALTER` n'empêche pas la
+création/le semis de `categories_sorties` juste au-dessus) — un nom de
+catégorie plus long que les trois d'origine doit pouvoir tenir.
+**Conséquence acceptée** : renommer une catégorie ne met pas à jour le
+texte déjà enregistré sur les sorties existantes (elles gardent l'ancien
+nom, affiché sans couleur reconnue — voir plus bas) ; supprimer une
+catégorie encore utilisée par des sorties existantes est donc **sans
+risque** et volontairement **non bloqué** par un garde-fou (contrairement
+aux catégories de galerie/blog/documents, où supprimer une catégorie
+encore utilisée est refusé) — il n'y a ici aucune ligne à orpheliner,
+juste du texte qui reste affiché tel quel.
+
+**Couleur par catégorie via une palette cyclique**, même principe que
+`$palette_rubriques`/`--rubrique-couleur` de `documents.php`
+(18/09/2026, voir plus haut) : `PALETTE_CATEGORIES_SORTIES` (6 teintes,
+`inc/agenda.php`) et `couleur_categorie($pdo, $categorie)` (position de la
+catégorie dans la liste actuelle, modulo la taille de la palette) plutôt
+qu'une classe CSS par catégorie (`.sortie-carte--sortie/--cours/
+--reunion`, `.categorie-badge--sortie/...`, `.agenda-cal-pastille--
+sortie/...`, toutes les trois supprimées) — s'adapte donc à n'importe
+quel nombre de catégories créées depuis Réglages, sans nouvelle règle CSS
+à écrire à chaque fois. `style_categorie_sortie($pdo, $categorie)` pose
+`style="--categorie-couleur: #…;"` sur l'élément racine de chaque
+affichage (carte de sortie, pastille de calendrier) ; le CSS lit
+`var(--categorie-couleur, var(--accent-2))`, avec repli sur la couleur
+d'accent du site si la catégorie n'est plus reconnue (renommée/supprimée
+depuis). La variable posée sur `.sortie-carte` est héritée par
+`.categorie-badge` à l'intérieur — un seul `style=""` par carte suffit,
+pas besoin de le répéter sur le badge.
+
+**Ordre CSS préservé à l'identique** : la nouvelle règle unique
+`.sortie-carte { border-left: 4px solid var(--categorie-couleur,
+var(--accent-2)); }` reste positionnée exactement là où vivaient les
+trois anciens modificateurs, **juste après** `.sortie-inscrite { border-
+color: ... }` — pour qu'à spécificité égale, la couleur de catégorie
+continue de l'emporter sur la teinte violette « inscrit » côté bordure
+gauche, comme avant ce changement.
+
+**Formulaires « Ajouter une sortie » et « Modifier »**
+(`espace/sorties-a-venir.php`) : le `<select>` de catégorie boucle
+désormais sur `categories_sorties($pdo)` plutôt que sur la constante. Le
+formulaire « Modifier » ajoute une option de repli « (ancienne
+catégorie) » quand le texte déjà enregistré sur la sortie ne correspond
+plus à aucune catégorie actuelle (renommée/supprimée depuis son dépôt) —
+pour ne jamais présélectionner silencieusement une mauvaise catégorie ni
+perdre la valeur réelle de la sortie.
+
+**Calendrier (`espace/agenda.php`)** : la légende (jusque-là trois
+`<span>` en dur) et les pastilles des vues mois/semaine/année parcourent
+désormais `categories_sorties($pdo)` et `style_categorie_sortie()`, comme
+les cartes de `sorties-a-venir.php`.
+
+**Nouveau pavé « Catégories de sorties » dans Réglages du site**
+(`parametres.php`), quatrième pavé de `.reglages-col-droite` (après
+« Catégories des galeries » et « Catégories du blog ») — même formulaire
+ajouter/renommer/supprimer que les deux autres, à la différence près,
+justifiée plus haut, qu'il n'y a pas de garde-fou « encore utilisée » sur
+la suppression.
+
+Testé hors ligne (26/09/2026) avec un vrai moteur SQLite (traduction à la
+volée des instructions MySQL de `migration.php`/`schema.sql`, même
+principe que les autres bancs d'essai de ce fichier) : migration rejouée
+sur une base simulant l'état déjà en ligne (création de la table, semis
+unique des trois catégories d'origine dans l'ordre, non-répétition à un
+second appel, élargissement de `sorties.categorie` appliqué), les trois
+nouvelles fonctions (`categories_sorties()`, `couleur_categorie()`,
+`style_categorie_sortie()`) vérifiées isolément (couleur cyclique
+correcte, `null`/repli pour une catégorie inconnue), et les requêtes SQL
+des trois actions de `parametres.php` (ajouter/renommer/supprimer, y
+compris supprimer une catégorie encore utilisée par une sortie existante,
+sans erreur ni orphelin). `php -l` sur les six fichiers PHP modifiés
+(`inc/agenda.php`, `inc/migration.php`, `agenda.php`,
+`sorties-a-venir.php`, `parametres.php`) — l'ordre CSS a été vérifié par
+relecture directe du fichier plutôt que par un rendu Chromium (la
+position de la nouvelle règle unique a été comparée pas à pas à celle des
+trois règles qu'elle remplace, avant et après modification).
