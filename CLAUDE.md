@@ -5190,3 +5190,22 @@ Non testable plus avant depuis ce sandbox (domaine externe, comme le reste
 de l'infrastructure mail de ce fichier) — la suite (évolution de la
 réputation) se suit désormais directement dans Postmaster Tools par
 l'utilisatrice.
+
+**Deux raccourcis ajoutés dans Réglages du site, le jour même** : « je
+pourrais avoir ce journal ou le lien dans les réglages du site ainsi que
+le lien de Postmaster Tools avec juste quelques explications pour me
+souvenir à quoi cela sert. » Un nouveau bloc « Suivi des e-mails »
+(`parametres.php`, juste après le grand formulaire des coordonnées,
+avant `.reglages-grid`) reprend le motif déjà utilisé pour les cartes de
+`le-club.php` (`.cards-grid`/`.feature-card`, icône + titre + description
++ bouton « Ouvrir », aucune nouvelle règle CSS) : une carte vers
+`journal-mails.php` (« à consulter en premier si un adhérent dit n'avoir
+rien reçu ») et une vers `https://postmaster.google.com` (« utile quand
+le journal dit... mais qu'un adhérent Gmail ne trouve rien, même en
+spam » — `target="_blank"`, comme les autres liens externes du site).
+**Le bloc entier est réservé à `est_administrateur()`** — `parametres.php`
+est ouvert à l'éditeur depuis le 21/09/2026, mais `journal-mails.php`
+reste, lui, réservé au seul responsable (`exige_administrateur()`,
+inchangé) : un éditeur qui aurait cliqué le lien serait tombé sur un
+refus d'accès, d'où ce même garde-fou posé ici pour ne jamais lui montrer
+un lien mort. `php -l` sur `parametres.php`.

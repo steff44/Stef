@@ -458,6 +458,31 @@ titre_page(
     <p class="form-note">Les visiteurs déjà sur le site verront le changement à leur prochaine visite, ou après quelques minutes si leur page reste ouverte.</p>
   </form>
 
+  <?php if (est_administrateur()): ?>
+  <h2 style="font-family:var(--font-heading);font-size:1.2rem;margin:32px 0 6px;">Suivi des e-mails</h2>
+  <p class="form-note" style="margin-top:0;margin-bottom:20px;">
+    Deux outils pour vérifier qu'une notification (nouvelle sortie, nouvel article, nouveau
+    document…) est bien partie, et pourquoi elle n'arriverait pas chez un adhérent — réservés
+    au responsable, comme les pages qu'ils ouvrent.
+  </p>
+  <div class="cards-grid">
+    <article class="feature-card">
+      <div class="feature-icon" aria-hidden="true">📬</div>
+      <h3>Journal des e-mails</h3>
+      <p>La liste des derniers envois du site (« SMTP OK » ou le message d'erreur exact du
+        serveur) — à consulter en premier si un adhérent dit n'avoir rien reçu.</p>
+      <a class="btn btn-ghost" href="journal-mails.php">Ouvrir</a>
+    </article>
+    <article class="feature-card">
+      <div class="feature-icon" aria-hidden="true">📈</div>
+      <h3>Google Postmaster Tools</h3>
+      <p>La réputation du domaine <code>focalclub.fr</code> vue par Gmail — utile quand le
+        journal dit « SMTP OK » mais qu'un adhérent Gmail ne trouve rien, même en spam.</p>
+      <a class="btn btn-ghost" href="https://postmaster.google.com" target="_blank" rel="noopener">Ouvrir</a>
+    </article>
+  </div>
+  <?php endif; ?>
+
   <div class="reglages-grid">
   <div class="form-card reglage-rubriques">
     <h2 style="font-family:var(--font-heading);font-size:1.2rem;margin:0 0 6px;">Rubriques des documents</h2>
