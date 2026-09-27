@@ -40,6 +40,13 @@ CREATE TABLE IF NOT EXISTS adherents (
   -- espace/mot-de-passe-oublie.php et espace/nouveau-mot-de-passe.php).
   jeton_reinitialisation VARCHAR(64) DEFAULT NULL,
   jeton_expire_le    DATETIME     DEFAULT NULL,
+  -- Blocage temporaire après plusieurs échecs de connexion, posé sur LE
+  -- COMPTE visé plutôt que sur la session du visiteur : un compteur en
+  -- session se réinitialise dès qu'un script ne conserve pas les cookies
+  -- d'une tentative à l'autre, ce qui le rendait inefficace contre un robot
+  -- (voir tenter_connexion() dans auth.php).
+  echecs_connexion   INT          NOT NULL DEFAULT 0,
+  bloque_jusqu_a     DATETIME     DEFAULT NULL,
   cree_le            DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

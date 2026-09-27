@@ -54,6 +54,12 @@ const COLONNES_ATTENDUES = [
     // nouvelle demande).
     'jeton_reinitialisation' => 'VARCHAR(64) DEFAULT NULL',
     'jeton_expire_le'        => 'DATETIME DEFAULT NULL',
+    // Blocage après plusieurs échecs de connexion, posé sur le compte visé
+    // plutôt que sur la session (27/09/2026, choix explicite de
+    // l'utilisatrice après vérification du mécanisme existant) — voir
+    // tenter_connexion() dans auth.php.
+    'echecs_connexion'       => 'INT NOT NULL DEFAULT 0',
+    'bloque_jusqu_a'         => 'DATETIME DEFAULT NULL',
 ];
 
 // Colonnes attendues sur `sorties` — même principe, table différente.

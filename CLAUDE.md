@@ -5274,3 +5274,55 @@ code** :
   l'utilisatrice comme un choix à faire elle-même plutôt qu'ajouté
   silencieusement ; non implémenté tant qu'elle ne le redemande pas
   explicitement.
+
+## Blocage après échecs de connexion : posé sur le compte, pas la session
+
+**Vérification demandée par l'utilisatrice, 27/09/2026** : « comment
+fonctionne le blocage après plusieurs échecs de connexion ». Un mécanisme
+existait déjà (`tenter_connexion()`, `inc/auth.php`, présent depuis les
+débuts du projet) mais avec une faille jamais signalée jusqu'ici : le
+compteur d'échecs vivait en **session PHP** (`$_SESSION['echecs']`), donc
+propre à un navigateur/cookie donné — un script qui teste des mots de passe
+sans conserver de cookies (le cas normal d'un outil de credential-stuffing)
+obtenait une session neuve à chaque tentative et n'était donc **jamais**
+réellement bloqué, malgré l'apparence d'une protection.
+
+**Corrigé** : le blocage est désormais posé sur **le compte visé**, deux
+nouvelles colonnes sur `adherents` (`echecs_connexion INT DEFAULT 0`,
+`bloque_jusqu_a DATETIME DEFAULT NULL` — `COLONNES_ATTENDUES`,
+`inc/migration.php`, et `inc/schema.sql` pour une prochaine installation ;
+aucun nouveau témoin de version nécessaire, `signature_schema()` hache déjà
+les clés de `COLONNES_ATTENDUES`). `tenter_connexion()` lit ces deux
+colonnes avec la ligne de l'adhérent (`TIMESTAMPDIFF(SECOND, NOW(),
+bloque_jusqu_a)`, horloge MySQL plutôt que PHP, même principe que la
+présence/déconnexion à distance) ; au 5ᵉ échec (`TENTATIVES_MAX`,
+inchangé) sur ce compte, `bloque_jusqu_a` est posé à `NOW() + 15 minutes`
+(`BLOCAGE_SECONDES`, inchangé). Une connexion réussie remet les deux
+colonnes à zéro (fondu dans l'`UPDATE` déjà exécuté à cet instant). Un
+identifiant qui ne correspond à aucun compte ne déclenche jamais
+d'écriture — anti-énumération inchangée, il n'y a alors rien de réel à
+protéger. Le compte non validé (`valide = 0`) avec un mot de passe correct
+continue de ne **pas** compter comme un échec, comme avant.
+
+**Compromis accepté, cohérent avec le reste du site** : un tiers connaissant
+un identifiant réel (l'annuaire des adhérents n'est visible qu'aux
+adhérents connectés) pourrait délibérément saisir 5 mauvais mots de passe
+pour bloquer ce compte 15 minutes — un inconvénient mineur (gêne
+temporaire, aucune donnée exposée) largement compensé par la faille
+corrigée (un blocage qui ne protégeait en réalité personne).
+
+Testé hors ligne (27/09/2026) avec un vrai moteur SQLite (copie de
+`auth.php`, `NOW()`/`TIMESTAMPDIFF()`/l'équivalent de `DATE_ADD(...,
+INTERVAL ? SECOND)` ajoutés via `PDO::sqliteCreateFunction()`, même
+principe que les autres bancs d'essai de ce fichier) : identifiant inconnu
+jamais bloqué même après 10 échecs, compteur qui monte jusqu'à 5 puis
+déclenche le blocage, bon mot de passe quand même refusé pendant le
+blocage avec le message dédié, blocage strictement propre au compte visé
+(un second compte avec le même mauvais mot de passe n'est pas affecté),
+blocage qui persiste malgré des appels simulant l'absence de cookies
+(le scénario qui contournait l'ancien mécanisme), levée automatique après
+expiration avec remise à zéro des compteurs, compte désactivé toujours
+compté comme un échec, inscription en attente toujours exclue du
+compteur. `php -l` sur les trois fichiers modifiés (`inc/auth.php`,
+`inc/migration.php`, `inc/schema.sql` non concerné par `php -l`, relu à
+la main).

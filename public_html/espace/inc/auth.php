@@ -9,6 +9,12 @@ require_once __DIR__ . '/db.php';
 
 const TENTATIVES_MAX     = 5;    // essais ratés avant blocage temporaire
 const BLOCAGE_SECONDES   = 900;  // 15 minutes
+// Le blocage est posé sur le COMPTE visé (colonnes echecs_connexion/
+// bloque_jusqu_a sur adherents), pas sur la session du visiteur — un
+// compteur en session se réinitialise dès qu'un script ne conserve pas les
+// cookies d'une tentative à l'autre, ce qui le rendait sans effet contre un
+// robot testant des mots de passe (27/09/2026, choix explicite de
+// l'utilisatrice après vérification du mécanisme existant).
 
 // Au-delà de ce délai sans consulter une page, un adhérent n'est plus compté
 // comme « connecté » dans le tableau des responsables. Le web étant sans
@@ -195,17 +201,9 @@ function tenter_connexion(string $identifiant, string $mot_de_passe): ?string
 {
     demarrer_session();
 
-    // Blocage temporaire après plusieurs échecs, pour décourager les essais
-    // automatisés de mots de passe.
-    $echecs = $_SESSION['echecs'] ?? 0;
-    $depuis = $_SESSION['dernier_echec'] ?? 0;
-    if ($echecs >= TENTATIVES_MAX && (time() - $depuis) < BLOCAGE_SECONDES) {
-        $minutes = (int) ceil((BLOCAGE_SECONDES - (time() - $depuis)) / 60);
-        return "Trop de tentatives. Réessayez dans {$minutes} minute" . ($minutes > 1 ? 's' : '') . ".";
-    }
-
     $requete = base_de_donnees()->prepare(
-        'SELECT id, identifiant, nom, email, telephone, mot_de_passe, administrateur, editeur, actif, valide
+        'SELECT id, identifiant, nom, email, telephone, mot_de_passe, administrateur, editeur, actif, valide,
+                echecs_connexion, TIMESTAMPDIFF(SECOND, NOW(), bloque_jusqu_a) AS blocage_restant
            FROM adherents
           WHERE identifiant = ?
           LIMIT 1'
@@ -213,14 +211,38 @@ function tenter_connexion(string $identifiant, string $mot_de_passe): ?string
     $requete->execute([$identifiant]);
     $ligne = $requete->fetch();
 
+    // Blocage temporaire après plusieurs échecs sur CE compte, pour décourager
+    // les essais automatisés de mots de passe — voir la note sur
+    // TENTATIVES_MAX/BLOCAGE_SECONDES plus haut. La comparaison passe par
+    // l'horloge de MySQL (TIMESTAMPDIFF), jamais celle de PHP, même principe
+    // que le reste du site (voir « Présence et déconnexion à distance »).
+    if ($ligne && $ligne['blocage_restant'] !== null && (int) $ligne['blocage_restant'] > 0) {
+        $minutes = (int) ceil((int) $ligne['blocage_restant'] / 60);
+        return "Trop de tentatives. Réessayez dans {$minutes} minute" . ($minutes > 1 ? 's' : '') . ".";
+    }
+
     // password_verify est appelé même quand le compte n'existe pas : sans ça,
     // le temps de réponse révélerait quels identifiants existent.
     $hachage = $ligne['mot_de_passe'] ?? '$2y$12$indisponibleindisponibleindisponibleindisponibleind';
     $correct = password_verify($mot_de_passe, $hachage);
 
     if (!$ligne || !$correct || !$ligne['actif']) {
-        $_SESSION['echecs']        = $echecs + 1;
-        $_SESSION['dernier_echec'] = time();
+        // Rien à incrémenter pour un identifiant qui n'existe pas — sans
+        // conséquence : il n'y a alors aucun compte réel à protéger.
+        if ($ligne) {
+            $echecs = (int) $ligne['echecs_connexion'] + 1;
+            if ($echecs >= TENTATIVES_MAX) {
+                $maj = base_de_donnees()->prepare(
+                    'UPDATE adherents
+                        SET echecs_connexion = ?, bloque_jusqu_a = DATE_ADD(NOW(), INTERVAL ? SECOND)
+                      WHERE id = ?'
+                );
+                $maj->execute([$echecs, BLOCAGE_SECONDES, $ligne['id']]);
+            } else {
+                $maj = base_de_donnees()->prepare('UPDATE adherents SET echecs_connexion = ? WHERE id = ?');
+                $maj->execute([$echecs, $ligne['id']]);
+            }
+        }
         // Message unique : ne jamais indiquer si c'est l'identifiant ou le mot
         // de passe qui est faux.
         return "Identifiant ou mot de passe incorrect.";
@@ -238,9 +260,6 @@ function tenter_connexion(string $identifiant, string $mot_de_passe): ?string
         return "Votre inscription est en attente de validation par un responsable.";
     }
 
-    // Le mot de passe est bon : on réinitialise les compteurs.
-    unset($_SESSION['echecs'], $_SESSION['dernier_echec']);
-
     // Si le coût du hachage a changé depuis la création du compte, on remet le
     // mot de passe à jour au passage.
     if (password_needs_rehash($ligne['mot_de_passe'], PASSWORD_DEFAULT)) {
@@ -254,10 +273,12 @@ function tenter_connexion(string $identifiant, string $mot_de_passe): ?string
     // deconnecte_le est remis à zéro : la coupure demandée par un responsable
     // visait les sessions d'alors, pas celle-ci. Sans cet effacement, quelqu'un
     // qui se reconnecte dans la seconde suivant sa déconnexion forcée serait
-    // éjecté une seconde fois, sans comprendre pourquoi.
+    // éjecté une seconde fois, sans comprendre pourquoi. Le mot de passe est
+    // bon : echecs_connexion/bloque_jusqu_a sont remis à zéro au passage.
     $maj = base_de_donnees()->prepare(
         'UPDATE adherents
-            SET derniere_connexion = NOW(), derniere_activite = NOW(), deconnecte_le = NULL
+            SET derniere_connexion = NOW(), derniere_activite = NOW(), deconnecte_le = NULL,
+                echecs_connexion = 0, bloque_jusqu_a = NULL
           WHERE id = ?'
     );
     $maj->execute([$ligne['id']]);
