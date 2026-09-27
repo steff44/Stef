@@ -1,0 +1,21 @@
+name: Diagnostic DNS TXT (Postmaster Tools)
+
+# Temporaire — vérifie que l'enregistrement TXT de vérification
+# Google Postmaster Tools pour focalclub.fr est bien visible publiquement.
+# À supprimer une fois la cause trouvée (même principe que les autres
+# workflows diag-* de ce dépôt).
+on:
+  workflow_dispatch:
+
+jobs:
+  dns:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Interroger les TXT de focalclub.fr (résolveur par défaut)
+        run: dig TXT focalclub.fr +noall +answer
+
+      - name: Interroger les TXT de focalclub.fr via Google (8.8.8.8)
+        run: dig TXT focalclub.fr @8.8.8.8 +noall +answer
+
+      - name: Interroger les TXT de focalclub.fr via Cloudflare (1.1.1.1)
+        run: dig TXT focalclub.fr @1.1.1.1 +noall +answer
