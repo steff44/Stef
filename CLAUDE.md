@@ -5120,3 +5120,73 @@ sans erreur ni orphelin). `php -l` sur les six fichiers PHP modifiés
 relecture directe du fichier plutôt que par un rendu Chromium (la
 position de la nouvelle règle unique a été comparée pas à pas à celle des
 trois règles qu'elle remplace, avant et après modification).
+
+## Notifications : e-mails « acceptés » mais invisibles — adresse invalide et réputation Gmail d'un domaine neuf
+
+**Signalé par l'utilisatrice le 27/09/2026** : après l'ajout d'une sortie
+(« LA TURBALLE - Trophée d'automne BMX »), le message habituel « Ajouté à
+l'agenda. Un e-mail a été envoyé aux adhérents. » s'est bien affiché, mais
+rien reçu du tout — alors que la connexion SMTP avait été confirmée
+réussie la veille (voir plus haut, clôture de l'investigation du
+10/09/2026). Diagnostic mené sans toucher au code, en s'appuyant sur les
+outils déjà en place :
+
+1. **`journal-mails.php`** : toutes les lignes de cet envoi marquées
+   « SMTP OK ». Rappel posé pour la suite : « SMTP OK » veut seulement
+   dire que **Hostinger a accepté le message pour l'acheminer**, pas
+   qu'il est réellement arrivé chez le destinataire — un rejet plus loin
+   dans la chaîne revient sous forme d'un e-mail de non-remise (NDR)
+   envoyé à l'adresse d'enveloppe (`noreply@focalclub.fr`), une boîte que
+   personne ne consultait jusque-là.
+2. **Boîte `noreply@focalclub.fr` (webmail Hostinger)** : un vrai NDR
+   trouvé — `xanadoo56@gmail.com` : « The email account that you tried to
+   reach does not exist » (550 5.1.1), envoyé directement par les
+   serveurs Gmail (`gsmtp`). Confirme au passage que l'authentification
+   du domaine fonctionne parfaitement (Gmail a accepté d'examiner le
+   message pour vérifier l'adresse, avant de le rejeter pour ce seul
+   motif) — l'utilisatrice a retrouvé cet adhérent et supprimé son compte.
+3. **Pour sa propre adresse** (aucun NDR le concernant) : le message
+   existait dans « Tous les messages » de Gmail mais dans **aucun**
+   onglet visible (ni Boîte de réception, ni Spam, ni Promotions/
+   Notifications/Réseaux sociaux) — confirmé par une pastille « Boîte de
+   réception » absente sur ces lignes, présente sur les autres e-mails de
+   la liste. Conclusion : Gmail **archive silencieusement** les messages
+   d'un domaine d'envoi tout neuf (`noreply@focalclub.fr`, quelques jours
+   d'existence) sans historique d'interaction, plutôt que de les rejeter
+   ou de les classer en spam — un comportement distinct des deux
+   précédents (rejet SPF/DKIM avant le 23/09, retard de plusieurs heures
+   observé le 22-23/09), propre à un manque de réputation plutôt qu'à un
+   problème d'authentification. **Rien à corriger dans le code** : la
+   configuration technique (SPF/DKIM/DMARC, SMTP authentifié) est déjà
+   correcte, seule la confiance de Gmail envers ce domaine doit encore se
+   construire avec le temps et le volume.
+
+**Deux mesures conseillées, sans changement de code** :
+- Faire remonter manuellement ces messages vers la boîte de réception
+  (menu du message → « Déplacer vers la boîte de réception ») et ajouter
+  `noreply@focalclub.fr` aux contacts, pour chaque adhérent concerné —
+  ces interactions positives comptent dans la réputation vue par Gmail.
+- **Google Postmaster Tools** (gratuit, postmaster.google.com) configuré
+  et **vérifié** le jour même pour `focalclub.fr`, pour suivre
+  objectivement cette réputation dans le temps plutôt que de deviner à
+  chaque envoi — utile aussi pour l'authentification (SPF/DKIM/DMARC) et
+  le taux de spam signalé, une fois un volume suffisant atteint (avec une
+  trentaine d'adhérents, certains graphiques resteront probablement vides
+  la plupart du temps, ce qui est normal à ce volume).
+
+**Vérification du domaine chez Google, en deux temps** : un premier ajout
+du TXT `google-site-verification=...` dans la Zone DNS de `focalclub.fr`
+(hPanel) n'a pas suffi — un diagnostic DNS temporaire (`diag-dns-txt.yml`,
+`dig` depuis GitHub Actions sur trois résolveurs, même principe que les
+diagnostics SPF/DKIM précédents, supprimé une fois la cause confirmée) a
+montré que le TXT **n'existait tout simplement pas encore** en DNS public
+malgré l'ajout côté hPanel — la sauvegarde n'avait probablement pas abouti
+du premier coup. Après un second ajout (en configurant bien le champ
+« Nom » sur `@`, comme l'enregistrement SPF déjà en place pour le même
+domaine racine) et un temps de propagation, le même diagnostic a confirmé
+le TXT visible sur les trois résolveurs interrogés, aux côtés du SPF sans
+conflit — la validation a alors réussi côté Google Postmaster Tools.
+Non testable plus avant depuis ce sandbox (domaine externe, comme le reste
+de l'infrastructure mail de ce fichier) — la suite (évolution de la
+réputation) se suit désormais directement dans Postmaster Tools par
+l'utilisatrice.
