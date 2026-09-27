@@ -5209,3 +5209,68 @@ reste, lui, réservé au seul responsable (`exige_administrateur()`,
 inchangé) : un éditeur qui aurait cliqué le lien serait tombé sur un
 refus d'accès, d'où ce même garde-fou posé ici pour ne jamais lui montrer
 un lien mort. `php -l` sur `parametres.php`.
+
+## Référencement Google : robots.txt, sitemap.xml, Search Console
+
+**Demande explicite de l'utilisatrice, 27/09/2026** : « je voudrais avoir
+les statistique de google, comment faire et comment se référencer au
+mieux sur google. » Deux besoins distincts derrière cette phrase — les
+« statistiques Google » du référencement (recherches qui affichent le
+site, clics, position) sont **Google Search Console**, à ne pas confondre
+avec Google Postmaster Tools (réputation d'envoi d'e-mails, voir plus
+haut, sans rapport) ni avec Google Analytics (fréquentation détaillée,
+voir plus bas pourquoi non ajouté d'office).
+
+**Un fichier de vérification Search Console existait déjà, jamais
+finalisé** : `public_html/google6487b2574d48bc18.html` a été ajouté et
+déployé le 08/09/2026 (même session Claude, avant ce jour), mais rien
+dans l'historique n'indique que l'étape de vérification côté compte
+Google ait été terminée. Il suffit donc à l'utilisatrice d'ouvrir
+[search.google.com/search-console](https://search.google.com/search-console),
+d'ajouter `focalclub.fr` comme propriété (méthode « Préfixe d'URL »,
+`https://focalclub.fr`), et de cliquer Valider — le fichier déjà en ligne
+devrait suffire sans rien déployer de plus.
+
+**`public_html/robots.txt` et `public_html/sitemap.xml` créés** — les
+deux manquaient entièrement sur le site en ligne (vérifié : aucun des
+deux fichiers n'existait). `robots.txt` autorise tout par défaut et
+liste en `Disallow` les pages de l'espace adhérents qui n'ont aucun
+intérêt à être indexées — celles réservées (`exige_connexion()`) et les
+utilitaires (connexion, téléchargement de fichiers, pages de gestion
+réservées au responsable/éditeur) — tout en laissant explicitement
+crawlables les pages publiques de `espace/` (`blog.php`,
+`blog-article.php`, `agenda.php`, `sorties-a-venir.php`), qui ne sont
+**pas** dans la liste `Disallow`. `sitemap.xml` liste les dix pages
+publiques et durables du site (les pages de redirection —
+`evenements.html`, `membres.html`, `expo-2026.html`, `connexion.html` —
+en sont volontairement absentes, un sitemap ne devant pointer que vers
+les adresses finales) ; `robots.txt` référence `Sitemap:
+https://focalclub.fr/sitemap.xml` pour que Google Search Console le
+découvre automatiquement, sans avoir besoin de le soumettre à la main
+(mais la soumettre manuellement dans Search Console, section Sitemaps,
+accélère la première découverte).
+
+**Non testable depuis ce sandbox** (comme le reste de ce qui touche à
+`focalclub.fr`) — à vérifier après déploiement : `focalclub.fr/robots.txt`
+et `focalclub.fr/sitemap.xml` doivent répondre 200, puis la vérification
+Search Console doit passer.
+
+**Recommandations données à l'utilisatrice, aucune non plus n'exigeant de
+code** :
+- **Google Business Profile** (anciennement Google My Business, gratuit,
+  business.google.com) — le levier le plus fort pour une association
+  locale : fait apparaître le club dans Google Maps et le « pack local »
+  pour des recherches du type « club photo La Turballe », avec horaires,
+  adresse, avis. Purement côté compte Google, rien à déployer ici.
+- **Google Analytics (GA4) volontairement non ajouté d'office** : le
+  site a déjà ses propres statistiques de fréquentation
+  (`espace/statistiques.php`, voir plus haut, 04/09/2026) sans cookie ni
+  IP complète, ce qui permet à `confidentialite.html` d'affirmer
+  « cookies (session uniquement, dispensé de consentement) ». GA4 pose
+  des cookies tiers de mesure d'audience — les ajouter casserait cette
+  affirmation et exigerait un bandeau de consentement RGPD, une charge
+  supplémentaire pour un site associatif qui a déjà l'essentiel
+  (fréquentation, provenance, pays/ville) sans ce compromis. Proposé à
+  l'utilisatrice comme un choix à faire elle-même plutôt qu'ajouté
+  silencieusement ; non implémenté tant qu'elle ne le redemande pas
+  explicitement.
