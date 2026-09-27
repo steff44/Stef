@@ -33,6 +33,16 @@ if (adherent_connecte()) {
 
 $pdo = base_de_donnees();
 
+// Délai minimum entre deux demandes réussies pour un même compte (27/09/2026,
+// choix explicite de l'utilisatrice) : jusqu'ici, seul le champ piège
+// protégeait cette page — quelqu'un connaissant l'identifiant ou l'e-mail
+// d'un adhérent pouvait déclencher une demande de réinitialisation en boucle
+// et inonder sa boîte mail, sans qu'aucun compte ne soit compromis pour
+// autant (chaque jeton reste valable une heure et à usage unique) mais en le
+// harcelant. Espacer les envois, pas les bloquer : passé ce délai, une
+// nouvelle demande fonctionne normalement.
+const DELAI_MIN_ENTRE_RESETS_SECONDES = 300; // 5 minutes
+
 // Anti-spam pour ce formulaire public — le champ piège suffit ici, sans
 // délai minimum (choix explicite de l'utilisatrice, 11/09/2026, après
 // diagnostic : contrairement à inscription.php, un formulaire à un seul
@@ -71,17 +81,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (!$piege_rempli && $saisie !== '') {
         $requete = $pdo->prepare(
-            'SELECT id, identifiant, nom, email FROM adherents
+            'SELECT id, identifiant, nom, email,
+                    TIMESTAMPDIFF(SECOND, derniere_demande_reinitialisation, NOW()) AS secondes_depuis_demande
+               FROM adherents
               WHERE actif = 1 AND (identifiant = ? OR email = ?)
               LIMIT 1'
         );
         $requete->execute([$saisie, $saisie]);
         $adherent = $requete->fetch();
 
+        // Compte trouvé mais une demande a déjà été envoyée il y a moins de
+        // DELAI_MIN_ENTRE_RESETS_SECONDES : on n'en renvoie pas une seconde
+        // (silencieusement, comme le reste de cette page — voir plus haut),
+        // sans toucher au jeton déjà émis, encore valable. Un drapeau dédié,
+        // plutôt que de mettre $adherent à null, pour ne pas déclencher à
+        // tort le journal « aucun compte ne correspond » juste en dessous.
+        $trop_recent = $adherent && $adherent['secondes_depuis_demande'] !== null
+            && (int) $adherent['secondes_depuis_demande'] < DELAI_MIN_ENTRE_RESETS_SECONDES;
+        if ($trop_recent) {
+            error_log("Espace adhérents — réinitialisation pour {$adherent['identifiant']} (id {$adherent['id']}) ignorée : déjà demandée il y a {$adherent['secondes_depuis_demande']}s.");
+        }
+
         // Consigné pour distinguer, dans les journaux, une saisie qui ne
         // correspond à aucun compte actif (faute de frappe, valeur
-        // autoremplie erronée...) des deux autres cas déjà journalisés
-        // ci-dessous.
+        // autoremplie erronée...) des autres cas déjà journalisés ci-dessous.
         if (!$adherent) {
             error_log("Espace adhérents — réinitialisation demandée pour « {$saisie} », mais aucun compte actif ne correspond.");
         }
@@ -93,15 +116,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // énumération), mais sans aucune trace nulle part sinon. Utile pour
         // diagnostiquer un « je n'ai rien reçu » qui ne serait pas un
         // problème d'envoi mais simplement une fiche adhérent incomplète.
-        if ($adherent && !$adherent['email']) {
+        if ($adherent && !$trop_recent && !$adherent['email']) {
             error_log("Espace adhérents — réinitialisation demandée pour {$adherent['identifiant']} (id {$adherent['id']}), mais aucun e-mail n'est renseigné sur ce compte.");
         }
 
-        if ($adherent && $adherent['email']) {
+        if ($adherent && !$trop_recent && $adherent['email']) {
             $jeton = bin2hex(random_bytes(32));
             $pdo->prepare(
                 'UPDATE adherents
-                    SET jeton_reinitialisation = ?, jeton_expire_le = NOW() + INTERVAL 1 HOUR
+                    SET jeton_reinitialisation = ?, jeton_expire_le = NOW() + INTERVAL 1 HOUR,
+                        derniere_demande_reinitialisation = NOW()
                   WHERE id = ?'
             )->execute([$jeton, $adherent['id']]);
 

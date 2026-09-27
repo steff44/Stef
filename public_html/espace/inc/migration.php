@@ -60,6 +60,14 @@ const COLONNES_ATTENDUES = [
     // tenter_connexion() dans auth.php.
     'echecs_connexion'       => 'INT NOT NULL DEFAULT 0',
     'bloque_jusqu_a'         => 'DATETIME DEFAULT NULL',
+    // Limite la fréquence des demandes de réinitialisation de mot de passe
+    // sur un même compte (27/09/2026, choix explicite de l'utilisatrice) —
+    // mot-de-passe-oublie.php n'avait jusqu'ici que le champ piège, sans
+    // aucune limite : n'importe qui connaissant l'identifiant/e-mail d'un
+    // adhérent pouvait déclencher une demande à répétition et inonder sa
+    // boîte mail. Distincte de bloque_jusqu_a (qui protège la connexion
+    // elle-même) : ici on ne bloque rien, on espace juste les envois.
+    'derniere_demande_reinitialisation' => 'DATETIME DEFAULT NULL',
 ];
 
 // Colonnes attendues sur `sorties` — même principe, table différente.

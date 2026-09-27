@@ -47,6 +47,10 @@ CREATE TABLE IF NOT EXISTS adherents (
   -- (voir tenter_connexion() dans auth.php).
   echecs_connexion   INT          NOT NULL DEFAULT 0,
   bloque_jusqu_a     DATETIME     DEFAULT NULL,
+  -- Limite la fréquence des demandes de réinitialisation de mot de passe
+  -- sur ce compte (voir espace/mot-de-passe-oublie.php) — sans lien avec
+  -- bloque_jusqu_a, qui protège la connexion elle-même.
+  derniere_demande_reinitialisation DATETIME DEFAULT NULL,
   cree_le            DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

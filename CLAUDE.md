@@ -5326,3 +5326,43 @@ compté comme un échec, inscription en attente toujours exclue du
 compteur. `php -l` sur les trois fichiers modifiés (`inc/auth.php`,
 `inc/migration.php`, `inc/schema.sql` non concerné par `php -l`, relu à
 la main).
+
+## Réinitialisation du mot de passe : délai minimum entre deux demandes
+
+**Corrigé à la suite d'un audit de sécurité demandé par l'utilisatrice,
+27/09/2026** (« le site est-il bien sécurisé » puis « traite le point 2 ») :
+`espace/mot-de-passe-oublie.php` n'avait jusqu'ici que le champ piège
+anti-robot (voir plus haut, 11/09/2026) — aucune limite de fréquence.
+Quelqu'un connaissant l'identifiant ou l'e-mail d'un adhérent pouvait
+déclencher une demande de réinitialisation en boucle et inonder sa boîte
+mail (chaque jeton reste à usage unique et valable une heure, donc aucun
+compte n'aurait pu être compromis par ce biais — c'est un harcèlement, pas
+une faille d'accès, mais un vrai trou à combler).
+
+Nouvelle colonne `derniere_demande_reinitialisation DATETIME DEFAULT NULL`
+sur `adherents` (`COLONNES_ATTENDUES`, `inc/migration.php`, et
+`inc/schema.sql` pour une prochaine installation ; aucun nouveau témoin de
+version nécessaire, `signature_schema()` hache déjà les clés de
+`COLONNES_ATTENDUES`) — distincte de `bloque_jusqu_a` (qui protège la
+connexion elle-même, voir juste au-dessus) : ici on **espace** les envois,
+on ne bloque rien. `mot-de-passe-oublie.php` lit cette colonne avec la
+ligne de l'adhérent (`TIMESTAMPDIFF(SECOND, derniere_demande_reinitialisation,
+NOW())`, horloge MySQL comme le reste du site) ; si une demande a déjà
+réussi pour ce compte il y a moins de `DELAI_MIN_ENTRE_RESETS_SECONDES`
+(5 minutes), la nouvelle demande est ignorée silencieusement — même
+message générique affiché, même principe anti-énumération que le reste de
+cette page — sans toucher au jeton déjà émis, encore valable. Passé ce
+délai, une nouvelle demande fonctionne normalement, avec un nouveau jeton.
+Un identifiant qui ne correspond à aucun compte, ou un compte sans e-mail
+renseigné, ne déclenche toujours aucune écriture ni aucun envoi — comportement
+hérité, inchangé.
+
+Testé hors ligne (27/09/2026) avec un vrai moteur SQLite (`NOW()`/
+`TIMESTAMPDIFF()` ajoutées via `PDO::sqliteCreateFunction()`, même
+principe que les autres bancs d'essai de ce fichier) : identifiant inconnu
+jamais d'envoi, première demande envoyée et horodatée, seconde demande 30
+secondes plus tard ignorée (par identifiant comme par e-mail, ancien jeton
+conservé), un second compte non affecté par le délai du premier, envoi de
+nouveau possible avec un nouveau jeton après expiration du délai, compte
+sans e-mail toujours sans effet. `php -l` sur `mot-de-passe-oublie.php` et
+`inc/migration.php`.
