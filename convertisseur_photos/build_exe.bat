@@ -4,14 +4,21 @@ REM lancer une seule fois sur un PC Windows ou Python est deja installe.
 REM Le .exe genere n'a ensuite plus besoin de Python : il peut etre copie
 REM sur n'importe quel autre PC Windows.
 
+REM Se place dans le dossier de ce fichier, meme lance depuis ailleurs.
+cd /d "%~dp0"
+
 echo Installation de PyInstaller et des modules photo (si necessaire)...
 python -m pip install --upgrade pyinstaller pillow rawpy exifread pillow-heif
 if errorlevel 1 goto erreur
 
 echo.
+echo Fabrication de l'icone (icone.ico) a partir de celle du logiciel...
+python -c "import base64,io,convertisseur_photos as c;from PIL import Image;Image.open(io.BytesIO(base64.b64decode(c.ICONE_FENETRE_BASE64))).save('icone.ico',sizes=[(16,16),(32,32),(48,48),(64,64),(128,128)])"
+if errorlevel 1 goto erreur
+
+echo.
 echo Fabrication de ConvertisseurPhotos.exe...
-REM Meme icone que Convertisseur PDF (dossier voisin).
-python -m PyInstaller --onefile --windowed --name ConvertisseurPhotos --icon ..\convertisseur_pdf\icone.ico ^
+python -m PyInstaller --noconfirm --onefile --windowed --name ConvertisseurPhotos --icon icone.ico ^
   --collect-all rawpy --collect-all pillow_heif --collect-submodules exifread ^
   convertisseur_photos.py
 if errorlevel 1 goto erreur
@@ -25,7 +32,6 @@ exit /b 0
 
 :erreur
 echo.
-echo Une erreur est survenue. Verifiez que Python est bien installe
-echo et accessible (commande "python" dans une invite de commandes).
+echo Une erreur est survenue (voir le message ci-dessus).
 pause
 exit /b 1
