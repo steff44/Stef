@@ -13,7 +13,11 @@ pour l'écran (site du club, diaporama, envoi par e-mail…). Il accepte :
 et les transforme, au choix, en **JPEG** ou en **WebP** :
 
 - plus grand côté ramené à **1920 pixels** (réglable) — une photo plus
-  petite n'est pas agrandie, sauf si vous cochez la case prévue ;
+  petite garde sa taille : elle n'est **jamais agrandie** ;
+- **poids maximum de 500 Ko** par photo (réglable, 0 = sans limite) : si la
+  photo est trop lourde, le logiciel baisse d'abord un peu la qualité (sans
+  descendre sous 70), puis, si ça ne suffit pas, réduit légèrement ses
+  dimensions ;
 - résolution **72 ppp** ;
 - **netteté accentuée pour l'écran**, appliquée après la réduction (Aucune,
   Légère, Normale, Forte) ;
@@ -68,18 +72,24 @@ vous voulez (Bureau, clé USB…) — il n'a plus besoin de Python.
 1. **Photos à convertir** : « Ajouter des photos… » (une seule ou
    plusieurs, avec Ctrl ou Maj dans la fenêtre de choix) et/ou « Ajouter un
    dossier… » (avec ou sans ses sous-dossiers). Vous pouvez combiner les
-   deux, et retirer des photos de la liste (touche Suppr).
-2. **Réglages** : format (JPEG ou WebP), taille, qualité (90 conseillé en
-   JPEG, 85 en WebP), netteté, métadonnées.
+   deux, et retirer des photos de la liste (touche Suppr). Le tableau
+   indique pour chaque photo ses dimensions et son poids, ainsi que le poids
+   total (et celui des photos sélectionnées).
+2. **Réglages** : format (JPEG ou WebP), taille, poids maximum, qualité (90
+   conseillé en JPEG, 85 en WebP), netteté, métadonnées. Sur un petit écran,
+   cette colonne défile avec la molette.
 3. **Nom des photos** : garder le nom d'origine, ou renommer avec un
    numéro — début du nom (ex. `Sortie_Croisic_`), premier numéro, nombre de
    chiffres (3 → `001`), et ordre de numérotation (nom de fichier, date de
    prise de vue, ou ordre de la liste). Un exemple s'affiche en direct.
-4. **Dossier de destination** : un dossier « Photos converties » à côté de
-   vos photos est proposé ; le bouton permet d'en choisir un autre.
+4. **Dossier de destination** (en bas de la fenêtre) : un dossier « Photos
+   converties » à côté de vos photos est proposé ; le bouton « Choisir le
+   dossier… » permet d'en choisir un autre.
 5. Cliquez sur **« Convertir les photos »**. Chaque photo s'affiche avec une
-   coche verte (✓), ou une croix rouge (✗) et la raison en cas d'échec — les
-   autres photos continuent. Le bouton « Arrêter » interrompt le lot.
+   coche verte (✓), ses dimensions et son poids final (et la qualité
+   utilisée si elle a dû être baissée), ou une croix rouge (✗) et la raison
+   en cas d'échec — les autres photos continuent. Le bouton « Arrêter »
+   interrompt le lot.
 
 Vos réglages sont mémorisés d'une fois sur l'autre.
 

@@ -6,7 +6,8 @@ Steftuto. Elle transforme des photos RAW de tout constructeur (Nikon, Canon,
 Sony, Fujifilm, Olympus/OM, Panasonic, Pentax, Leica, DNG...), des JPEG et la
 plupart des autres formats d'image (TIFF, PNG, HEIC, WebP...) en JPEG ou en
 WebP :
-- plus grand côté ramené à 1920 pixels (réglable),
+- plus grand côté ramené à 1920 pixels (réglable) — jamais agrandi,
+- poids maximum de chaque photo (500 Ko par défaut, réglable),
 - résolution 72 ppp,
 - accentuation de la netteté adaptée à l'écran,
 - conversion des couleurs en sRGB (l'espace des écrans et navigateurs),
@@ -102,6 +103,14 @@ NIVEAUX_NETTETE = {
 }
 
 ORDRES = ("Nom de fichier", "Date de prise de vue", "Ordre de la liste")
+
+POIDS_MAX_DEFAUT_KO = 500
+# Pour tenir sous le poids maximum, on baisse d'abord la qualité, mais pas
+# en dessous de QUALITE_MIN (au-delà, la compression se voit) ; si ça ne
+# suffit pas, on réduit un peu les dimensions, jusqu'à COTE_MIN pixels.
+QUALITE_MIN = 70
+QUALITE_PLANCHER = 30
+COTE_MIN = 480
 
 FICHIER_REGLAGES = os.path.join(os.path.expanduser("~"), ".convertisseur_photos.json")
 
@@ -306,6 +315,29 @@ def _configurer_style(fenetre):
     )
 
     style.configure(
+        "Treeview",
+        background=COULEUR_CARTE,
+        fieldbackground=COULEUR_CARTE,
+        foreground=COULEUR_TEXTE,
+        bordercolor=COULEUR_BORDURE,
+        rowheight=24,
+    )
+    style.map(
+        "Treeview",
+        background=[("selected", COULEUR_ACCENT)],
+        foreground=[("selected", "white")],
+    )
+    style.configure(
+        "Treeview.Heading",
+        background=COULEUR_LIGNE_ALTERNEE,
+        foreground=COULEUR_TEXTE,
+        font=police_grasse,
+        relief="flat",
+        bordercolor=COULEUR_BORDURE,
+    )
+    style.map("Treeview.Heading", background=[("active", COULEUR_BANDEAU_SOUS_TITRE)])
+
+    style.configure(
         "TProgressbar",
         troughcolor=COULEUR_LIGNE_ALTERNEE,
         background=COULEUR_ACCENT,
@@ -390,6 +422,48 @@ class BandeauTitre(tk.Canvas):
         )
 
 
+class CadreDefilant(ttk.Frame):
+    """Colonne qui défile avec la molette quand l'écran est trop petit pour
+    tout afficher (portable, affichage agrandi à 125 % ou 150 %...)."""
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        self._canvas = tk.Canvas(self, highlightthickness=0, bd=0, background=COULEUR_FOND)
+        self._barre = ttk.Scrollbar(self, orient="vertical", command=self._canvas.yview)
+        self.interieur = ttk.Frame(self._canvas)
+        self._fenetre = self._canvas.create_window((0, 0), window=self.interieur, anchor="nw")
+        self._canvas.configure(yscrollcommand=self._barre.set)
+        self._canvas.pack(side="left", fill="both", expand=True)
+        self._barre.pack(side="right", fill="y")
+        self.interieur.bind("<Configure>", self._contenu_change)
+        self._canvas.bind("<Configure>", self._cadre_change)
+        self._canvas.bind("<Enter>", self._activer_molette)
+        self._canvas.bind("<Leave>", self._desactiver_molette)
+
+    def _contenu_change(self, _evenement=None):
+        self._canvas.configure(
+            scrollregion=self._canvas.bbox("all"), width=self.interieur.winfo_reqwidth()
+        )
+
+    def _cadre_change(self, evenement):
+        self._canvas.itemconfigure(self._fenetre, width=evenement.width)
+
+    def _activer_molette(self, _evenement=None):
+        self._canvas.bind_all("<MouseWheel>", self._molette)
+        self._canvas.bind_all("<Button-4>", lambda _e: self._canvas.yview_scroll(-1, "units"))
+        self._canvas.bind_all("<Button-5>", lambda _e: self._canvas.yview_scroll(1, "units"))
+
+    def _desactiver_molette(self, _evenement=None):
+        for sequence in ("<MouseWheel>", "<Button-4>", "<Button-5>"):
+            self._canvas.unbind_all(sequence)
+
+    def _molette(self, evenement):
+        if self._canvas.yview() == (0.0, 1.0):
+            return  # tout est déjà visible
+        pas = -1 if evenement.delta > 0 else 1
+        self._canvas.yview_scroll(pas, "units")
+
+
 # -- Lecture des photos ------------------------------------------------------
 
 # Étiquettes EXIF (numéros standard) utilisées plus bas.
@@ -430,6 +504,38 @@ class ErreurPhoto(Exception):
 
 def est_raw(chemin):
     return os.path.splitext(chemin)[1].lower() in EXTENSIONS_RAW
+
+
+def taille_lisible(octets):
+    """1 234 567 octets -> « 1,2 Mo » ; 456 789 -> « 446 Ko »."""
+    if octets is None:
+        return ""
+    if octets < 1024 * 1024:
+        return f"{max(1, round(octets / 1024))} Ko"
+    return f"{octets / (1024 * 1024):.1f} Mo".replace(".", ",")
+
+
+def lire_dimensions(chemin):
+    """Dimensions (largeur, hauteur) de la photo d'origine, dans le sens où
+    elle s'affiche (portrait/paysage), ou None si illisible."""
+    try:
+        if est_raw(chemin) and RAWPY_OK:
+            with rawpy.imread(chemin) as raw:
+                largeur, hauteur = raw.sizes.width, raw.sizes.height
+                if raw.sizes.flip in (5, 6):
+                    largeur, hauteur = hauteur, largeur
+                return largeur, hauteur
+        with Image.open(chemin) as image:
+            largeur, hauteur = image.size
+            try:
+                orientation = image.getexif().get(TAG_ORIENTATION)
+            except Exception:
+                orientation = None
+            if orientation in (5, 6, 7, 8):
+                largeur, hauteur = hauteur, largeur
+            return largeur, hauteur
+    except Exception:
+        return None
 
 
 def _exif_depuis_pillow(chemin):
@@ -626,11 +732,10 @@ def _vers_srgb(image):
     if icc:
         try:
             source = ImageCms.ImageCmsProfile(io.BytesIO(icc))
-            mode_sortie = "RGB"
             if image.mode not in ("RGB", "CMYK", "L"):
                 image = image.convert("RGB")
             image = ImageCms.profileToProfile(
-                image, source, _profil_srgb(), renderingIntent=0, outputMode=mode_sortie
+                image, source, _profil_srgb(), renderingIntent=0, outputMode="RGB"
             )
         except Exception:
             pass
@@ -642,8 +747,6 @@ def _vers_srgb(image):
 def ouvrir_photo(chemin, taille_max):
     """Renvoie (image RGB sRGB déjà redressée, remarque éventuelle)."""
     if est_raw(chemin):
-        # Quelques « RAW » (.raw de certains compacts) sont en fait lisibles
-        # par Pillow ; on tente LibRaw d'abord, c'est lui le spécialiste.
         image, remarque = _ouvrir_raw(chemin, taille_max)
         return _vers_srgb(image), remarque
     try:
@@ -670,10 +773,12 @@ def ouvrir_photo(chemin, taille_max):
     return _vers_srgb(image), None
 
 
-def redimensionner(image, taille_max, agrandir):
+def redimensionner(image, taille_max):
+    """Ramène le plus grand côté à taille_max. Une photo déjà plus petite
+    n'est JAMAIS agrandie (elle deviendrait floue sans rien gagner)."""
     largeur, hauteur = image.size
     grand_cote = max(largeur, hauteur)
-    if taille_max <= 0 or grand_cote == taille_max or (grand_cote < taille_max and not agrandir):
+    if taille_max <= 0 or grand_cote <= taille_max:
         return image
     echelle = taille_max / grand_cote
     nouvelle = (max(1, round(largeur * echelle)), max(1, round(hauteur * echelle)))
@@ -749,21 +854,6 @@ def _exif_en_octets(exif):
         return exif.tobytes()
 
 
-def enregistrer(image, chemin_sortie, format_sortie, qualite, exif_octets):
-    parametres = {"quality": int(qualite)}
-    icc = _profil_icc_srgb_octets()
-    if icc:
-        parametres["icc_profile"] = icc
-    if exif_octets:
-        parametres["exif"] = exif_octets
-    if format_sortie == "JPEG":
-        parametres.update(dpi=(72, 72), optimize=True, progressive=True, subsampling="4:2:0")
-        image.save(chemin_sortie, "JPEG", **parametres)
-    else:
-        parametres.update(method=6)
-        image.save(chemin_sortie, "WEBP", **parametres)
-
-
 _ICC_SRGB_OCTETS = None
 
 
@@ -779,21 +869,98 @@ def _profil_icc_srgb_octets():
     return _ICC_SRGB_OCTETS
 
 
-def convertir_une_photo(chemin, chemin_sortie, reglages):
-    """Tout le traitement d'une photo. Renvoie une remarque éventuelle."""
-    taille = reglages["taille"]
-    image, remarque = ouvrir_photo(chemin, taille)
-    image = redimensionner(image, taille, reglages["agrandir"])
-    image = accentuer(image, reglages["nettete"])
+def encoder(image, format_sortie, qualite, exif_octets):
+    """Encode la photo en mémoire et renvoie les octets du fichier final :
+    on peut ainsi mesurer son poids exact avant de l'écrire sur le disque."""
+    tampon = io.BytesIO()
+    parametres = {"quality": int(qualite)}
+    icc = _profil_icc_srgb_octets()
+    if icc:
+        parametres["icc_profile"] = icc
+    if exif_octets:
+        parametres["exif"] = exif_octets
+    if format_sortie == "JPEG":
+        parametres.update(dpi=(72, 72), optimize=True, progressive=True, subsampling="4:2:0")
+        image.save(tampon, "JPEG", **parametres)
+    else:
+        parametres.update(method=4)
+        image.save(tampon, "WEBP", **parametres)
+    return tampon.getvalue()
 
-    exif_octets = None
-    if reglages["garder_metadonnees"]:
-        exif = preparer_exif(lire_exif(chemin), image.width, image.height, reglages["garder_gps"])
-        exif_octets = _exif_en_octets(exif)
+
+def _meilleure_qualite_sous_limite(image, format_sortie, qualite_max, qualite_min,
+                                   exif_octets, limite):
+    """Recherche par dichotomie la plus haute qualité entre qualite_min et
+    qualite_max qui tient sous la limite. Renvoie (qualité, octets) ou None."""
+    bas, haut = qualite_min, qualite_max
+    meilleur = None
+    while bas <= haut:
+        milieu = (bas + haut) // 2
+        donnees = encoder(image, format_sortie, milieu, exif_octets)
+        if len(donnees) <= limite:
+            meilleur = (milieu, donnees)
+            bas = milieu + 1
+        else:
+            haut = milieu - 1
+    return meilleur
+
+
+def convertir_une_photo(chemin, chemin_sortie, reglages):
+    """Tout le traitement d'une photo. Renvoie un dictionnaire décrivant le
+    résultat : dimensions, poids, remarques éventuelles."""
+    taille = reglages["taille"]
+    format_sortie = reglages["format"]
+    qualite = reglages["qualite"]
+    limite = reglages["poids_max_ko"] * 1024
+
+    source, remarque_ouverture = ouvrir_photo(chemin, taille)
+    exif_source = lire_exif(chemin) if reglages["garder_metadonnees"] else None
+
+    def preparer(cote):
+        image = accentuer(redimensionner(source, cote), reglages["nettete"])
+        exif_octets = None
+        if reglages["garder_metadonnees"]:
+            exif = preparer_exif(exif_source, image.width, image.height, reglages["garder_gps"])
+            exif_octets = _exif_en_octets(exif)
+        return image, exif_octets
+
+    cote = min(taille, max(source.size)) if taille > 0 else max(source.size)
+    cote_depart = cote
+    image, exif_octets = preparer(cote)
+    qualite_finale = qualite
+    donnees = encoder(image, format_sortie, qualite, exif_octets)
+    trop_lourde = False
+
+    if limite and len(donnees) > limite:
+        # 1) baisser un peu la qualité ; 2) sinon réduire les dimensions de
+        # 10 % et recommencer ; 3) au plus petit, accepter une qualité plus
+        # basse plutôt que d'échouer.
+        while True:
+            trouve = _meilleure_qualite_sous_limite(
+                image, format_sortie, qualite - 1, min(QUALITE_MIN, qualite - 1),
+                exif_octets, limite,
+            )
+            if trouve:
+                qualite_finale, donnees = trouve
+                break
+            if cote <= COTE_MIN:
+                trouve = _meilleure_qualite_sous_limite(
+                    image, format_sortie, QUALITE_MIN - 1, QUALITE_PLANCHER, exif_octets, limite
+                )
+                if trouve:
+                    qualite_finale, donnees = trouve
+                else:
+                    qualite_finale = QUALITE_PLANCHER
+                    donnees = encoder(image, format_sortie, QUALITE_PLANCHER, exif_octets)
+                    trop_lourde = True
+                break
+            cote = max(COTE_MIN, int(cote * 0.9))
+            image, exif_octets = preparer(cote)
 
     fichier_temporaire = chemin_sortie + ".partiel"
     try:
-        enregistrer(image, fichier_temporaire, reglages["format"], reglages["qualite"], exif_octets)
+        with open(fichier_temporaire, "wb") as f:
+            f.write(donnees)
         os.replace(fichier_temporaire, chemin_sortie)
     except Exception as erreur:
         try:
@@ -801,7 +968,23 @@ def convertir_une_photo(chemin, chemin_sortie, reglages):
         except OSError:
             pass
         raise ErreurPhoto(f"écriture impossible ({erreur})") from erreur
-    return remarque
+
+    remarques = []
+    if qualite_finale != qualite:
+        remarques.append(f"qualité {qualite_finale}")
+    if cote < cote_depart:
+        remarques.append("dimensions réduites pour tenir le poids")
+    if trop_lourde:
+        remarques.append("poids maximum impossible à atteindre")
+    if remarque_ouverture:
+        remarques.append(remarque_ouverture)
+    return {
+        "largeur": image.width,
+        "hauteur": image.height,
+        "poids": len(donnees),
+        "remarques": remarques,
+        "alerte": bool(remarque_ouverture or trop_lourde),
+    }
 
 
 # -- Liste des photos, noms de sortie ----------------------------------------
@@ -885,21 +1068,31 @@ class ApplicationConvertisseur(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title(APP_TITLE)
-        self.geometry("1080x780")
-        self.minsize(920, 680)
+        # Fenêtre adaptée à l'écran : sur un portable, une fenêtre plus haute
+        # que l'écran cacherait le bas (dont le dossier de destination).
+        largeur = min(1120, self.winfo_screenwidth() - 40)
+        hauteur = min(800, self.winfo_screenheight() - 90)
+        self.geometry(f"{largeur}x{hauteur}+20+10")
+        self.minsize(820, 540)
         self.configure(background=COULEUR_FOND)
         _definir_icone_fenetre(self)
 
         self._police_base, self._police_grasse = _configurer_style(self)
 
         self._photos = []  # chemins absolus, dans l'ordre de la liste
+        self._iid_par_chemin = {}
+        self._chemin_par_iid = {}
+        self._poids = {}  # chemin -> poids du fichier d'origine
+        self._compteur_iid = 0
         self._dossier_cible = None
         self._file_evenements = queue.Queue()
+        self._file_dimensions = queue.Queue()
         self._conversion_en_cours = False
         self._annulation = threading.Event()
         self._nb_total = 0
         self._nb_reussis = 0
         self._nb_echecs = 0
+        self._poids_total_sortie = 0
 
         self._creer_variables()
         self._charger_reglages()
@@ -907,6 +1100,7 @@ class ApplicationConvertisseur(tk.Tk):
         self._mettre_a_jour_exemple()
         self._mettre_a_jour_etats()
         self._verifier_file_evenements()
+        threading.Thread(target=self._lecteur_dimensions, daemon=True).start()
         self.protocol("WM_DELETE_WINDOW", self._fermer)
         self.after(300, self._signaler_modules_manquants)
 
@@ -916,8 +1110,8 @@ class ApplicationConvertisseur(tk.Tk):
         self.var_format = tk.StringVar(value="JPEG")
         self.var_qualite = tk.IntVar(value=90)
         self.var_taille = tk.IntVar(value=1920)
+        self.var_poids_max = tk.IntVar(value=POIDS_MAX_DEFAUT_KO)
         self.var_nettete = tk.StringVar(value="Normale (écran)")
-        self.var_agrandir = tk.BooleanVar(value=False)
         self.var_metadonnees = tk.BooleanVar(value=True)
         self.var_gps = tk.BooleanVar(value=False)
         self.var_renommer = tk.BooleanVar(value=False)
@@ -929,7 +1123,7 @@ class ApplicationConvertisseur(tk.Tk):
         self.var_destination = tk.StringVar(value="")
 
     VARIABLES_MEMORISEES = (
-        "format", "qualite", "taille", "nettete", "agrandir", "metadonnees", "gps",
+        "format", "qualite", "taille", "poids_max", "nettete", "metadonnees", "gps",
         "renommer", "prefixe", "chiffres", "ordre", "sous_dossiers", "destination",
     )
 
@@ -1008,24 +1202,24 @@ class ApplicationConvertisseur(tk.Tk):
         self.bandeau = BandeauTitre(self, police_bandeau_titre, police_bandeau_sous_titre)
         self.bandeau.pack(fill="x", side="top")
 
-        # Bas de fenêtre (actions + progression + détail), posé avant le
-        # centre pour qu'il reste toujours visible même fenêtre réduite.
-        cadre_bas = ttk.Frame(self, padding=(16, 0, 16, 14))
+        # Bas de fenêtre (destination, actions, progression, détail), posé
+        # avant le centre pour qu'il reste toujours visible, même sur un
+        # petit écran.
+        cadre_bas = ttk.Frame(self, padding=(16, 0, 16, 12))
         cadre_bas.pack(fill="x", side="bottom")
         self._construire_bas(cadre_bas)
 
-        centre = ttk.Frame(self, padding=(16, 14, 16, 8))
+        centre = ttk.Frame(self, padding=(16, 12, 16, 8))
         centre.pack(fill="both", expand=True)
         centre.columnconfigure(0, weight=1)
         centre.columnconfigure(1, weight=0)
         centre.rowconfigure(0, weight=1)
 
         self._construire_liste_photos(centre)
-        colonne_droite = ttk.Frame(centre)
+        colonne_droite = CadreDefilant(centre)
         colonne_droite.grid(row=0, column=1, sticky="nsew", padx=(14, 0))
-        self._construire_reglages(colonne_droite)
-        self._construire_noms(colonne_droite)
-        self._construire_destination(colonne_droite)
+        self._construire_reglages(colonne_droite.interieur)
+        self._construire_noms(colonne_droite.interieur)
 
     def _construire_liste_photos(self, parent):
         cadre = ttk.LabelFrame(parent, text="1. Photos à convertir", padding=10)
@@ -1060,14 +1254,25 @@ class ApplicationConvertisseur(tk.Tk):
         )
         self.bouton_retirer.pack(side="right", padx=(0, 8))
 
-        self.liste = tk.Listbox(cadre, selectmode="extended")
-        _styliser_liste(self.liste)
-        self.liste.grid(row=2, column=0, sticky="nsew")
-        defilement = ttk.Scrollbar(cadre, orient="vertical", command=self.liste.yview)
+        colonnes = ("nom", "dimensions", "poids", "dossier")
+        self.tableau = ttk.Treeview(
+            cadre, columns=colonnes, show="headings", selectmode="extended"
+        )
+        self.tableau.heading("nom", text="Photo", anchor="w")
+        self.tableau.heading("dimensions", text="Dimensions")
+        self.tableau.heading("poids", text="Poids")
+        self.tableau.heading("dossier", text="Dossier", anchor="w")
+        self.tableau.column("nom", width=220, minwidth=120, anchor="w")
+        self.tableau.column("dimensions", width=120, minwidth=90, anchor="center", stretch=False)
+        self.tableau.column("poids", width=80, minwidth=60, anchor="e", stretch=False)
+        self.tableau.column("dossier", width=150, minwidth=80, anchor="w")
+        self.tableau.grid(row=2, column=0, sticky="nsew")
+        defilement = ttk.Scrollbar(cadre, orient="vertical", command=self.tableau.yview)
         defilement.grid(row=2, column=1, sticky="ns")
-        self.liste.configure(yscrollcommand=defilement.set)
-        self.liste.bind("<Delete>", lambda _e: self.retirer_selection())
-        self.liste.bind("<BackSpace>", lambda _e: self.retirer_selection())
+        self.tableau.configure(yscrollcommand=defilement.set)
+        self.tableau.bind("<Delete>", lambda _e: self.retirer_selection())
+        self.tableau.bind("<BackSpace>", lambda _e: self.retirer_selection())
+        self.tableau.bind("<<TreeviewSelect>>", lambda _e: self._mettre_a_jour_compte())
 
         self.var_compte = tk.StringVar()
         ttk.Label(cadre, textvariable=self.var_compte, style="Doux.TLabel").grid(
@@ -1076,7 +1281,7 @@ class ApplicationConvertisseur(tk.Tk):
 
     def _construire_reglages(self, parent):
         cadre = ttk.LabelFrame(parent, text="2. Réglages", padding=10)
-        cadre.pack(fill="x")
+        cadre.pack(fill="x", padx=(0, 4))
         cadre.columnconfigure(1, weight=1)
 
         ttk.Label(cadre, text="Format :").grid(row=0, column=0, sticky="w")
@@ -1097,40 +1302,51 @@ class ApplicationConvertisseur(tk.Tk):
         ttk.Spinbox(
             ligne, from_=320, to=8000, increment=10, width=7, textvariable=self.var_taille
         ).pack(side="left")
-        ttk.Label(ligne, text="pixels   —   72 ppp", style="Doux.TLabel").pack(
+        ttk.Label(ligne, text="pixels  —  72 ppp", style="Doux.TLabel").pack(
             side="left", padx=(6, 0)
         )
 
-        ttk.Label(cadre, text="Qualité :").grid(row=2, column=0, sticky="w", pady=(8, 0))
+        ttk.Label(cadre, text="Poids maximum :").grid(row=2, column=0, sticky="w", pady=(8, 0))
         ligne = ttk.Frame(cadre)
         ligne.grid(row=2, column=1, sticky="w", pady=(8, 0))
+        ttk.Spinbox(
+            ligne, from_=0, to=20000, increment=50, width=7, textvariable=self.var_poids_max
+        ).pack(side="left")
+        ttk.Label(ligne, text="Ko  (0 = sans limite)", style="Doux.TLabel").pack(
+            side="left", padx=(6, 0)
+        )
+
+        ttk.Label(cadre, text="Qualité :").grid(row=3, column=0, sticky="w", pady=(8, 0))
+        ligne = ttk.Frame(cadre)
+        ligne.grid(row=3, column=1, sticky="w", pady=(8, 0))
         ttk.Spinbox(
             ligne, from_=50, to=100, increment=1, width=5, textvariable=self.var_qualite
         ).pack(side="left")
         ttk.Label(ligne, text="(90 conseillé)", style="Doux.TLabel").pack(side="left", padx=(6, 0))
 
-        ttk.Label(cadre, text="Netteté écran :").grid(row=3, column=0, sticky="w", pady=(8, 0))
+        ttk.Label(cadre, text="Netteté écran :").grid(row=4, column=0, sticky="w", pady=(8, 0))
         ttk.Combobox(
             cadre, values=list(NIVEAUX_NETTETE), textvariable=self.var_nettete,
             state="readonly", width=17,
-        ).grid(row=3, column=1, sticky="w", pady=(8, 0))
+        ).grid(row=4, column=1, sticky="w", pady=(8, 0))
 
+        ttk.Label(
+            cadre,
+            text="Les photos plus petites gardent leur taille (jamais agrandies).",
+            style="Doux.TLabel",
+        ).grid(row=5, column=0, columnspan=2, sticky="w", pady=(8, 0))
         ttk.Checkbutton(
-            cadre, text="Agrandir les photos plus petites que cette taille",
-            variable=self.var_agrandir,
-        ).grid(row=4, column=0, columnspan=2, sticky="w", pady=(8, 0))
-        ttk.Checkbutton(
-            cadre, text="Conserver les métadonnées (appareil, objectif, date, réglages…)",
+            cadre, text="Conserver les métadonnées (appareil, objectif, date…)",
             variable=self.var_metadonnees, command=self._mettre_a_jour_etats,
-        ).grid(row=5, column=0, columnspan=2, sticky="w", pady=(4, 0))
+        ).grid(row=6, column=0, columnspan=2, sticky="w", pady=(6, 0))
         self.case_gps = ttk.Checkbutton(
             cadre, text="…y compris la position GPS", variable=self.var_gps,
         )
-        self.case_gps.grid(row=6, column=0, columnspan=2, sticky="w", padx=(24, 0))
+        self.case_gps.grid(row=7, column=0, columnspan=2, sticky="w", padx=(24, 0))
 
     def _construire_noms(self, parent):
         cadre = ttk.LabelFrame(parent, text="3. Nom des photos", padding=10)
-        cadre.pack(fill="x", pady=(10, 0))
+        cadre.pack(fill="x", pady=(10, 0), padx=(0, 4))
         cadre.columnconfigure(1, weight=1)
 
         ttk.Radiobutton(
@@ -1173,22 +1389,20 @@ class ApplicationConvertisseur(tk.Tk):
         for variable in (self.var_prefixe, self.var_numero, self.var_chiffres, self.var_format):
             variable.trace_add("write", lambda *_a: self._mettre_a_jour_exemple())
 
-    def _construire_destination(self, parent):
-        cadre = ttk.LabelFrame(parent, text="4. Dossier de destination", padding=10)
-        cadre.pack(fill="x", pady=(10, 0))
+    def _construire_bas(self, parent):
+        # Dossier de destination : dans le bas de la fenêtre, toujours visible.
+        cadre_dest = ttk.LabelFrame(parent, text="4. Dossier de destination", padding=(10, 8))
+        cadre_dest.pack(fill="x", pady=(0, 8))
         self.bouton_destination = ttk.Button(
-            cadre, text="📁  Choisir le dossier…", command=self.choisir_destination
+            cadre_dest, text="📁  Choisir le dossier…", command=self.choisir_destination
         )
-        self.bouton_destination.pack(anchor="w")
-        self.label_destination = ttk.Label(
-            cadre, style="Doux.TLabel", wraplength=330, justify="left"
-        )
-        self.label_destination.pack(anchor="w", pady=(6, 0))
+        self.bouton_destination.pack(side="left")
+        self.label_destination = ttk.Label(cadre_dest, style="Doux.TLabel", anchor="w")
+        self.label_destination.pack(side="left", fill="x", expand=True, padx=(12, 0))
         self.var_destination.trace_add("write", lambda *_a: self._mettre_a_jour_etats())
 
-    def _construire_bas(self, parent):
         actions = ttk.Frame(parent)
-        actions.pack(fill="x", pady=(4, 0))
+        actions.pack(fill="x")
         self.bouton_convertir = ttk.Button(
             actions, text="▶  Convertir les photos", style="Accent.TButton",
             command=self.lancer_conversion,
@@ -1213,7 +1427,7 @@ class ApplicationConvertisseur(tk.Tk):
 
         cadre_journal = ttk.LabelFrame(parent, text="Détail", padding=8)
         cadre_journal.pack(fill="x", pady=(6, 0))
-        self.journal = tk.Listbox(cadre_journal, height=6)
+        self.journal = tk.Listbox(cadre_journal, height=4)
         _styliser_liste(self.journal)
         self.journal.pack(side="left", fill="both", expand=True)
         defilement = ttk.Scrollbar(cadre_journal, orient="vertical", command=self.journal.yview)
@@ -1254,6 +1468,26 @@ class ApplicationConvertisseur(tk.Tk):
             + "…"
         )
 
+    def _mettre_a_jour_compte(self):
+        nb = len(self._photos)
+        if nb == 0:
+            self.var_compte.set(
+                "Aucune photo. Ajoutez une ou plusieurs photos, ou un dossier entier."
+            )
+            return
+        nb_raw = sum(1 for p in self._photos if est_raw(p))
+        total = sum(self._poids.get(p) or 0 for p in self._photos)
+        texte = f"{nb} photo(s)"
+        if nb_raw:
+            texte += f" dont {nb_raw} RAW"
+        texte += f" — {taille_lisible(total)} au total."
+        selection = [self._chemin_par_iid[i] for i in self.tableau.selection()
+                     if i in self._chemin_par_iid]
+        if selection:
+            poids_selection = sum(self._poids.get(p) or 0 for p in selection)
+            texte += f"   Sélection : {len(selection)} photo(s), {taille_lisible(poids_selection)}."
+        self.var_compte.set(texte)
+
     def _mettre_a_jour_etats(self):
         occupe = self._conversion_en_cours
         etat_normal = "disabled" if occupe else "normal"
@@ -1288,42 +1522,51 @@ class ApplicationConvertisseur(tk.Tk):
         self.bouton_ouvrir.configure(
             state="normal" if destination and os.path.isdir(destination) else "disabled"
         )
-
-        nb = len(self._photos)
-        nb_raw = sum(1 for p in self._photos if est_raw(p))
-        if nb == 0:
-            self.var_compte.set(
-                "Aucune photo. Ajoutez une ou plusieurs photos, ou un dossier entier."
-            )
-        else:
-            detail = f" dont {nb_raw} RAW" if nb_raw else ""
-            self.var_compte.set(f"{nb} photo(s) dans la liste{detail}.")
+        self._mettre_a_jour_compte()
 
     # -- Liste des photos ----------------------------------------------------
 
     def _ajouter(self, chemins):
-        deja = {os.path.normcase(os.path.abspath(p)) for p in self._photos}
         ajoutes = 0
         for chemin in chemins:
             absolu = os.path.abspath(chemin)
-            cle = os.path.normcase(absolu)
-            if cle in deja:
+            if absolu in self._iid_par_chemin:
                 continue
-            deja.add(cle)
+            try:
+                poids = os.path.getsize(absolu)
+            except OSError:
+                poids = None
+            self._compteur_iid += 1
+            iid = f"photo{self._compteur_iid}"
             self._photos.append(absolu)
-            self.liste.insert("end", self._libelle(absolu))
+            self._iid_par_chemin[absolu] = iid
+            self._chemin_par_iid[iid] = absolu
+            self._poids[absolu] = poids
+            self.tableau.insert(
+                "", "end", iid=iid,
+                values=(
+                    os.path.basename(absolu),
+                    "…",
+                    taille_lisible(poids),
+                    os.path.basename(os.path.dirname(absolu)),
+                ),
+            )
+            self._file_dimensions.put(absolu)
             ajoutes += 1
         if not self.var_destination.get() and self._photos:
             # Proposition par défaut : un dossier « Photos converties » à côté
-            # des photos ; on peut toujours en choisir un autre.
+            # des photos ; le bouton permet d'en choisir un autre.
             dossier = os.path.dirname(self._photos[0])
             self.var_destination.set(os.path.join(dossier, "Photos converties"))
         self._mettre_a_jour_etats()
         return ajoutes
 
-    def _libelle(self, chemin):
-        dossier = os.path.basename(os.path.dirname(chemin))
-        return f"{os.path.basename(chemin)}    —  {dossier}"
+    def _lecteur_dimensions(self):
+        """Tourne en arrière-plan : lit les dimensions des photos ajoutées
+        (un RAW doit être ouvert pour cela) sans figer la fenêtre."""
+        while True:
+            chemin = self._file_dimensions.get()
+            self._file_evenements.put(("dimensions", chemin, lire_dimensions(chemin)))
 
     def ajouter_photos(self):
         types = [
@@ -1332,12 +1575,14 @@ class ApplicationConvertisseur(tk.Tk):
             ("JPEG", "*.jpg *.jpeg *.JPG *.JPEG"),
             ("Tous les fichiers", "*"),
         ]
-        chemins = filedialog.askopenfilenames(title="Choisir une ou plusieurs photos", filetypes=types)
+        chemins = filedialog.askopenfilenames(
+            parent=self, title="Choisir une ou plusieurs photos", filetypes=types
+        )
         if chemins:
-            self._ajouter(chemins)
+            self._ajouter(self.tk.splitlist(chemins))
 
     def ajouter_dossier(self):
-        dossier = filedialog.askdirectory(title="Choisir un dossier de photos")
+        dossier = filedialog.askdirectory(parent=self, title="Choisir un dossier de photos")
         if not dossier:
             return
         trouves = lister_photos_dossier(dossier, self.var_sous_dossiers.get())
@@ -1351,18 +1596,29 @@ class ApplicationConvertisseur(tk.Tk):
         ajoutes = self._ajouter(trouves)
         self._journaliser(f"📂  {ajoutes} photo(s) ajoutée(s) depuis {dossier}", COULEUR_TEXTE)
 
+    def _oublier(self, chemin):
+        iid = self._iid_par_chemin.pop(chemin, None)
+        if iid:
+            self._chemin_par_iid.pop(iid, None)
+        self._poids.pop(chemin, None)
+
     def retirer_selection(self):
         if self._conversion_en_cours:
             return
-        for index in sorted(self.liste.curselection(), reverse=True):
-            self.liste.delete(index)
-            del self._photos[index]
+        for iid in self.tableau.selection():
+            chemin = self._chemin_par_iid.get(iid)
+            self.tableau.delete(iid)
+            if chemin:
+                self._photos.remove(chemin)
+                self._oublier(chemin)
         self._mettre_a_jour_etats()
 
     def vider_liste(self):
         if self._conversion_en_cours:
             return
-        self.liste.delete(0, "end")
+        self.tableau.delete(*self.tableau.get_children())
+        for chemin in list(self._photos):
+            self._oublier(chemin)
         self._photos.clear()
         self._mettre_a_jour_etats()
 
@@ -1373,12 +1629,12 @@ class ApplicationConvertisseur(tk.Tk):
             if parent == initial:
                 break
             initial = parent
-        dossier = filedialog.askdirectory(
-            title="Choisir le dossier où enregistrer les photos converties",
-            initialdir=initial or None,
-        )
+        options = {"parent": self, "title": "Choisir le dossier où enregistrer les photos converties"}
+        if initial and os.path.isdir(initial):
+            options["initialdir"] = initial
+        dossier = filedialog.askdirectory(**options)
         if dossier:
-            self.var_destination.set(dossier)
+            self.var_destination.set(os.path.normpath(dossier))
 
     # -- Conversion -----------------------------------------------------------
 
@@ -1390,8 +1646,8 @@ class ApplicationConvertisseur(tk.Tk):
             "format": self.var_format.get(),
             "qualite": self._entier(self.var_qualite, 90, 50, 100),
             "taille": self._entier(self.var_taille, 1920, 100, 20000),
+            "poids_max_ko": self._entier(self.var_poids_max, POIDS_MAX_DEFAUT_KO, 0, 100000),
             "nettete": self.var_nettete.get(),
-            "agrandir": self.var_agrandir.get(),
             "garder_metadonnees": self.var_metadonnees.get(),
             "garder_gps": self.var_metadonnees.get() and self.var_gps.get(),
             "renommer": self.var_renommer.get(),
@@ -1423,6 +1679,7 @@ class ApplicationConvertisseur(tk.Tk):
         self._nb_total = len(self._photos)
         self._nb_reussis = 0
         self._nb_echecs = 0
+        self._poids_total_sortie = 0
         self._mettre_a_jour_etats()
         self.journal.delete(0, "end")
         self.barre_progression.configure(value=0, maximum=self._nb_total)
@@ -1461,8 +1718,8 @@ class ApplicationConvertisseur(tk.Tk):
             if self._annulation.is_set():
                 return
             try:
-                remarque = convertir_une_photo(chemin, chemin_sortie, reglages)
-                evenements.put(("progression", chemin, chemin_sortie, None, remarque))
+                resultat = convertir_une_photo(chemin, chemin_sortie, reglages)
+                evenements.put(("progression", chemin, chemin_sortie, None, resultat))
             except ErreurPhoto as erreur:
                 evenements.put(("progression", chemin, chemin_sortie, str(erreur), None))
             except Exception as erreur:  # jamais bloquer tout le lot sur une photo
@@ -1479,7 +1736,7 @@ class ApplicationConvertisseur(tk.Tk):
 
     def _verifier_file_evenements(self):
         """Boucle appelée régulièrement par Tkinter : relit les messages
-        déposés par le thread de conversion et met la fenêtre à jour."""
+        déposés par les threads de travail et met la fenêtre à jour."""
         try:
             while True:
                 self._traiter_evenement(self._file_evenements.get_nowait())
@@ -1495,22 +1752,34 @@ class ApplicationConvertisseur(tk.Tk):
     def _traiter_evenement(self, evenement):
         genre = evenement[0]
 
-        if genre == "statut":
+        if genre == "dimensions":
+            _genre, chemin, dimensions = evenement
+            iid = self._iid_par_chemin.get(chemin)
+            if iid and self.tableau.exists(iid):
+                texte = f"{dimensions[0]} × {dimensions[1]}" if dimensions else "?"
+                self.tableau.set(iid, "dimensions", texte)
+
+        elif genre == "statut":
             self.var_statut.set(evenement[1])
 
         elif genre == "progression":
-            _genre, chemin, chemin_sortie, erreur, remarque = evenement
+            _genre, chemin, chemin_sortie, erreur, resultat = evenement
             nom = os.path.basename(chemin)
             if erreur:
                 self._nb_echecs += 1
                 self._journaliser(f"✗  {nom} — {erreur}", COULEUR_DANGER)
             else:
                 self._nb_reussis += 1
-                texte = f"✓  {nom}  →  {os.path.basename(chemin_sortie)}"
-                if remarque:
-                    self._journaliser(f"{texte}  ({remarque})", COULEUR_AVERTISSEMENT)
-                else:
-                    self._journaliser(texte, COULEUR_SUCCES)
+                self._poids_total_sortie += resultat["poids"]
+                texte = (
+                    f"✓  {nom}  →  {os.path.basename(chemin_sortie)}   "
+                    f"{resultat['largeur']} × {resultat['hauteur']} px, "
+                    f"{taille_lisible(resultat['poids'])}"
+                )
+                if resultat["remarques"]:
+                    texte += "   (" + ", ".join(resultat["remarques"]) + ")"
+                couleur = COULEUR_AVERTISSEMENT if resultat["alerte"] else COULEUR_SUCCES
+                self._journaliser(texte, couleur)
             fait = self._nb_reussis + self._nb_echecs
             self.barre_progression.configure(value=fait)
             self.var_statut.set(f"{fait} / {self._nb_total} photo(s) traitée(s)…")
@@ -1527,7 +1796,8 @@ class ApplicationConvertisseur(tk.Tk):
                 )
                 return
             self.var_statut.set(
-                f"Terminé en {temps} : {self._nb_reussis} / {self._nb_total} photo(s) convertie(s)."
+                f"Terminé en {temps} : {self._nb_reussis} / {self._nb_total} photo(s) "
+                f"convertie(s), {taille_lisible(self._poids_total_sortie)} au total."
             )
             if self._nb_echecs:
                 messagebox.showwarning(
