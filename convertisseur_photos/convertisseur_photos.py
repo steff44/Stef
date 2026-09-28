@@ -105,6 +105,16 @@ NIVEAUX_NETTETE = {
 ORDRES = ("Nom de fichier", "Date de prise de vue", "Ordre de la liste")
 
 POIDS_MAX_DEFAUT_KO = 500
+
+# Case « Réglages Focal Club » : réglages imposés pour les photos du site du
+# club (la qualité et le GPS restent au choix).
+REGLAGES_FOCAL = {
+    "format": "WEBP",
+    "taille": 1920,
+    "poids_max_ko": 500,
+    "nettete": "Normale (écran)",
+    "garder_metadonnees": True,
+}
 # Pour tenir sous le poids maximum, on baisse d'abord la qualité, mais pas
 # en dessous de QUALITE_MIN (au-delà, la compression se voit) ; si ça ne
 # suffit pas, on réduit un peu les dimensions, jusqu'à COTE_MIN pixels.
@@ -249,6 +259,11 @@ def _configurer_style(fenetre):
     style.configure("TCheckbutton", background=COULEUR_FOND, foreground=COULEUR_TEXTE)
     style.configure("TRadiobutton", background=COULEUR_FOND, foreground=COULEUR_TEXTE)
     style.map("TCheckbutton", background=[("active", COULEUR_FOND)])
+    style.configure(
+        "Focal.TCheckbutton", background=COULEUR_FOND, foreground=COULEUR_ACCENT_2,
+        font=police_grasse,
+    )
+    style.map("Focal.TCheckbutton", background=[("active", COULEUR_FOND)])
     style.map("TRadiobutton", background=[("active", COULEUR_FOND)])
     style.configure(
         "TLabelframe", background=COULEUR_FOND, bordercolor=COULEUR_BORDURE, relief="solid"
@@ -378,7 +393,7 @@ class BandeauTitre(tk.Canvas):
     NB_BANDES = 120
 
     def __init__(self, parent, police_titre, police_sous_titre):
-        super().__init__(parent, height=64, highlightthickness=0, bd=0)
+        super().__init__(parent, height=58, highlightthickness=0, bd=0)
         self._police_titre = police_titre
         self._police_sous_titre = police_sous_titre
         try:
@@ -1070,8 +1085,8 @@ class ApplicationConvertisseur(tk.Tk):
         self.title(APP_TITLE)
         # Fenêtre adaptée à l'écran : sur un portable, une fenêtre plus haute
         # que l'écran cacherait le bas (dont le dossier de destination).
-        largeur = min(1120, self.winfo_screenwidth() - 40)
-        hauteur = min(800, self.winfo_screenheight() - 90)
+        largeur = min(1300, self.winfo_screenwidth() - 40)
+        hauteur = min(820, self.winfo_screenheight() - 80)
         self.geometry(f"{largeur}x{hauteur}+20+10")
         self.minsize(820, 540)
         self.configure(background=COULEUR_FOND)
@@ -1100,6 +1115,7 @@ class ApplicationConvertisseur(tk.Tk):
         self._mettre_a_jour_exemple()
         self._mettre_a_jour_etats()
         self._verifier_file_evenements()
+        self.after(50, self._ajuster_hauteur)
         threading.Thread(target=self._lecteur_dimensions, daemon=True).start()
         self.protocol("WM_DELETE_WINDOW", self._fermer)
         self.after(300, self._signaler_modules_manquants)
@@ -1107,6 +1123,7 @@ class ApplicationConvertisseur(tk.Tk):
     # -- Réglages mémorisés d'une fois sur l'autre ------------------------
 
     def _creer_variables(self):
+        self.var_focal = tk.BooleanVar(value=False)
         self.var_format = tk.StringVar(value="JPEG")
         self.var_qualite = tk.IntVar(value=90)
         self.var_taille = tk.IntVar(value=1920)
@@ -1123,7 +1140,7 @@ class ApplicationConvertisseur(tk.Tk):
         self.var_destination = tk.StringVar(value="")
 
     VARIABLES_MEMORISEES = (
-        "format", "qualite", "taille", "poids_max", "nettete", "metadonnees", "gps",
+        "focal", "format", "qualite", "taille", "poids_max", "nettete", "metadonnees", "gps",
         "renommer", "prefixe", "chiffres", "ordre", "sous_dossiers", "destination",
     )
 
@@ -1147,6 +1164,8 @@ class ApplicationConvertisseur(tk.Tk):
             self.var_format.set("JPEG")
         if self.var_destination.get() and not os.path.isdir(self.var_destination.get()):
             self.var_destination.set("")
+        if self.var_focal.get():
+            self._appliquer_focal()
 
     def _enregistrer_reglages(self):
         donnees = {}
@@ -1205,11 +1224,11 @@ class ApplicationConvertisseur(tk.Tk):
         # Bas de fenêtre (destination, actions, progression, détail), posé
         # avant le centre pour qu'il reste toujours visible, même sur un
         # petit écran.
-        cadre_bas = ttk.Frame(self, padding=(16, 0, 16, 12))
+        cadre_bas = ttk.Frame(self, padding=(16, 0, 16, 8))
         cadre_bas.pack(fill="x", side="bottom")
         self._construire_bas(cadre_bas)
 
-        centre = ttk.Frame(self, padding=(16, 12, 16, 8))
+        centre = ttk.Frame(self, padding=(16, 8, 16, 4))
         centre.pack(fill="both", expand=True)
         centre.columnconfigure(0, weight=1)
         centre.columnconfigure(1, weight=0)
@@ -1217,6 +1236,7 @@ class ApplicationConvertisseur(tk.Tk):
 
         self._construire_liste_photos(centre)
         colonne_droite = CadreDefilant(centre)
+        self._colonne_droite = colonne_droite
         colonne_droite.grid(row=0, column=1, sticky="nsew", padx=(14, 0))
         self._construire_reglages(colonne_droite.interieur)
         self._construire_noms(colonne_droite.interieur)
@@ -1280,94 +1300,111 @@ class ApplicationConvertisseur(tk.Tk):
         )
 
     def _construire_reglages(self, parent):
-        cadre = ttk.LabelFrame(parent, text="2. Réglages", padding=10)
+        cadre = ttk.LabelFrame(parent, text="2. Réglages", padding=(10, 8))
         cadre.pack(fill="x", padx=(0, 4))
         cadre.columnconfigure(1, weight=1)
+        self._widgets_focal = []  # réglages verrouillés par la case Focal Club
+        ecart = (6, 0)
 
-        ttk.Label(cadre, text="Format :").grid(row=0, column=0, sticky="w")
-        ligne = ttk.Frame(cadre)
-        ligne.grid(row=0, column=1, sticky="w")
-        ttk.Radiobutton(
-            ligne, text="JPEG", value="JPEG", variable=self.var_format,
-            command=self._format_change,
-        ).pack(side="left")
-        ttk.Radiobutton(
-            ligne, text="WebP (plus léger)", value="WEBP", variable=self.var_format,
-            command=self._format_change,
-        ).pack(side="left", padx=(12, 0))
+        ttk.Checkbutton(
+            cadre, text="Réglages Focal Club (site du club)", style="Focal.TCheckbutton",
+            variable=self.var_focal, command=self._focal_change,
+        ).grid(row=0, column=0, columnspan=2, sticky="w")
+        ttk.Label(
+            cadre, text="WebP, 1920 px, 500 Ko, netteté normale, métadonnées conservées",
+            style="Doux.TLabel",
+        ).grid(row=1, column=0, columnspan=2, sticky="w", padx=(24, 0))
 
-        ttk.Label(cadre, text="Plus grand côté :").grid(row=1, column=0, sticky="w", pady=(8, 0))
+        ttk.Label(cadre, text="Format :").grid(row=2, column=0, sticky="w", pady=(8, 0))
         ligne = ttk.Frame(cadre)
-        ligne.grid(row=1, column=1, sticky="w", pady=(8, 0))
-        ttk.Spinbox(
+        ligne.grid(row=2, column=1, sticky="w", pady=(8, 0))
+        for texte, valeur, marge in (("JPEG", "JPEG", 0), ("WebP (plus léger)", "WEBP", 12)):
+            bouton = ttk.Radiobutton(
+                ligne, text=texte, value=valeur, variable=self.var_format,
+                command=self._format_change,
+            )
+            bouton.pack(side="left", padx=(marge, 0))
+            self._widgets_focal.append(bouton)
+
+        ttk.Label(cadre, text="Plus grand côté :").grid(row=3, column=0, sticky="w", pady=ecart)
+        ligne = ttk.Frame(cadre)
+        ligne.grid(row=3, column=1, sticky="w", pady=ecart)
+        champ = ttk.Spinbox(
             ligne, from_=320, to=8000, increment=10, width=7, textvariable=self.var_taille
-        ).pack(side="left")
-        ttk.Label(ligne, text="pixels  —  72 ppp", style="Doux.TLabel").pack(
+        )
+        champ.pack(side="left")
+        self._widgets_focal.append(champ)
+        ttk.Label(ligne, text="px, 72 ppp, jamais agrandi", style="Doux.TLabel").pack(
             side="left", padx=(6, 0)
         )
 
-        ttk.Label(cadre, text="Poids maximum :").grid(row=2, column=0, sticky="w", pady=(8, 0))
+        ttk.Label(cadre, text="Poids maximum :").grid(row=4, column=0, sticky="w", pady=ecart)
         ligne = ttk.Frame(cadre)
-        ligne.grid(row=2, column=1, sticky="w", pady=(8, 0))
-        ttk.Spinbox(
+        ligne.grid(row=4, column=1, sticky="w", pady=ecart)
+        champ = ttk.Spinbox(
             ligne, from_=0, to=20000, increment=50, width=7, textvariable=self.var_poids_max
-        ).pack(side="left")
+        )
+        champ.pack(side="left")
+        self._widgets_focal.append(champ)
         ttk.Label(ligne, text="Ko  (0 = sans limite)", style="Doux.TLabel").pack(
             side="left", padx=(6, 0)
         )
 
-        ttk.Label(cadre, text="Qualité :").grid(row=3, column=0, sticky="w", pady=(8, 0))
+        ttk.Label(cadre, text="Qualité :").grid(row=5, column=0, sticky="w", pady=ecart)
         ligne = ttk.Frame(cadre)
-        ligne.grid(row=3, column=1, sticky="w", pady=(8, 0))
+        ligne.grid(row=5, column=1, sticky="w", pady=ecart)
         ttk.Spinbox(
             ligne, from_=50, to=100, increment=1, width=5, textvariable=self.var_qualite
         ).pack(side="left")
-        ttk.Label(ligne, text="(90 conseillé)", style="Doux.TLabel").pack(side="left", padx=(6, 0))
+        ttk.Label(ligne, text="(90 en JPEG, 85 en WebP)", style="Doux.TLabel").pack(
+            side="left", padx=(6, 0)
+        )
 
-        ttk.Label(cadre, text="Netteté écran :").grid(row=4, column=0, sticky="w", pady=(8, 0))
-        ttk.Combobox(
+        ttk.Label(cadre, text="Netteté écran :").grid(row=6, column=0, sticky="w", pady=ecart)
+        champ = ttk.Combobox(
             cadre, values=list(NIVEAUX_NETTETE), textvariable=self.var_nettete,
             state="readonly", width=17,
-        ).grid(row=4, column=1, sticky="w", pady=(8, 0))
-
-        ttk.Label(
-            cadre,
-            text="Les photos plus petites gardent leur taille (jamais agrandies).",
-            style="Doux.TLabel",
-        ).grid(row=5, column=0, columnspan=2, sticky="w", pady=(8, 0))
-        ttk.Checkbutton(
-            cadre, text="Conserver les métadonnées (appareil, objectif, date…)",
-            variable=self.var_metadonnees, command=self._mettre_a_jour_etats,
-        ).grid(row=6, column=0, columnspan=2, sticky="w", pady=(6, 0))
-        self.case_gps = ttk.Checkbutton(
-            cadre, text="…y compris la position GPS", variable=self.var_gps,
         )
-        self.case_gps.grid(row=7, column=0, columnspan=2, sticky="w", padx=(24, 0))
+        champ.grid(row=6, column=1, sticky="w", pady=ecart)
+        self._widgets_focal.append(champ)
+
+        ligne = ttk.Frame(cadre)
+        ligne.grid(row=7, column=0, columnspan=2, sticky="w", pady=(6, 0))
+        champ = ttk.Checkbutton(
+            ligne, text="Conserver les métadonnées",
+            variable=self.var_metadonnees, command=self._mettre_a_jour_etats,
+        )
+        champ.pack(side="left")
+        self._widgets_focal.append(champ)
+        self.case_gps = ttk.Checkbutton(
+            ligne, text="y compris la position GPS", variable=self.var_gps,
+        )
+        self.case_gps.pack(side="left", padx=(12, 0))
 
     def _construire_noms(self, parent):
-        cadre = ttk.LabelFrame(parent, text="3. Nom des photos", padding=10)
-        cadre.pack(fill="x", pady=(10, 0), padx=(0, 4))
-        cadre.columnconfigure(1, weight=1)
+        cadre = ttk.LabelFrame(parent, text="3. Nom des photos", padding=(10, 8))
+        cadre.pack(fill="x", pady=(8, 0), padx=(0, 4))
 
+        ligne = ttk.Frame(cadre)
+        ligne.pack(fill="x")
         ttk.Radiobutton(
-            cadre, text="Garder le nom d'origine", value=False, variable=self.var_renommer,
+            ligne, text="Garder le nom d'origine", value=False, variable=self.var_renommer,
             command=self._mettre_a_jour_etats,
-        ).grid(row=0, column=0, columnspan=2, sticky="w")
+        ).pack(side="left")
         ttk.Radiobutton(
-            cadre, text="Renommer avec un numéro", value=True, variable=self.var_renommer,
+            ligne, text="Renommer avec un numéro", value=True, variable=self.var_renommer,
             command=self._mettre_a_jour_etats,
-        ).grid(row=1, column=0, columnspan=2, sticky="w", pady=(2, 0))
+        ).pack(side="left", padx=(14, 0))
 
         self._widgets_renommage = []
-        ttk.Label(cadre, text="Début du nom :").grid(row=2, column=0, sticky="w", pady=(8, 0))
-        champ = ttk.Entry(cadre, textvariable=self.var_prefixe, width=22)
-        champ.grid(row=2, column=1, sticky="w", pady=(8, 0))
-        self._widgets_renommage.append(champ)
-
-        ttk.Label(cadre, text="Premier numéro :").grid(row=3, column=0, sticky="w", pady=(6, 0))
         ligne = ttk.Frame(cadre)
-        ligne.grid(row=3, column=1, sticky="w", pady=(6, 0))
-        champ = ttk.Spinbox(ligne, from_=0, to=999999, width=7, textvariable=self.var_numero)
+        ligne.pack(fill="x", pady=(6, 0))
+        ttk.Label(ligne, text="Début du nom :").pack(side="left")
+        champ = ttk.Entry(ligne, textvariable=self.var_prefixe, width=16)
+        champ.pack(side="left", padx=(6, 0))
+        self._widgets_renommage.append(champ)
+        ttk.Label(ligne, text="1er n° :").pack(side="left", padx=(10, 4))
+        champ = ttk.Spinbox(ligne, from_=0, to=999999, width=6, textvariable=self.var_numero)
         champ.pack(side="left")
         self._widgets_renommage.append(champ)
         ttk.Label(ligne, text="chiffres :").pack(side="left", padx=(10, 4))
@@ -1375,16 +1412,18 @@ class ApplicationConvertisseur(tk.Tk):
         champ.pack(side="left")
         self._widgets_renommage.append(champ)
 
-        ttk.Label(cadre, text="Ordre :").grid(row=4, column=0, sticky="w", pady=(6, 0))
+        ligne = ttk.Frame(cadre)
+        ligne.pack(fill="x", pady=(6, 0))
+        ttk.Label(ligne, text="Ordre :").pack(side="left")
         champ = ttk.Combobox(
-            cadre, values=ORDRES, textvariable=self.var_ordre, state="readonly", width=20
+            ligne, values=ORDRES, textvariable=self.var_ordre, state="readonly", width=20
         )
-        champ.grid(row=4, column=1, sticky="w", pady=(6, 0))
+        champ.pack(side="left", padx=(6, 0))
         self._widgets_renommage.append(champ)
 
         self.var_exemple = tk.StringVar()
-        ttk.Label(cadre, textvariable=self.var_exemple, style="Doux.TLabel").grid(
-            row=5, column=0, columnspan=2, sticky="w", pady=(8, 0)
+        ttk.Label(cadre, textvariable=self.var_exemple, style="Doux.TLabel").pack(
+            anchor="w", pady=(6, 0)
         )
         for variable in (self.var_prefixe, self.var_numero, self.var_chiffres, self.var_format):
             variable.trace_add("write", lambda *_a: self._mettre_a_jour_exemple())
@@ -1392,7 +1431,7 @@ class ApplicationConvertisseur(tk.Tk):
     def _construire_bas(self, parent):
         # Dossier de destination : dans le bas de la fenêtre, toujours visible.
         cadre_dest = ttk.LabelFrame(parent, text="4. Dossier de destination", padding=(10, 8))
-        cadre_dest.pack(fill="x", pady=(0, 8))
+        cadre_dest.pack(fill="x", pady=(0, 6))
         self.bouton_destination = ttk.Button(
             cadre_dest, text="📁  Choisir le dossier de destination…",
             command=self.choisir_destination,
@@ -1428,17 +1467,18 @@ class ApplicationConvertisseur(tk.Tk):
             command=self._ouvrir_dossier_resultat,
         )
         self.bouton_ouvrir.pack(side="left", padx=(8, 0))
-
-        self.barre_progression = ttk.Progressbar(parent, mode="determinate")
-        self.barre_progression.pack(fill="x", pady=(10, 0))
+        # État d'avancement à droite des boutons (gagne une ligne de hauteur).
         self.var_statut = tk.StringVar(value="")
-        ttk.Label(parent, textvariable=self.var_statut, style="Doux.TLabel").pack(
-            anchor="w", pady=(4, 0)
+        ttk.Label(actions, textvariable=self.var_statut, style="Doux.TLabel").pack(
+            side="left", padx=(14, 0)
         )
 
-        cadre_journal = ttk.LabelFrame(parent, text="Détail", padding=8)
+        self.barre_progression = ttk.Progressbar(parent, mode="determinate")
+        self.barre_progression.pack(fill="x", pady=(8, 0))
+
+        cadre_journal = ttk.LabelFrame(parent, text="Détail", padding=6)
         cadre_journal.pack(fill="x", pady=(6, 0))
-        self.journal = tk.Listbox(cadre_journal, height=4)
+        self.journal = tk.Listbox(cadre_journal, height=3)
         _styliser_liste(self.journal)
         self.journal.pack(side="left", fill="both", expand=True)
         defilement = ttk.Scrollbar(cadre_journal, orient="vertical", command=self.journal.yview)
@@ -1446,6 +1486,35 @@ class ApplicationConvertisseur(tk.Tk):
         self.journal.configure(yscrollcommand=defilement.set)
 
     # -- Mises à jour de l'affichage ------------------------------------------
+
+    def _ajuster_hauteur(self):
+        """À l'ouverture, agrandit la fenêtre juste assez pour que la colonne
+        des réglages (jusqu'au cadre « Nom des photos ») soit visible en
+        entier, sans jamais dépasser l'écran. Sur un écran trop petit, la
+        colonne reste défilable avec la molette."""
+        self.update_idletasks()
+        colonne = self._colonne_droite
+        manque = colonne.interieur.winfo_reqheight() - colonne.winfo_height()
+        if manque <= 0:
+            return
+        hauteur_max = self.winfo_screenheight() - 80
+        nouvelle = min(hauteur_max, self.winfo_height() + manque + 4)
+        if nouvelle > self.winfo_height():
+            self.geometry(f"{self.winfo_width()}x{nouvelle}+{self.winfo_x()}+0")
+
+    def _appliquer_focal(self):
+        """Impose les réglages du Focal Club (photos pour le site)."""
+        self.var_format.set(REGLAGES_FOCAL["format"])
+        self.var_taille.set(REGLAGES_FOCAL["taille"])
+        self.var_poids_max.set(REGLAGES_FOCAL["poids_max_ko"])
+        self.var_nettete.set(REGLAGES_FOCAL["nettete"])
+        self.var_metadonnees.set(REGLAGES_FOCAL["garder_metadonnees"])
+
+    def _focal_change(self):
+        if self.var_focal.get():
+            self._appliquer_focal()
+            self._format_change()
+        self._mettre_a_jour_etats()
 
     def _format_change(self):
         # Qualité conseillée différente selon le format : on ne la change que
@@ -1512,6 +1581,12 @@ class ApplicationConvertisseur(tk.Tk):
         self.case_gps.configure(
             state="normal" if self.var_metadonnees.get() and not occupe else "disabled"
         )
+        verrou = self.var_focal.get() or occupe
+        for widget in self._widgets_focal:
+            if isinstance(widget, ttk.Combobox):
+                widget.configure(state="disabled" if verrou else "readonly")
+            else:
+                widget.configure(state="disabled" if verrou else "normal")
 
         for bouton in (
             self.bouton_ajout_photos, self.bouton_ajout_dossier, self.bouton_destination,
@@ -1650,6 +1725,8 @@ class ApplicationConvertisseur(tk.Tk):
     # -- Conversion -----------------------------------------------------------
 
     def _lire_reglages(self):
+        if self.var_focal.get():
+            self._appliquer_focal()  # par sécurité : toujours les valeurs du club
         prefixe = self.var_prefixe.get()
         for interdit in '\\/:*?"<>|':
             prefixe = prefixe.replace(interdit, "_")
