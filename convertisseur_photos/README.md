@@ -75,9 +75,14 @@ vous voulez (Bureau, clé USB…) — il n'a plus besoin de Python.
    deux, et retirer des photos de la liste (touche Suppr). Le tableau
    indique pour chaque photo ses dimensions et son poids, ainsi que le poids
    total (et celui des photos sélectionnées).
-2. **Réglages** : format (JPEG ou WebP), taille, poids maximum, qualité (90
-   conseillé en JPEG, 85 en WebP), netteté, métadonnées. Sur un petit écran,
-   cette colonne défile avec la molette.
+2. **Réglages** : cochez **« Réglages Focal Club (site du club) »** pour
+   préparer des photos destinées au site : format WebP, 1920 px, 500 Ko,
+   netteté écran normale et métadonnées conservées sont alors imposés (ces
+   réglages sont grisés tant que la case est cochée ; la qualité et la
+   position GPS restent au choix). Sans cette case, tout est réglable :
+   format (JPEG ou WebP), taille, poids maximum, qualité (90 conseillé en
+   JPEG, 85 en WebP), netteté, métadonnées. Sur un très petit écran, cette
+   colonne défile avec la molette.
 3. **Nom des photos** : garder le nom d'origine, ou renommer avec un
    numéro — début du nom (ex. `Sortie_Croisic_`), premier numéro, nombre de
    chiffres (3 → `001`), et ordre de numérotation (nom de fichier, date de
