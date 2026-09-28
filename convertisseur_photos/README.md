@@ -84,7 +84,8 @@ vous voulez (Bureau, clé USB…) — il n'a plus besoin de Python.
    prise de vue, ou ordre de la liste). Un exemple s'affiche en direct.
 4. **Dossier de destination** (en bas de la fenêtre) : un dossier « Photos
    converties » à côté de vos photos est proposé ; le bouton « Choisir le
-   dossier… » permet d'en choisir un autre.
+   dossier de destination… » permet d'en choisir un autre. Le chemin
+   complet du dossier s'affiche à côté, en entier.
 5. Cliquez sur **« Convertir les photos »**. Chaque photo s'affiche avec une
    coche verte (✓), ses dimensions et son poids final (et la qualité
    utilisée si elle a dû être baissée), ou une croix rouge (✗) et la raison

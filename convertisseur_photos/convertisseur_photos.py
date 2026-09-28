@@ -1394,11 +1394,22 @@ class ApplicationConvertisseur(tk.Tk):
         cadre_dest = ttk.LabelFrame(parent, text="4. Dossier de destination", padding=(10, 8))
         cadre_dest.pack(fill="x", pady=(0, 8))
         self.bouton_destination = ttk.Button(
-            cadre_dest, text="📁  Choisir le dossier…", command=self.choisir_destination
+            cadre_dest, text="📁  Choisir le dossier de destination…",
+            command=self.choisir_destination,
         )
-        self.bouton_destination.pack(side="left")
-        self.label_destination = ttk.Label(cadre_dest, style="Doux.TLabel", anchor="w")
+        self.bouton_destination.pack(side="left", anchor="n")
+        # Case blanche sur toute la largeur restante : le chemin complet y
+        # est toujours lisible en entier (il passe à la ligne s'il est long).
+        self.label_destination = tk.Label(
+            cadre_dest, anchor="w", justify="left", background=COULEUR_CARTE,
+            foreground=COULEUR_TEXTE, padx=10, pady=7,
+            highlightthickness=1, highlightbackground=COULEUR_BORDURE,
+        )
         self.label_destination.pack(side="left", fill="x", expand=True, padx=(12, 0))
+        self.label_destination.bind(
+            "<Configure>",
+            lambda e: self.label_destination.configure(wraplength=max(100, e.width - 24)),
+        )
         self.var_destination.trace_add("write", lambda *_a: self._mettre_a_jour_etats())
 
         actions = ttk.Frame(parent)
