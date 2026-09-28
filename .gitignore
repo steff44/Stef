@@ -40,3 +40,11 @@ steftuto/*.spec
 # Journal des e-mails envoyés (voir inc/mail.php, espace/journal-mails.php) :
 # contient les adresses des adhérents, écrit par le serveur — jamais versionné.
 public_html/espace/inc/.journal-mails.log
+
+# Convertisseur Photos : cache Python, réglages et fichiers générés par
+# build_exe.bat (icône, exécutable) — jamais versionnés.
+convertisseur_photos/__pycache__/
+convertisseur_photos/build/
+convertisseur_photos/dist/
+convertisseur_photos/*.spec
+convertisseur_photos/icone.ico
