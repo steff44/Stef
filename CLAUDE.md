@@ -5366,3 +5366,40 @@ conservé), un second compte non affecté par le délai du premier, envoi de
 nouveau possible avec un nouveau jeton après expiration du délai, compte
 sans e-mail toujours sans effet. `php -l` sur `mot-de-passe-oublie.php` et
 `inc/migration.php`.
+
+## Documents du club : archives .zip jusqu'à 50 Mo, liens cliquables dans la description
+
+**Choix explicite de l'utilisatrice, 29/09/2026** : elle voulait mettre le
+logiciel Convertisseur Photos (dossier `convertisseur_photos/` du dépôt,
+distribué sous forme de `ConvertisseurPhotos.zip` d'environ 23 Mo) à
+disposition des adhérents depuis « Ajouter un document », mais la page
+refusait à la fois le format (`.zip` absent de `DOCUMENTS_ACCEPTES`) et le
+poids (plafond général `TAILLE_MAX_OCTETS`, 8 Mo). Elle a aussi signalé ne
+pas pouvoir y mettre de lien.
+
+- `DOCUMENTS_ACCEPTES` (`inc/televersement.php`) accepte désormais
+  `application/zip` (et `application/x-zip-compressed`) → extension `.zip`.
+  Le type reste déduit du contenu (`mime_content_type()`), jamais de
+  l'extension ; l'archive est seulement stockée et servie en
+  téléchargement par `telecharger.php`, jamais décompressée ni exécutée.
+- Nouveau plafond propre aux Documents du Club, `TAILLE_MAX_DOCUMENT`
+  (50 Mo), passé à `enregistrer_fichier_envoye()` par `documents.php` —
+  le plafond général de 8 Mo reste inchangé partout ailleurs (photos de
+  sortie, couverture de blog). Libellé du champ et `data-taille-max` de
+  l'avertissement côté navigateur mis à jour en conséquence.
+- Nouveau `public_html/espace/.user.ini` : `upload_max_filesize = 60M`,
+  `post_max_size = 64M`, `max_execution_time`/`max_input_time = 300` —
+  sans quoi les limites PHP de Hostinger pourraient refuser l'envoi avant
+  même d'atteindre le code. **Non vérifiable hors ligne** (le serveur PHP
+  intégré ignore `.user.ini`) : si un dépôt de ~23 Mo échoue encore en
+  ligne avec « trop volumineux », régler ces deux valeurs dans hPanel
+  (Avancé → Configuration PHP → Options PHP).
+- `documents.php` détecte un envoi plus gros que `post_max_size` (PHP
+  vide alors entièrement `$_POST`/`$_FILES`) **avant** `verifier_csrf()`,
+  qui aurait sinon affiché un « Formulaire expiré » trompeur : message
+  dédié « Envoi trop volumineux pour le serveur ».
+- La description d'un document passe par `texte_avec_liens_html()`
+  (`inc/page.php`, déjà utilisé pour les sorties et les extraits du blog)
+  : une adresse `http(s)://` y devient cliquable (nouvel onglet), avec
+  `.document-description a` pour qu'elle ne se fonde pas dans le texte
+  grisé.

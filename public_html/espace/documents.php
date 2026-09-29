@@ -53,6 +53,18 @@ function notifier_nouveaux_documents(PDO $pdo, string $categorie_nom, array $tit
 $adherent = exige_connexion();
 $pdo      = base_de_donnees();
 
+// Envoi plus lourd que ce que le serveur accepte (post_max_size) : PHP vide
+// alors entièrement $_POST et $_FILES, ce qui ferait échouer verifier_csrf()
+// avec un « Formulaire expiré » trompeur. On le détecte avant, pour afficher
+// la vraie raison.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$_POST && !$_FILES
+    && (int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > 0) {
+    definir_message('erreur', "Envoi trop volumineux pour le serveur (maximum "
+        . taille_lisible(TAILLE_MAX_DOCUMENT) . " par dépôt). Déposez les fichiers en plusieurs fois.");
+    header('Location: documents.php');
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verifier_csrf();
     exige_gestionnaire();
@@ -87,7 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $titres_reussis = [];
 
             foreach ($fichiers as $fichier) {
-                $resultat = enregistrer_fichier_envoye($fichier, __DIR__ . '/fichiers', 'document');
+                $resultat = enregistrer_fichier_envoye($fichier, __DIR__ . '/fichiers', 'document', TAILLE_MAX_DOCUMENT);
                 $nom_origine = basename((string) $fichier['name']);
 
                 if ($resultat['erreur'] !== null) {
@@ -259,14 +271,14 @@ titre_page("Documents du club", "Comptes rendus, statuts, bulletins et ressource
           </div>
         </div>
         <div class="field">
-          <label for="description">Description (facultatif, s'applique à tous les fichiers déposés ici)</label>
+          <label for="description">Description (facultatif, s'applique à tous les fichiers déposés ici — une adresse http(s)://… y devient un lien cliquable)</label>
           <textarea id="description" name="description" rows="2"></textarea>
         </div>
         <div class="field">
-          <label for="documents">Fichiers (PDF, Word, Excel, OpenDocument, texte ou image — <?= taille_lisible(TAILLE_MAX_OCTETS) ?> maximum chacun)</label>
+          <label for="documents">Fichiers (PDF, Word, Excel, PowerPoint, OpenDocument, texte, image ou archive .zip — <?= taille_lisible(TAILLE_MAX_DOCUMENT) ?> maximum chacun)</label>
           <input type="file" id="documents" name="documents[]" multiple required
-                 data-taille-max="<?= TAILLE_MAX_OCTETS ?>"
-                 data-taille-max-lisible="<?= e(taille_lisible(TAILLE_MAX_OCTETS)) ?>">
+                 data-taille-max="<?= TAILLE_MAX_DOCUMENT ?>"
+                 data-taille-max-lisible="<?= e(taille_lisible(TAILLE_MAX_DOCUMENT)) ?>">
           <p class="form-note">
             Plusieurs fichiers peuvent être sélectionnés d'un coup : le titre de chaque
             document reprend alors le nom de son fichier, sans l'extension.
