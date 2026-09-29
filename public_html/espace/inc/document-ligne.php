@@ -13,7 +13,7 @@ declare(strict_types=1);
               <?= e($document['titre']) ?>
             </a>
             <?php if ($document['description']): ?>
-              <p class="document-description"><?= e($document['description']) ?></p>
+              <p class="document-description"><?= texte_avec_liens_html((string) $document['description']) ?></p>
             <?php endif; ?>
             <p class="document-meta">
               <?= e($document['nom_origine']) ?> — <?= e(taille_lisible((int) $document['taille'])) ?>

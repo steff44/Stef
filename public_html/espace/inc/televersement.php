@@ -19,6 +19,14 @@ require_once __DIR__ . '/page.php';
 
 const TAILLE_MAX_OCTETS = 8388608; // 8 Mo
 
+// Plafond propre aux Documents du Club, relevé à 50 Mo (choix explicite de
+// l'utilisatrice, 29/09/2026) pour pouvoir y déposer une archive .zip — par
+// exemple le logiciel Convertisseur Photos (~23 Mo), que les adhérents
+// téléchargent ensuite depuis cette page. Les limites PHP du serveur
+// (upload_max_filesize/post_max_size) sont relevées en conséquence dans
+// espace/.user.ini.
+const TAILLE_MAX_DOCUMENT = 52428800; // 50 Mo
+
 // Plafond plus strict pour les photos déposées par les adhérents (Galerie
 // privée, Galerie du Club) — choix explicite de l'utilisateur, 21/08/2026 :
 // contrairement aux documents et aux photos de sortie, qui gardent le
@@ -51,6 +59,11 @@ const DOCUMENTS_ACCEPTES = [
     'application/vnd.ms-powerpoint' => 'ppt',
     'application/vnd.openxmlformats-officedocument.presentationml.presentation' => 'pptx',
     'application/vnd.oasis.opendocument.presentation' => 'odp',
+    // Archive .zip, ajoutée le 29/09/2026 (voir TAILLE_MAX_DOCUMENT plus
+    // haut). Reste servie en téléchargement par telecharger.php, jamais
+    // décompressée ni exécutée sur le serveur.
+    'application/zip' => 'zip',
+    'application/x-zip-compressed' => 'zip',
 ];
 
 /*
@@ -99,7 +112,7 @@ function enregistrer_fichier_envoye(
     if (!isset($autorises[$mime])) {
         return $echec($categorie === 'image'
             ? "Format d'image non accepté. Utilisez JPEG, PNG, WebP ou GIF."
-            : "Format de document non accepté (PDF, Word, Excel, PowerPoint, OpenDocument, texte ou image).");
+            : "Format de document non accepté (PDF, Word, Excel, PowerPoint, OpenDocument, texte, image ou archive .zip).");
     }
 
     // Pour une image, on vérifie en plus qu'elle s'ouvre réellement : un

@@ -2304,6 +2304,16 @@ button.lien-retour {
   color: var(--text-muted);
   font-size: 0.9rem;
 }
+/* Lien collé dans la description d'un document : sans cette règle, il se
+   fondrait dans le texte grisé (a { color: inherit }), même piège que
+   .blog-extrait a / .sortie-description a. */
+.document-description a {
+  color: var(--accent-3);
+  text-decoration: underline;
+}
+.document-description a:hover {
+  color: var(--accent);
+}
 .document-meta {
   margin: 6px 0 0;
   color: var(--text-muted);
