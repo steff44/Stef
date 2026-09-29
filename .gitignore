@@ -48,3 +48,4 @@ convertisseur_photos/build/
 convertisseur_photos/dist/
 convertisseur_photos/*.spec
 convertisseur_photos/icone.ico
+convertisseur_photos/.env_fabrication/

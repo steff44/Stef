@@ -17,10 +17,13 @@ WebP :
 On choisit une photo, plusieurs photos ou un dossier entier, puis le dossier
 de destination. Les photos d'origine ne sont jamais modifiées.
 
-Modules nécessaires :  pip install pillow rawpy exifread pillow-heif
-(rawpy pour les RAW, exifread pour lire les métadonnées de certains RAW,
-pillow-heif pour les photos HEIC d'iPhone — tous facultatifs sauf Pillow :
-le logiciel signale clairement ce qui manque.)
+Modules nécessaires :  pip install pillow rawpy exifread
+(rawpy pour les RAW, exifread pour lire les métadonnées de certains RAW —
+facultatifs tous les deux, le logiciel signale clairement ce qui manque.)
+Le format HEIC des iPhone n'est volontairement pas pris en charge : son
+module pèserait à lui seul près de la moitié du logiciel. Un iPhone peut
+enregistrer directement en JPEG (Réglages > Appareil photo > Formats >
+« Le plus compatible »).
 
 Lancement :  python3 convertisseur_photos.py
 """
@@ -45,33 +48,22 @@ try:
 except ImportError:  # signalé au démarrage, le logiciel ne peut rien faire sans
     PILLOW_OK = False
 
-try:
+# rawpy (moteur RAW, avec numpy) et exifread ne sont chargés qu'au moment où
+# une photo en a besoin : la fenêtre s'ouvre ainsi beaucoup plus vite.
+import importlib.util
+
+RAWPY_OK = importlib.util.find_spec("rawpy") is not None
+EXIFREAD_OK = importlib.util.find_spec("exifread") is not None
+
+
+def _rawpy():
     import rawpy
 
-    RAWPY_OK = True
-except ImportError:
-    RAWPY_OK = False
+    return rawpy
 
-try:
-    import exifread
 
-    EXIFREAD_OK = True
-except ImportError:
-    EXIFREAD_OK = False
-
-HEIF_OK = False
-if PILLOW_OK:
-    try:
-        import pillow_heif
-
-        pillow_heif.register_heif_opener()
-        HEIF_OK = True
-        try:
-            pillow_heif.register_avif_opener()
-        except Exception:
-            pass
-    except ImportError:
-        pass
+# Formats volontairement non pris en charge (voir en tête de fichier).
+EXTENSIONS_NON_PRISES_EN_CHARGE = {".heic", ".heif", ".avif"}
 
 APP_TITLE = "Convertisseur Photos"
 SOUS_TITRE = "RAW, JPEG et autres formats → JPEG ou WebP prêts pour l'écran"
@@ -84,7 +76,9 @@ EXTENSIONS_RAW = {
     ".pxn", ".r3d", ".raf", ".raw", ".rw2", ".rwl", ".rwz", ".sr2", ".srf", ".srw",
     ".x3f",
 }
-# Autres formats d'image ouverts par Pillow (et pillow-heif pour HEIC/AVIF).
+# Autres formats d'image ouverts par Pillow. HEIC/AVIF restent listés pour
+# qu'une telle photo apparaisse dans la liste avec une explication claire,
+# plutôt que d'être ignorée en silence.
 EXTENSIONS_IMAGES = {
     ".jpg", ".jpeg", ".jpe", ".jfif", ".png", ".tif", ".tiff", ".bmp", ".gif",
     ".webp", ".heic", ".heif", ".avif", ".jp2", ".j2k", ".psd", ".tga", ".ppm",
@@ -535,7 +529,7 @@ def lire_dimensions(chemin):
     elle s'affiche (portrait/paysage), ou None si illisible."""
     try:
         if est_raw(chemin) and RAWPY_OK:
-            with rawpy.imread(chemin) as raw:
+            with _rawpy().imread(chemin) as raw:
                 largeur, hauteur = raw.sizes.width, raw.sizes.height
                 if raw.sizes.flip in (5, 6):
                     largeur, hauteur = hauteur, largeur
@@ -616,6 +610,8 @@ def _exif_depuis_exifread(chemin):
         return None
     try:
         with open(chemin, "rb") as f:
+            import exifread
+
             tags = exifread.process_file(f, details=False)
     except Exception:
         return None
@@ -682,6 +678,7 @@ def _ouvrir_raw(chemin, taille_max):
             "fichier RAW, mais le module « rawpy » n'est pas installé "
             "(pip install rawpy)"
         )
+    rawpy = _rawpy()
     try:
         with rawpy.imread(chemin) as raw:
             try:
@@ -778,10 +775,10 @@ def ouvrir_photo(chemin, taille_max):
             except ErreurPhoto:
                 pass
         extension = os.path.splitext(chemin)[1].lower()
-        if extension in (".heic", ".heif", ".avif") and not HEIF_OK:
+        if extension in EXTENSIONS_NON_PRISES_EN_CHARGE:
             raise ErreurPhoto(
-                "photo HEIC/AVIF, mais le module « pillow-heif » n'est pas installé "
-                "(pip install pillow-heif)"
+                "format HEIC/AVIF non pris en charge — enregistrez la photo en JPEG "
+                "(sur iPhone : Réglages > Appareil photo > Formats > « Le plus compatible »)"
             ) from erreur
         raise ErreurPhoto(f"format non reconnu ({erreur})") from erreur
     image = ImageOps.exif_transpose(image)  # applique la rotation portrait/paysage
@@ -1193,8 +1190,6 @@ class ApplicationConvertisseur(tk.Tk):
         manquants = []
         if not RAWPY_OK:
             manquants.append("• rawpy — indispensable pour les photos RAW")
-        if not HEIF_OK:
-            manquants.append("• pillow-heif — pour les photos HEIC (iPhone)")
         if not EXIFREAD_OK:
             manquants.append("• exifread — métadonnées de certains RAW (CR3, RAF, ORF...)")
         if manquants:
@@ -1209,7 +1204,7 @@ class ApplicationConvertisseur(tk.Tk):
                 APP_TITLE,
                 "Certains modules ne sont pas installés :\n\n" + "\n".join(manquants)
                 + "\n\nPour les installer, tapez dans une invite de commandes :\n"
-                "pip install rawpy pillow-heif exifread\n\n"
+                "pip install rawpy exifread\n\n"
                 "Le logiciel fonctionne quand même pour les autres formats.",
             )
 
@@ -1918,7 +1913,7 @@ def main():
             APP_TITLE,
             "Le module « Pillow » n'est pas installé.\n\n"
             "Tapez dans une invite de commandes :\n"
-            "pip install pillow rawpy pillow-heif exifread",
+            "pip install pillow rawpy exifread",
         )
         return
     app = ApplicationConvertisseur()

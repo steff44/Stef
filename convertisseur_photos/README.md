@@ -7,8 +7,15 @@ pour l'écran (site du club, diaporama, envoi par e-mail…). Il accepte :
   (`.cr2`, `.cr3`), Sony (`.arw`), Fujifilm (`.raf`), Olympus / OM System
   (`.orf`), Panasonic (`.rw2`), Pentax (`.pef`), Leica, Hasselblad, DNG…
 - les **JPEG**,
-- et la plupart des autres formats : TIFF, PNG, HEIC (iPhone), WebP, BMP,
-  PSD (image aplatie)…
+- et la plupart des autres formats : TIFF, PNG, WebP, BMP, PSD (image
+  aplatie)…
+
+Le format **HEIC des iPhone n'est volontairement pas pris en charge** : son
+module pesait à lui seul près de la moitié du logiciel. Les photos d'iPhone
+envoyées par e-mail ou messagerie arrivent en général déjà en JPEG ; sinon,
+l'iPhone peut enregistrer directement en JPEG (Réglages > Appareil photo >
+Formats > « Le plus compatible »). Un fichier HEIC ajouté par erreur est
+signalé clairement dans le détail, sans bloquer les autres photos.
 
 et les transforme, au choix, en **JPEG** ou en **WebP** :
 
@@ -40,14 +47,13 @@ Il faut Python 3 (sur Windows, téléchargez-le sur
 Python to PATH »), puis ces modules, en une seule commande :
 
 ```
-pip install pillow rawpy exifread pillow-heif
+pip install pillow rawpy exifread
 ```
 
 - `pillow` : indispensable ;
 - `rawpy` : pour les fichiers RAW (il contient LibRaw, le moteur de
   développement RAW utilisé par de nombreux logiciels photo) ;
-- `exifread` : pour lire les métadonnées de certains RAW (CR3, RAF, ORF…) ;
-- `pillow-heif` : pour les photos HEIC d'iPhone.
+- `exifread` : pour lire les métadonnées de certains RAW (CR3, RAF, ORF…).
 
 S'il en manque un, le logiciel vous le dit au démarrage et fonctionne quand
 même pour les autres formats.
@@ -60,12 +66,28 @@ Dans le dossier `convertisseur_photos` :
 python convertisseur_photos.py
 ```
 
-## Fabriquer un exécutable Windows (.exe)
+## Fabriquer le logiciel Windows (à double-cliquer)
 
-Comme pour Convertisseur PDF : sur un PC Windows où Python est installé,
-double-cliquez sur `build_exe.bat`. Au bout d'une minute ou deux, vous
-obtenez `convertisseur_photos\dist\ConvertisseurPhotos.exe`, à copier où
-vous voulez (Bureau, clé USB…) — il n'a plus besoin de Python.
+Sur un PC Windows où Python est installé, double-cliquez sur
+`build_exe.bat`. Au bout de quelques minutes (la première fois ; plus vite
+ensuite), vous obtenez :
+
+- le dossier `convertisseur_photos\dist\ConvertisseurPhotos`, qui contient
+  le logiciel (`ConvertisseurPhotos.exe`) et ses fichiers — **ne séparez pas
+  l'`.exe` du reste de ce dossier** ;
+- un **raccourci « Convertisseur Photos » sur votre Bureau**, pour le lancer
+  d'un double-clic ;
+- `dist\ConvertisseurPhotos.zip`, pour le donner à quelqu'un (à
+  décompresser, puis double-cliquer sur `ConvertisseurPhotos.exe`) : il n'a
+  pas besoin de Python.
+
+Le logiciel est fabriqué sous forme de dossier plutôt que d'un seul gros
+fichier `.exe` : un fichier unique doit être entièrement décompressé à
+chaque lancement (et analysé par l'antivirus), ce qui le rendait lent à
+s'ouvrir. Le script travaille aussi dans un environnement Python dédié
+(`.env_fabrication`, créé la première fois) qui ne contient que les modules
+utiles, et exclut tout ce dont le logiciel ne se sert pas : il est ainsi
+nettement plus léger qu'avant.
 
 ## Utilisation
 
