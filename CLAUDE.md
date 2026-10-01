@@ -5403,3 +5403,68 @@ pas pouvoir y mettre de lien.
   : une adresse `http(s)://` y devient cliquable (nouvel onglet), avec
   `.document-description a` pour qu'elle ne se fonde pas dans le texte
   grisé.
+
+## Erreur fatale « MySQL server has gone away » après une notification
+
+**Signalé par l'utilisatrice le 01/10/2026** : erreur fatale en ligne lors
+de l'ajout d'une sortie, `PDOException` (« SQLSTATE[HY000] ... MySQL
+server has gone away ») dans `inc/mail.php:342`, `PDO->prepare()`, appelée
+depuis `sorties-a-venir.php:208` — c'est-à-dire exactement dans
+`envoyer_confirmation_personnelle()`. Confirmé le jour même par
+l'utilisatrice sur un second point d'entrée indépendant, le dépôt d'un
+document (« Quand j'ajoute un fichier voila ce que j'obtiens ») : même
+fonction partagée, donc même cause, pas un hasard propre à l'agenda.
+
+**Cause** : cette fonction est toujours appelée juste après une boucle qui
+notifie **tous** les adhérents éligibles (voir les quatre appelants —
+sortie, document, article de blog, album « Nos Sorties ») — une boucle qui
+ne touche jamais `$pdo` pendant qu'elle dure, et qui peut prendre du temps
+si le serveur SMTP (`inc/smtp.php`, ajouté le 23/09/2026) met du temps à
+répondre ou à échouer : jusqu'à sept allers-retours lors de l'ouverture
+d'une connexion (bannière, EHLO, STARTTLS, EHLO, AUTH LOGIN, identifiant,
+mot de passe), chacun pouvant alors attendre jusqu'à 15 secondes avant
+d'abandonner — près de deux minutes dans le pire cas pour un seul envoi.
+Une connexion MySQL restée inactive aussi longtemps peut être fermée par
+le serveur lui-même (délai d'inactivité de l'hébergeur) ; la requête
+suivante sur cette même connexion échoue alors avec une `PDOException`
+sans rapport avec les données — jusqu'ici non rattrapée, elle remontait et
+plantait toute la page, alors que ce fichier a pour principe constant
+qu'« un e-mail qui ne part pas ne doit jamais empêcher une action déjà
+réussie » (l'action elle-même — sortie créée, document déposé — avait de
+toute façon déjà réussi avant cet appel).
+
+**Corrigé en deux temps** :
+- `base_de_donnees()` (`inc/db.php`) prend un paramètre facultatif
+  `$reconnecter` (défaut `false`, aucun appel existant à changer) : à
+  `true`, ignore la connexion déjà en cache et en ouvre une neuve.
+- `envoyer_confirmation_personnelle()` (`inc/mail.php`) entoure sa requête
+  d'un `try`/`catch` : une `PDOException` déclenche une reconnexion
+  (`base_de_donnees(true)`) et un seul nouvel essai sur cette connexion
+  fraîche ; si ce second essai échoue aussi, la fonction renonce
+  **silencieusement** à la confirmation plutôt que de laisser remonter
+  l'exception — cohérent avec le reste de ce fichier, qui n'a jamais
+  laissé un souci d'e-mail faire échouer la page. La reconnexion ne
+  modifie que la variable locale `$pdo` de cette fonction (y compris pour
+  `valeur_parametre()` juste après) — aucun des quatre appelants n'a
+  besoin d'être changé, ils gardent chacun leur propre connexion, en
+  principe déjà valide pour le reste de leur propre traitement.
+
+**Défense complémentaire, même piège, cause commune** :
+`stream_set_timeout()` (`inc/smtp.php`) passe de 15 à **8 secondes** par
+étape de l'ouverture — réduit le pire cas de ~2 minutes à ~1 minute
+d'inactivité possible sur `$pdo`, sans gêner un vrai aller-retour SMTP
+(généralement sous la seconde). Les deux correctifs sont complémentaires :
+celui-ci réduit la probabilité et la durée du blocage, l'autre garantit
+que, même si le blocage se produit malgré tout, la page ne plante plus.
+
+Testé hors ligne (01/10/2026) : la fonction `envoyer_confirmation_personnelle()`
+(copie exacte, isolée) rejouée avec une fausse connexion PDO qui lève
+systématiquement l'exception observée en production — connexion valide
+dès le départ (aucune reconnexion, e-mail envoyé normalement), connexion
+cassée au premier appel (reconnexion automatique, e-mail envoyé quand
+même), connexion cassée **et** la reconnexion échoue aussi (aucune
+exception ne remonte, contrairement au comportement en ligne avant ce
+correctif), adhérent sans e-mail après reconnexion (aucun envoi, aucune
+erreur). `php -l` sur les trois fichiers modifiés
+(`inc/db.php`, `inc/mail.php`, `inc/smtp.php`).
+

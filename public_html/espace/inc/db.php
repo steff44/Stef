@@ -5,11 +5,19 @@
 
 declare(strict_types=1);
 
-function base_de_donnees(): PDO
+/*
+ * $reconnecter = true force une connexion neuve même si une déjà en cache
+ * est encore considérée valide — utilisé par envoyer_confirmation_personnelle()
+ * (inc/mail.php) après un envoi SMTP qui a pu laisser la connexion MySQL
+ * inactive trop longtemps (« MySQL server has gone away », voir ce fichier),
+ * sans toucher au reste de la page : chaque appelant garde sa propre
+ * variable $pdo, seule la mise en cache interne de cette fonction change.
+ */
+function base_de_donnees(bool $reconnecter = false): PDO
 {
     // Une seule connexion par page, même si la fonction est appelée plusieurs fois.
     static $pdo = null;
-    if ($pdo instanceof PDO) {
+    if (!$reconnecter && $pdo instanceof PDO) {
         return $pdo;
     }
 
