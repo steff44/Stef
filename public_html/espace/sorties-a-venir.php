@@ -189,6 +189,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $lien_sortie    = SITE_URL . '/espace/sorties-a-venir.php#sortie-' . $nouvelle_id;
             $expediteur     = valeur_parametre($pdo, 'email') ?: 'cooky44.sl@gmail.com';
 
+            definir_message('succes', "Ajouté à l'agenda. Un e-mail a été envoyé aux adhérents.");
+
+            // La réponse part tout de suite : la boucle d'e-mails ci-dessous
+            // (un envoi par adhérent) ne doit pas faire attendre la page
+            // (voir finir_reponse(), inc/page.php).
+            header('Location: sorties-a-venir.php');
+            finir_reponse();
+
             $destinataires = $pdo->query(
                 "SELECT nom, email FROM adherents WHERE valide = 1 AND actif = 1 AND email IS NOT NULL AND email <> ''"
             )->fetchAll();
@@ -216,8 +224,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 . "{$lien_sortie}\n\n"
                 . "À bientôt,\nLe Focal Club Turballais"
             );
-
-            definir_message('succes', "Ajouté à l'agenda. Un e-mail a été envoyé aux adhérents.");
+            exit;
         }
     }
 

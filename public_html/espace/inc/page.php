@@ -329,3 +329,45 @@ function afficher_message(): void
     $classe = $message['type'] === 'succes' ? 'alerte-succes' : 'alerte-erreur';
     echo '<div class="alerte ' . $classe . '">' . e($message['texte']) . '</div>';
 }
+
+/*
+ * Termine la réponse HTTP tout de suite — à appeler juste après le
+ * header('Location: ...') d'une redirection, avant d'enchaîner sur une
+ * boucle d'envoi d'e-mails (un envoi SMTP par adhérent, voir
+ * inc/smtp.php) : sans cela, l'adhérent reste à attendre la page pendant
+ * tous ces envois. Piège signalé par l'utilisatrice, 01/10/2026 : après un
+ * dépôt de document, « la confirmation met du temps à venir ». Le
+ * navigateur reçoit sa réponse immédiatement ; le script continue de
+ * tourner côté serveur pour envoyer les e-mails, sans que personne
+ * n'attende.
+ *
+ * Sans effet si l'hébergeur ne tourne pas sous PHP-FPM
+ * (fastcgi_finish_request absente) : repli sur un simple vidage des
+ * tampons de sortie, moins fiable mais sans danger — la page attend alors
+ * la fin des envois comme avant ce correctif.
+ */
+function finir_reponse(): void
+{
+    // Le script continue après la réponse envoyée : une fermeture d'onglet
+    // par l'adhérent (il a déjà sa page) ne doit pas interrompre les envois
+    // encore en cours.
+    ignore_user_abort(true);
+
+    // definir_message() a déjà écrit son message dans $_SESSION avant cet
+    // appel ; relâcher la session maintenant libère son verrou pour les
+    // autres requêtes du même adhérent, qui resteraient sinon bloquées
+    // jusqu'à la fin des envois.
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
+
+    if (function_exists('fastcgi_finish_request')) {
+        fastcgi_finish_request();
+        return;
+    }
+
+    if (ob_get_level() > 0) {
+        ob_end_flush();
+    }
+    flush();
+}
