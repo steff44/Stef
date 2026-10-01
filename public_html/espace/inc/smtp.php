@@ -58,7 +58,16 @@ final class SessionSmtp
         if ($connexion === false) {
             throw new ErreurConnexionSmtp("Connexion à {$this->hote}:{$this->port} impossible : {$message_erreur}");
         }
-        stream_set_timeout($connexion, 15);
+        // 8 s par étape (pas 15) : l'ouverture enchaîne jusqu'à sept
+        // allers-retours (bannière, EHLO, STARTTLS, EHLO, AUTH LOGIN,
+        // identifiant, mot de passe) — à 15 s chacun, un serveur qui
+        // répond mais traîne pouvait immobiliser la page MySQL inactive
+        // pendant près de deux minutes, largement assez pour déclencher
+        // « MySQL server has gone away » sur la requête suivante (voir
+        // envoyer_confirmation_personnelle(), inc/mail.php, piège du
+        // 01/10/2026). 8 s reste large pour un vrai aller-retour SMTP
+        // (généralement sous la seconde).
+        stream_set_timeout($connexion, 8);
         $this->connexion = $connexion;
 
         try {

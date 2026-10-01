@@ -336,11 +336,38 @@ function config_smtp(): ?array
  * une adresse ajoutée ou corrigée après la dernière connexion restait
  * invisible ici jusqu'à une reconnexion, faisant échouer la confirmation en
  * silence sans rapport avec l'état réel du compte).
+ *
+ * **Reconnexion à la base si besoin** (piège trouvé le 01/10/2026, erreur
+ * fatale en ligne : « SQLSTATE[HY000]: ... MySQL server has gone away »,
+ * exactement ici, après une notification à de nombreux adhérents — sortie
+ * créée ou document déposé, les deux signalés). Cette fonction est
+ * toujours appelée juste après une boucle d'envoi à tous les adhérents
+ * éligibles (voir les quatre appelants), qui ne touche jamais $pdo le
+ * temps qu'elle dure — potentiellement plusieurs dizaines de secondes si
+ * le serveur SMTP met du temps à répondre ou à échouer (voir inc/smtp.php).
+ * Une connexion MySQL restée inactive trop longtemps est fermée par le
+ * serveur lui-même ; la requête suivante sur cette même connexion échoue
+ * alors avec une PDOException non liée aux données, qui plantait toute la
+ * page au lieu d'être absorbée comme le reste des échecs de ce fichier
+ * (« un e-mail qui ne part pas ne doit jamais empêcher une action déjà
+ * réussie »). Une seule reconnexion suffit à repartir ; si elle échoue
+ * aussi, on renonce silencieusement à la confirmation plutôt que de
+ * remonter l'exception.
  */
 function envoyer_confirmation_personnelle(PDO $pdo, array $adherent, string $sujet, string $corps): void
 {
-    $requete = $pdo->prepare('SELECT email FROM adherents WHERE id = ?');
-    $requete->execute([$adherent['id']]);
+    try {
+        $requete = $pdo->prepare('SELECT email FROM adherents WHERE id = ?');
+        $requete->execute([$adherent['id']]);
+    } catch (PDOException $e) {
+        try {
+            $pdo = base_de_donnees(true);
+            $requete = $pdo->prepare('SELECT email FROM adherents WHERE id = ?');
+            $requete->execute([$adherent['id']]);
+        } catch (PDOException $e2) {
+            return;
+        }
+    }
     $email = $requete->fetchColumn();
 
     if (empty($email)) {
