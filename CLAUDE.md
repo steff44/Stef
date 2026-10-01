@@ -5514,3 +5514,44 @@ après déploiement : un dépôt de document doit maintenant rediriger vers
 normalement (avec éventuellement un léger décalage, désormais invisible
 pour elle puisqu'elle n'attend plus la page).
 
+## Documents du club : choisir une catégorie du sommaire n'affiche qu'elle
+
+**Choix explicite de l'utilisatrice, 01/10/2026** : « je voudrais que quand
+je choisi une catégorie dans les "documents" je n'ai que cette catégorie
+qui apparaisse ». Jusqu'ici, une pastille du sommaire n'était qu'une ancre
+`#categorie-{id}` : cliquer dessus faisait défiler la page jusqu'à la bonne
+section, mais toutes les autres rubriques/catégories restaient affichées
+en dessous.
+
+**Filtrage côté client, sur le même principe que la recherche juste
+au-dessus** (`documents.php`, script inline) : chaque pastille de catégorie
+porte désormais `data-filtre-categorie="{id}"` (vide pour un nouveau lien
+« Toutes les catégories », ajouté en tête du sommaire, actif par défaut).
+Au clic (ancre `href` conservée comme repli sans JavaScript),
+`appliquerFiltreCategorie(id)` masque tous les blocs `.sous-categorie-
+documents` sauf celui choisi, masque tout `.rubrique-documents` qui ne le
+contient pas (y compris « Autres documents », `data-autres-documents`,
+jamais concerné par un choix de catégorie), marque la pastille active
+(`.is-active`, fond dans la couleur de la rubrique) et fait défiler
+jusqu'à la section — `.sous-categorie-documents` gagne au passage le même
+`scroll-margin-top: 120px` que `.rubrique-documents`, pour ne pas passer
+sous l'en-tête collant une fois qu'elle devient la cible réelle du
+défilement.
+
+**Filtre de catégorie et recherche se réinitialisent l'un l'autre**
+plutôt que de se combiner (même principe de simplicité que les filtres de
+la page Galerie, jamais cumulés à la recherche non plus) : choisir une
+catégorie vide d'abord le champ de recherche s'il contenait du texte ;
+lancer une recherche appelle `appliquerFiltreCategorie("")` en tout
+premier, pour qu'effacer ensuite la recherche ne laisse jamais une
+catégorie orpheline masquée par un filtre devenu invisible.
+
+Testé hors ligne (01/10/2026) avec une page HTML isolée reproduisant le
+sommaire, les blocs détaillés et le script, et Playwright : choisir une
+catégorie n'affiche plus qu'elle (bonne rubrique visible, « Autres
+documents » masqué, pastille active) ; « Toutes les catégories » restaure
+tout ; rechercher un terme pendant qu'une catégorie est filtrée réinitialise
+le filtre avant d'appliquer la recherche ; vider la recherche ensuite
+restaure l'affichage complet, sans catégorie restée masquée. Aucune erreur
+JavaScript. `php -l` sur `documents.php`.
+
