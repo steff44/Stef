@@ -329,14 +329,29 @@ titre_page("Documents du club", "Comptes rendus, statuts, bulletins et ressource
         // à l'autre de la page (choix explicite de l'utilisatrice,
         // 18/09/2026).
       ?>
+      <?php
+        // Choisir une catégorie du sommaire n'affiche plus que cette seule
+        // catégorie (choix explicite de l'utilisatrice, 01/10/2026 : « je
+        // n'ai que cette catégorie qui apparaisse ») — le lien « Toutes les
+        // catégories » revient à l'affichage complet. data-filtre-categorie
+        // ("" pour Toutes, l'identifiant sinon) est lu par le script plus
+        // bas, qui masque les autres blocs plutôt que de recharger la page
+        // (même principe que la recherche juste au-dessus). L'ancre
+        // #categorie-{id} reste posée sur chaque lien : sans JavaScript, le
+        // navigateur continue de défiler jusqu'à la bonne section, toutes
+        // les autres restant simplement visibles.
+      ?>
       <nav class="documents-index" aria-label="Sommaire des documents">
+        <ul class="documents-index-categories documents-index-toutes">
+          <li><a href="documents.php" data-filtre-categorie="" class="is-active">Toutes les catégories</a></li>
+        </ul>
         <div class="documents-index-groupe">
           <?php foreach ($rubriques_peuplees as $rubrique_id => $rubrique): ?>
             <div class="documents-index-rubrique" style="--rubrique-couleur: <?= e($couleurs_rubriques[$rubrique_id]) ?>;">
               <h2><?= e($rubrique['nom']) ?></h2>
               <ul class="documents-index-categories">
                 <?php foreach ($rubrique['categories'] as $categorie_id => $nom_categorie): ?>
-                  <li><a href="#categorie-<?= $categorie_id ?>"><?= e($nom_categorie) ?></a></li>
+                  <li><a href="#categorie-<?= $categorie_id ?>" data-filtre-categorie="<?= $categorie_id ?>"><?= e($nom_categorie) ?></a></li>
                 <?php endforeach; ?>
               </ul>
             </div>
@@ -345,7 +360,7 @@ titre_page("Documents du club", "Comptes rendus, statuts, bulletins et ressource
       </nav>
 
       <?php foreach ($rubriques_peuplees as $rubrique_id => $rubrique): ?>
-        <div class="rubrique-documents">
+        <div class="rubrique-documents" data-rubrique-id="<?= $rubrique_id ?>">
           <h2><?= e($rubrique['nom']) ?></h2>
           <?php foreach ($rubrique['categories'] as $categorie_id => $nom_categorie): ?>
             <div class="sous-categorie-documents" id="categorie-<?= $categorie_id ?>">
@@ -361,7 +376,7 @@ titre_page("Documents du club", "Comptes rendus, statuts, bulletins et ressource
       <?php endforeach; ?>
 
       <?php if ($autres): ?>
-        <div class="rubrique-documents">
+        <div class="rubrique-documents" data-autres-documents>
           <h2>Autres documents</h2>
           <ul class="liste-documents">
             <?php foreach ($autres as $document): ?>
@@ -376,6 +391,50 @@ titre_page("Documents du club", "Comptes rendus, statuts, bulletins et ressource
 <script>
 (function () {
   var champ = document.getElementById("recherche-documents");
+
+  // Filtre par catégorie du sommaire — indépendant du champ de recherche
+  // plus bas, mais les deux se réinitialisent l'un l'autre pour ne jamais
+  // se superposer (choix de simplicité, comme ailleurs sur le site : les
+  // filtres de la page Galerie et la recherche ne se combinent pas non
+  // plus).
+  var liensFiltre = document.querySelectorAll(".documents-index-categories a[data-filtre-categorie]");
+  var rubriqueBlocs = document.querySelectorAll(".rubrique-documents");
+  var categorieBlocs = document.querySelectorAll(".sous-categorie-documents");
+
+  function appliquerFiltreCategorie(id) {
+    if (!id) {
+      rubriqueBlocs.forEach(function (bloc) { bloc.hidden = false; });
+      categorieBlocs.forEach(function (bloc) { bloc.hidden = false; });
+    } else {
+      categorieBlocs.forEach(function (bloc) {
+        bloc.hidden = bloc.id !== "categorie-" + id;
+      });
+      rubriqueBlocs.forEach(function (bloc) {
+        bloc.hidden = bloc.hasAttribute("data-autres-documents") || !bloc.querySelector("#categorie-" + id);
+      });
+    }
+
+    liensFiltre.forEach(function (lien) {
+      lien.classList.toggle("is-active", lien.dataset.filtreCategorie === id);
+    });
+
+    if (id) {
+      var cible = document.getElementById("categorie-" + id);
+      if (cible) cible.scrollIntoView({ block: "start", behavior: "smooth" });
+    }
+  }
+
+  liensFiltre.forEach(function (lien) {
+    lien.addEventListener("click", function (evenement) {
+      evenement.preventDefault();
+      if (champ && champ.value.trim() !== "") {
+        champ.value = "";
+        appliquerRecherche();
+      }
+      appliquerFiltreCategorie(lien.dataset.filtreCategorie);
+    });
+  });
+
   if (!champ) return;
 
   var lignes      = document.querySelectorAll(".document-ligne");
@@ -406,6 +465,12 @@ titre_page("Documents du club", "Comptes rendus, statuts, bulletins et ressource
   }
 
   function appliquerRecherche() {
+    // Repart d'un sommaire non filtré avant d'appliquer la recherche —
+    // sans ça, une catégorie choisie juste avant resterait masquée une fois
+    // la recherche effacée, la bascule ci-dessous ne touchant jamais
+    // .sous-categorie-documents (voir appliquerFiltreCategorie()).
+    appliquerFiltreCategorie("");
+
     var recherche = normaliser(champ.value.trim());
     var enRecherche = recherche !== "";
     var trouve = 0;

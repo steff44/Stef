@@ -1974,6 +1974,18 @@ button.lien-retour {
   border-color: var(--rubrique-couleur, var(--accent-3));
   color: var(--rubrique-couleur, var(--text));
 }
+/* Pastille de la catégorie actuellement choisie (ou « Toutes les
+   catégories », active par défaut) — choix explicite de l'utilisatrice,
+   01/10/2026 : « je n'ai que cette catégorie qui apparaisse ». Posée/
+   retirée par documents.php, voir son script inline. */
+.documents-index-categories a.is-active {
+  background: var(--rubrique-couleur, var(--accent));
+  border-color: var(--rubrique-couleur, var(--accent));
+  color: #fff;
+}
+.documents-index-toutes {
+  margin: 0 0 16px;
+}
 .rubrique-documents,
 .groupe-galerie {
   margin: 0 0 36px;
@@ -2007,6 +2019,10 @@ button.lien-retour {
 }
 .sous-categorie-documents {
   margin: 22px 0 0;
+  /* Devient la cible réelle du défilement une fois une catégorie choisie
+     dans le sommaire (voir documents.php) — même marge que
+     .rubrique-documents pour ne jamais passer sous l'en-tête collant. */
+  scroll-margin-top: 120px;
 }
 .sous-categorie-documents h3 {
   font-family: var(--font-heading);
