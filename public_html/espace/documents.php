@@ -130,7 +130,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $titres_reussis[] = $titre !== '' ? $titre : $nom_origine;
             }
 
+            $parts = [];
+            if ($reussis > 0) {
+                $parts[] = "{$reussis} document" . ($reussis > 1 ? 's' : '')
+                    . " ajouté" . ($reussis > 1 ? 's' : '') . " dans « {$categorie['categorie_nom']} ». Un e-mail a été envoyé aux adhérents.";
+            }
+            array_push($parts, ...$erreurs);
+            definir_message($erreurs ? 'erreur' : 'succes', implode(' ', $parts));
+
             if ($titres_reussis !== []) {
+                // La réponse part tout de suite : les e-mails ci-dessous (un
+                // envoi par adhérent) ne doivent pas faire attendre la page
+                // (voir finir_reponse(), inc/page.php).
+                header('Location: documents.php');
+                finir_reponse();
+
                 notifier_nouveaux_documents($pdo, $categorie['categorie_nom'], $titres_reussis);
 
                 $liste_confirmation = implode("\n", array_map(static fn($titre) => "- {$titre}", $titres_reussis));
@@ -145,15 +159,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     . SITE_URL . "/espace/documents.php\n\n"
                     . "À bientôt,\nLe Focal Club Turballais"
                 );
+                exit;
             }
-
-            $parts = [];
-            if ($reussis > 0) {
-                $parts[] = "{$reussis} document" . ($reussis > 1 ? 's' : '')
-                    . " ajouté" . ($reussis > 1 ? 's' : '') . " dans « {$categorie['categorie_nom']} ». Un e-mail a été envoyé aux adhérents.";
-            }
-            array_push($parts, ...$erreurs);
-            definir_message($erreurs ? 'erreur' : 'succes', implode(' ', $parts));
         }
     }
 

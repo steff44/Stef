@@ -5468,3 +5468,49 @@ correctif), adhérent sans e-mail après reconnexion (aucun envoi, aucune
 erreur). `php -l` sur les trois fichiers modifiés
 (`inc/db.php`, `inc/mail.php`, `inc/smtp.php`).
 
+## Dépôt de document : la confirmation mettait du temps à venir
+
+**Signalé par l'utilisatrice, 01/10/2026, même jour** : « quand j'ajoute un
+fichier la confirmation met du temps à venir ». Cause distincte du piège
+juste au-dessus (pas une erreur, une lenteur) : les quatre actions qui
+préviennent tous les adhérents par e-mail (dépôt de document, nouvelle
+sortie, nouvel article de blog, nouvel album de « Nos Sorties ») envoient
+cette boucle d'e-mails (un envoi SMTP authentifié par adhérent, voir
+`inc/smtp.php`) **avant** le `header('Location: ...')` de redirection — le
+navigateur reste donc à attendre la page tant que tous les envois ne sont
+pas terminés, potentiellement des dizaines de secondes avec plusieurs
+dizaines d'adhérents.
+
+**Corrigé par une nouvelle fonction `finir_reponse()`** (`inc/page.php`,
+partagée) : envoie la réponse HTTP (redirection + message déjà posé en
+session) tout de suite, via `fastcgi_finish_request()` (présente sous
+PHP-FPM, l'environnement de Hostinger) — le script continue ensuite de
+tourner côté serveur pour la boucle d'e-mails, sans que personne
+n'attende. Appelle aussi `session_write_close()` avant (le message de
+`definir_message()` est déjà en session à ce stade, donc rien n'est perdu
+— relâcher le verrou de session libère en plus les autres requêtes du même
+adhérent, qui resteraient sinon bloquées) et `ignore_user_abort(true)`
+(fermer l'onglet juste après la redirection ne doit pas couper les envois
+encore en cours). Repli sans danger si l'hébergeur ne tourne pas sous
+PHP-FPM : un simple `flush()`, qui ne change rien au comportement
+d'avant ce correctif.
+
+Appliqué aux quatre points d'appel concernés, chacun restructuré sur le
+même principe (`definir_message()` → `header('Location: ...')` →
+`finir_reponse()` → la boucle d'e-mails → `exit;`, au lieu de l'ordre
+inverse) : `documents.php` (dépôt de documents), `sorties-a-venir.php`
+(action `creer`), `blog.php` (publication d'un article), `parametres.php`
+(action `ajouter_album`, les deux branches Drive et local). Les autres
+actions de ces mêmes pages (suppression, modification, inscription…), qui
+n'envoient aucun e-mail en boucle, gardent leur `header`/`exit` partagé
+inchangé en bas de fichier.
+
+`php -l` sur les cinq fichiers modifiés (`inc/page.php`, `documents.php`,
+`sorties-a-venir.php`, `blog.php`, `parametres.php`). Non mesurable hors
+ligne (le serveur PHP intégré n'a pas PHP-FPM, donc pas de
+`fastcgi_finish_request()` à exercer) — **à confirmer par l'utilisatrice**
+après déploiement : un dépôt de document doit maintenant rediriger vers
+`documents.php` quasi instantanément, les e-mails continuant d'arriver
+normalement (avec éventuellement un léger décalage, désormais invisible
+pour elle puisqu'elle n'attend plus la page).
+

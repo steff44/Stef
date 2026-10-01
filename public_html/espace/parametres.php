@@ -266,9 +266,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $ordre = (int) $pdo->query('SELECT COALESCE(MAX(ordre), -1) FROM albums_sorties')->fetchColumn() + 1;
                     $pdo->prepare('INSERT INTO albums_sorties (nom, dossier_drive, type, ordre) VALUES (?, ?, ?, ?)')
                         ->execute([$nom, $dossier, $type, $ordre]);
+                    definir_message('succes', "Album « {$nom} » ajouté. Un e-mail a été envoyé aux adhérents.");
+
+                    // La réponse part tout de suite : les e-mails ci-dessous
+                    // (notification à tous les adhérents + confirmation
+                    // personnelle) ne doivent pas faire attendre la page
+                    // (voir finir_reponse(), inc/page.php).
+                    header('Location: parametres.php');
+                    finir_reponse();
+
                     notifier_nouvel_album($pdo, $nom);
                     confirmer_nouvel_album($pdo, $adherent, $nom);
-                    definir_message('succes', "Album « {$nom} » ajouté. Un e-mail a été envoyé aux adhérents.");
+                    exit;
                 } else {
                     $pdo->prepare('UPDATE albums_sorties SET nom = ?, type = ? WHERE id = ?')
                         ->execute([$nom, $type, $id]);
@@ -290,9 +299,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $ordre = (int) $pdo->query('SELECT COALESCE(MAX(ordre), -1) FROM albums_sorties')->fetchColumn() + 1;
                     $pdo->prepare('INSERT INTO albums_sorties (nom, dossier_drive, type, ordre) VALUES (?, ?, ?, ?)')
                         ->execute([$nom, $dossier, $type, $ordre]);
+                    definir_message('succes', "Album « {$nom} » ajouté. Un e-mail a été envoyé aux adhérents.");
+
+                    // La réponse part tout de suite : les e-mails ci-dessous
+                    // (notification à tous les adhérents + confirmation
+                    // personnelle) ne doivent pas faire attendre la page
+                    // (voir finir_reponse(), inc/page.php).
+                    header('Location: parametres.php');
+                    finir_reponse();
+
                     notifier_nouvel_album($pdo, $nom);
                     confirmer_nouvel_album($pdo, $adherent, $nom);
-                    definir_message('succes', "Album « {$nom} » ajouté. Un e-mail a été envoyé aux adhérents.");
+                    exit;
                 } else {
                     $pdo->prepare('UPDATE albums_sorties SET nom = ?, dossier_drive = ?, type = ? WHERE id = ?')
                         ->execute([$nom, $dossier, $type, $id]);
