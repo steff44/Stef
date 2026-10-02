@@ -759,6 +759,32 @@ function appliquer_migrations(PDO $pdo): void
         $reussi = false;
     }
 
+    try {
+        // Rétablit UNE seule fois « Choix des photos », supprimé par erreur
+        // (02/10/2026). Un témoin sur disque empêche de la réintroduire si un
+        // responsable la supprime de nouveau volontairement.
+        $temoin_choix = __DIR__ . '/.migration-expo2027-choix-photos';
+        if (!file_exists($temoin_choix)) {
+            $titre_choix = 'Expo 2027 – Choix des photos';
+            $existe = $pdo->prepare('SELECT COUNT(*) FROM sorties WHERE titre = ?');
+            $existe->execute([$titre_choix]);
+            if ((int) $existe->fetchColumn() === 0) {
+                foreach (EXPOSITION_2027_JALONS as [$titre, $debut, $fin, $description]) {
+                    if ($titre === $titre_choix) {
+                        $pdo->prepare(
+                            'INSERT INTO sorties (titre, categorie, description, lieu, debut, fin, rendez_vous, covoiturage)
+                             VALUES (?, ?, ?, ?, ?, ?, ?, 0)'
+                        )->execute([$titre, EXPOSITION_2027_CATEGORIE, $description, null, $debut, $fin, null]);
+                    }
+                }
+            }
+            @file_put_contents($temoin_choix, '1');
+        }
+    } catch (PDOException $e) {
+        error_log('Espace adhérents — rétablissement choix des photos : ' . $e->getMessage());
+        $reussi = false;
+    }
+
     if ($reussi) {
         @file_put_contents($temoin, signature_schema());
     }
@@ -778,6 +804,7 @@ function signature_schema(): string
         'categories_galerie_v3' . '||' .
         'reunion_hebdomadaire_v1' . '||' .
         'exposition_2027_v1' . '||' .
+        'exposition_2027_choix_photos_v1' . '||' .
         'categories_blog_v1' . '||' .
         'articles_blog_v1' . '||' .
         'categories_sorties_v1' . '||' .

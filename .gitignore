@@ -22,6 +22,7 @@ public_html/espace/test.sqlite
 
 # Témoin de mise à niveau du schéma, écrit par le serveur.
 public_html/espace/inc/.schema-a-jour
+public_html/espace/inc/.migration-expo2027-choix-photos
 
 # Cache des albums et de leurs photos Google Drive, écrit par le serveur
 # (voir infos-albums.php) — un fichier par album, plus un pour la liste ;
