@@ -226,6 +226,26 @@ const REUNION_HEBDOMADAIRE_LIEU  = 'Foyer des Vignes, 17 rue Michelet, 44420 La 
 const REUNION_HEBDOMADAIRE_DEBUT = '2026-09-10'; // un jeudi
 const REUNION_HEBDOMADAIRE_FIN   = '2027-06-30';
 
+// Calendrier prévisionnel de l'exposition du club (21-23/05/2027), semé une
+// seule fois dans `sorties` — choix explicite de l'utilisatrice, 02/10/2026.
+// Chaque jalon reste ensuite une sortie ordinaire, modifiable ou supprimable
+// depuis sorties-a-venir.php (les horaires ci-dessous sont des valeurs de
+// départ, à ajuster là-bas). Jamais réintroduit si un responsable supprime
+// tout : le semis ne se rejoue que s'il n'existe aucune sortie « Exposition ».
+const EXPOSITION_2027_CATEGORIE = 'Exposition';
+const EXPOSITION_2027_JALONS = [
+    // [titre, début, fin (ou null), description]
+    ['Expo 2027 – Dépôt des thèmes',                  '2026-12-17 20:30:00', null,                  "Chaque adhérent propose le ou les thèmes qu'il souhaite présenter."],
+    ['Expo 2027 – Choix des photos',                  '2027-01-15 09:00:00', '2027-02-15 18:00:00', "Période de sélection des photos à exposer, du 15 janvier au 15 février."],
+    ['Expo 2027 – Envoi des photos à l\'impression',  '2027-02-18 20:30:00', null,                  "Envoi des photos choisies à l'impression."],
+    ['Expo 2027 – Réception des photos tirées',       '2027-03-25 20:30:00', null,                  "Réception des photos tirées : pensez à les vérifier dès leur arrivée."],
+    ['Expo 2027 – Début des encadrements',            '2027-04-01 20:30:00', null,                  "Début des encadrements."],
+    ['Expo 2027 – Atelier encadrement',               '2027-04-08 20:30:00', null,                  "Atelier pour s'entraider et partager les astuces d'encadrement."],
+    ['Expo 2027 – Planning des présences et de l\'installation', '2027-05-13 20:30:00', null,     "Qui est présent, quand, et qui installe les photos."],
+    ['Expo 2027 – Installation des photos',           '2027-05-21 09:00:00', null,                  "Installation des photos le matin, avant l'ouverture au public."],
+    ['EXPOSITION DU CLUB',                            '2027-05-21 14:00:00', '2027-05-23 18:00:00', "Exposition du Focal Club Turballais, du vendredi 21 au dimanche 23 mai 2027. Horaires d'ouverture à préciser."],
+];
+
 // Coordonnées du club, modifiables par un responsable depuis parametres.php
 // et affichées sur les pages publiques statiques via infos-club.php. Les
 // valeurs par défaut reprennent EXACTEMENT ce qui est déjà écrit en dur dans
@@ -713,6 +733,32 @@ function appliquer_migrations(PDO $pdo): void
         $reussi = false;
     }
 
+    try {
+        // Semé une seule fois : aucun jalon « Exposition » en base.
+        $compteur = $pdo->prepare('SELECT COUNT(*) FROM sorties WHERE categorie = ?');
+        $compteur->execute([EXPOSITION_2027_CATEGORIE]);
+        if ((int) $compteur->fetchColumn() === 0) {
+            // La catégorie doit exister dans la liste gérée depuis parametres.php.
+            $existe = $pdo->prepare('SELECT COUNT(*) FROM categories_sorties WHERE nom = ?');
+            $existe->execute([EXPOSITION_2027_CATEGORIE]);
+            if ((int) $existe->fetchColumn() === 0) {
+                $ordre = (int) $pdo->query('SELECT COALESCE(MAX(ordre), 0) FROM categories_sorties')->fetchColumn() + 1;
+                $pdo->prepare('INSERT INTO categories_sorties (nom, ordre) VALUES (?, ?)')
+                    ->execute([EXPOSITION_2027_CATEGORIE, $ordre]);
+            }
+            $inserer_jalon = $pdo->prepare(
+                'INSERT INTO sorties (titre, categorie, description, lieu, debut, fin, rendez_vous, covoiturage)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, 0)'
+            );
+            foreach (EXPOSITION_2027_JALONS as [$titre, $debut, $fin, $description]) {
+                $inserer_jalon->execute([$titre, EXPOSITION_2027_CATEGORIE, $description, null, $debut, $fin, null]);
+            }
+        }
+    } catch (PDOException $e) {
+        error_log('Espace adhérents — migration exposition 2027 : ' . $e->getMessage());
+        $reussi = false;
+    }
+
     if ($reussi) {
         @file_put_contents($temoin, signature_schema());
     }
@@ -731,6 +777,7 @@ function signature_schema(): string
         'rubriques_documents_v1' . '||' .
         'categories_galerie_v3' . '||' .
         'reunion_hebdomadaire_v1' . '||' .
+        'exposition_2027_v1' . '||' .
         'categories_blog_v1' . '||' .
         'articles_blog_v1' . '||' .
         'categories_sorties_v1' . '||' .
