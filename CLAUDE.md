@@ -5572,3 +5572,11 @@ des valeurs de départ, à ajuster depuis « Sorties à venir ». Aucun e-mail
 n'est envoyé aux adhérents par ce semis. Témoin `exposition_2027_v1` dans
 `signature_schema()`. Testé hors ligne (SQLite) : 9 lignes créées, non
 rejoué au second passage. Prend effet au déploiement sur `main`.
+
+**Rétablissement de « Choix des photos » (02/10/2026)** : la sortie
+« Expo 2027 – Choix des photos » ayant été supprimée par erreur depuis
+« Sorties à venir », `appliquer_migrations()` la recrée **une seule fois**
+si elle est absente (témoin `inc/.migration-expo2027-choix-photos`, non
+versionné, pour ne pas la réintroduire si elle est supprimée volontairement
+ensuite). Sans e-mail aux adhérents, contrairement à une création par le
+formulaire. Témoin `exposition_2027_choix_photos_v1` dans `signature_schema()`.
