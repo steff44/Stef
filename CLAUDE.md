@@ -5555,3 +5555,20 @@ le filtre avant d'appliquer la recherche ; vider la recherche ensuite
 restaure l'affichage complet, sans catégorie restée masquée. Aucune erreur
 JavaScript. `php -l` sur `documents.php`.
 
+
+## Agenda : calendrier prévisionnel de l'exposition 2027
+
+**Choix explicite de l'utilisatrice, 02/10/2026** : les jalons de l'exposition
+du club (21 au 23 mai 2027) sont ajoutés à l'agenda du site. Semés une seule
+fois par `appliquer_migrations()` (`EXPOSITION_2027_JALONS`,
+`inc/migration.php`), comme la réunion hebdomadaire : neuf sorties de
+catégorie « Exposition » (nouvelle catégorie, ajoutée à `categories_sorties`
+si absente) — dépôt des thèmes 17/12/2026, choix des photos 15/01 → 15/02,
+impression 18/02, réception des tirages 25/03, début des encadrements 01/04,
+atelier encadrement 08/04, planning 13/05, installation 21/05 au matin, et
+l'exposition 21 → 23/05 (sortie sur plusieurs jours, colonne `fin`). Les
+heures (20h30 pour les jeudis, 9h l'installation, 14h–18h l'exposition) sont
+des valeurs de départ, à ajuster depuis « Sorties à venir ». Aucun e-mail
+n'est envoyé aux adhérents par ce semis. Témoin `exposition_2027_v1` dans
+`signature_schema()`. Testé hors ligne (SQLite) : 9 lignes créées, non
+rejoué au second passage. Prend effet au déploiement sur `main`.
