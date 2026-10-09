@@ -89,6 +89,49 @@ s'ouvrir. Le script travaille aussi dans un environnement Python dédié
 utiles, et exclut tout ce dont le logiciel ne se sert pas : il est ainsi
 nettement plus léger qu'avant.
 
+## Sous GNU/Linux
+
+Le logiciel fonctionne tel quel sous GNU/Linux (Ubuntu, Linux Mint, Debian,
+Fedora…). Il faut d'abord Python 3 avec Tkinter et venv ; sur
+Debian/Ubuntu/Linux Mint :
+
+```
+sudo apt install python3 python3-venv python3-tk
+```
+
+(Fedora : `sudo dnf install python3 python3-tkinter` ; Arch/Manjaro :
+`sudo pacman -S python tk`.)
+
+Ensuite, dans un terminal ouvert dans le dossier `convertisseur_photos` :
+
+```
+bash build_linux.sh
+```
+
+Au bout de quelques minutes (la première fois), vous obtenez :
+
+- le dossier `dist/ConvertisseurPhotos`, qui contient le logiciel
+  (`ConvertisseurPhotos`) et ses fichiers — **ne séparez pas le programme du
+  reste de ce dossier** ;
+- une entrée **« Convertisseur Photos » dans le menu des applications**
+  (et une icône sur le Bureau s'il existe) ;
+- `dist/ConvertisseurPhotos-linux.tar.gz`, pour le donner à quelqu'un : il
+  le décompresse, puis lance `installer.sh` dans le dossier obtenu
+  (double-clic, ou `bash installer.sh` dans un terminal) pour ajouter le
+  logiciel à son menu. Il n'a pas besoin de Python. Si vous déplacez le
+  dossier plus tard, relancez `installer.sh`.
+
+Le logiciel fabriqué fonctionne sur les distributions aussi récentes ou plus
+récentes que celle sur laquelle il a été fabriqué : pour le partager le plus
+largement, fabriquez-le sur une distribution un peu ancienne.
+
+Sans rien fabriquer, vous pouvez aussi le lancer directement avec Python :
+
+```
+python3 -m pip install --user pillow rawpy exifread
+python3 convertisseur_photos.py
+```
+
 ## Utilisation
 
 1. **Photos à convertir** : « Ajouter des photos… » (une seule ou
