@@ -5580,3 +5580,60 @@ si elle est absente (témoin `inc/.migration-expo2027-choix-photos`, non
 versionné, pour ne pas la réintroduire si elle est supprimée volontairement
 ensuite). Sans e-mail aux adhérents, contrairement à une création par le
 formulaire. Témoin `exposition_2027_choix_photos_v1` dans `signature_schema()`.
+
+## Sorties à venir : nombre de participants par inscription, total global
+
+**Choix explicite de l'utilisatrice, 29/10/2026** : « pour les sorties il y a
+la possibilité de s'inscrire... j'aurais voulu que tu rajoutes la possibilité
+de mettre un nombre si par exemple il y a une famille de trois un des
+invités ensuite je voudrais que tu comptabilise et mette dans une petite
+fenêtre intégrée à la sortie le nombre global de participants ». Jusqu'ici,
+une ligne de `inscriptions` valait toujours une seule personne — un adhérent
+inscrivant sa famille devait soit ne compter que lui-même, soit chaque membre
+de la famille devait avoir son propre compte pour s'inscrire séparément.
+
+Nouvelle colonne `inscriptions.nombre` (`INT NOT NULL DEFAULT 1` —
+`COLONNES_INSCRIPTIONS_ATTENDUES`, `inc/migration.php`, et `inc/schema.sql`
+pour une prochaine installation ; aucun nouveau témoin de version nécessaire,
+`signature_schema()` hache déjà les clés de ces constantes) : le nombre de
+personnes couvertes par une inscription, l'adhérent et ses invités compris.
+Une ligne déjà en base avant cette colonne reste à 1, comme avant.
+
+**« Je participe » devient un formulaire avec un champ « Nombre de
+personnes »** (`sorties-a-venir.php`, `<input type="number" min="1"
+max="20">`, 1 par défaut) — borné à [1, 20] côté serveur aussi (saisie
+erronée ou malveillante). L'action `inscription` fait désormais un
+**upsert** (`INSERT ... ON DUPLICATE KEY UPDATE nombre = ?`, la clé unique
+`(sortie_id, adherent_id)` étant déjà en place) plutôt qu'un simple
+`INSERT IGNORE` : un adhérent déjà inscrit qui soumet de nouveau le
+formulaire avec un nombre différent **met à jour** sa ligne existante au
+lieu d'être ignoré — permet de corriger son nombre de personnes sans
+d'abord se désinscrire. Une fois inscrit, le champ reste affiché, pré-rempli
+avec le nombre actuellement enregistré, à côté d'un bouton « Mettre à jour »
+(le bouton devient « Je participe » → « Mettre à jour » selon `$inscrit`,
+même principe que l'ancien bouton unique) ; « Me désinscrire » redevient un
+second formulaire séparé, visible seulement une fois inscrit.
+
+**« Petite fenêtre » dédiée au total global**, distincte du nombre
+d'adhérents inscrits : une pastille `.sortie-total-participants` (fond
+`--bg-alt`, bordure, icône 👥), affichée seulement si au moins une personne
+est inscrite, montrant `SUM(inscriptions.nombre)` pour la sortie — pas
+`COUNT(*)` des lignes, qui reste affiché juste en dessous sous le libellé
+« {n} adhérent(s) inscrit(s) » (renommé depuis « {n} inscrit(s) » pour
+distinguer clairement les deux chiffres). La liste des noms affiche le
+nombre entre parenthèses dès qu'il dépasse 1 (ex. « Alice Martin (3) »),
+pour retrouver d'un coup d'œil qui a inscrit des invités.
+
+Testé hors ligne (29/10/2026) : logique d'upsert/bornage en isolation sur
+SQLite (migration ajoute bien la colonne sur une base déjà en ligne, une
+ligne pré-existante vaut 1, deux inscriptions distinctes gardent leurs
+propres nombres, mettre à jour son nombre ne crée pas de doublon et
+recalcule le total, bornes 0→1 et 999→20 respectées, désinscription retire
+la ligne et redescend le total, aucune inscription → total 0 → pas de
+pastille) ; puis bout en bout avec un vrai serveur PHP intégré (deux
+adhérents connectés via de vraies sessions, formulaires réels, jetons CSRF) :
+Alice inscrit sa famille de 3, Bob s'inscrit seul (total 4, « 2 adhérents
+inscrits : Alice Martin (3), Bob Durand »), Alice met à jour à 5 sans
+doublon (total 6), Bob se désinscrit (total 5, « 1 adhérent inscrit : Alice
+Martin (5) »). Rendu Chromium (desktop et 390px) sans débordement
+horizontal, boutons qui s'empilent proprement sur mobile.
