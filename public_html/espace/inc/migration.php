@@ -87,6 +87,15 @@ const COLONNES_SORTIES_ATTENDUES = [
     'fin'       => 'DATETIME DEFAULT NULL',
 ];
 
+// Colonne attendue sur `inscriptions` — nombre de personnes couvertes par
+// une inscription (choix explicite de l'utilisatrice, 29/10/2026 : « si il y
+// a une famille de trois un des invités... »). DEFAULT 1 pour qu'une
+// inscription déjà en base, posée avant cette colonne, continue de compter
+// pour une seule personne, comme avant.
+const COLONNES_INSCRIPTIONS_ATTENDUES = [
+    'nombre' => 'INT NOT NULL DEFAULT 1',
+];
+
 // Colonnes attendues sur `documents`. `categorie` (VARCHAR) est l'ancien
 // classement, figé dans le code — conservé tel quel pour ne perdre aucune
 // donnée, mais plus lu par le code depuis le passage aux rubriques/
@@ -312,6 +321,17 @@ function appliquer_migrations(PDO $pdo): void
                 $pdo->exec("ALTER TABLE documents ADD COLUMN {$colonne} {$definition}");
             } catch (PDOException $e) {
                 error_log('Espace adhérents — migration documents.' . $colonne . ' : ' . $e->getMessage());
+                $reussi = false;
+            }
+        }
+    }
+
+    foreach (COLONNES_INSCRIPTIONS_ATTENDUES as $colonne => $definition) {
+        if (colonne_absente($pdo, 'inscriptions', $colonne)) {
+            try {
+                $pdo->exec("ALTER TABLE inscriptions ADD COLUMN {$colonne} {$definition}");
+            } catch (PDOException $e) {
+                error_log('Espace adhérents — migration inscriptions.' . $colonne . ' : ' . $e->getMessage());
                 $reussi = false;
             }
         }
@@ -797,6 +817,7 @@ function signature_schema(): string
         implode('|', array_keys(COLONNES_ATTENDUES)) . '||' .
         implode('|', array_keys(COLONNES_SORTIES_ATTENDUES)) . '||' .
         implode('|', array_keys(COLONNES_DOCUMENTS_ATTENDUES)) . '||' .
+        implode('|', array_keys(COLONNES_INSCRIPTIONS_ATTENDUES)) . '||' .
         implode('|', array_keys(COLONNES_PHOTOS_PRIVEES_ATTENDUES)) . '||' .
         implode('|', array_keys(COLONNES_ALBUMS_ATTENDUES)) . '||' .
         implode('|', array_keys(PARAMETRES_PAR_DEFAUT)) . '||' .

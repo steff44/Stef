@@ -35,10 +35,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'inscription') {
         $adherent = exige_connexion();
-        // INSERT IGNORE : la clé unique empêche déjà la double inscription.
-        $pdo->prepare('INSERT IGNORE INTO inscriptions (sortie_id, adherent_id) VALUES (?, ?)')
-            ->execute([$id, $adherent['id']]);
-        definir_message('succes', "Vous êtes inscrit à cette sortie.");
+        // Nombre de personnes couvertes par cette inscription (l'adhérent et
+        // ses invités — ex. une famille de trois), choix explicite de
+        // l'utilisatrice, 29/10/2026. Borné à [1, 20] : au moins
+        // l'adhérent lui-même, et un plafond raisonnable contre une saisie
+        // erronée ou malveillante.
+        $nombre = max(1, min(20, (int) ($_POST['nombre'] ?? 1)));
+        // La clé unique (sortie_id, adherent_id) empêche déjà la double
+        // inscription : si l'adhérent est déjà inscrit, ON DUPLICATE KEY
+        // UPDATE met simplement à jour son nombre de personnes, sans créer
+        // de seconde ligne — permet de corriger le nombre après coup sans
+        // d'abord se désinscrire.
+        $pdo->prepare(
+            'INSERT INTO inscriptions (sortie_id, adherent_id, nombre) VALUES (?, ?, ?)
+             ON DUPLICATE KEY UPDATE nombre = ?'
+        )->execute([$id, $adherent['id'], $nombre, $nombre]);
+        definir_message('succes', $nombre > 1
+            ? "Vous êtes inscrit à cette sortie, pour {$nombre} personnes."
+            : "Vous êtes inscrit à cette sortie.");
 
     } elseif ($action === 'desinscription') {
         $adherent = exige_connexion();
@@ -232,28 +246,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-// À venir d'abord, puis les sorties passées.
+// À venir d'abord, puis les sorties passées. nb_inscrits compte les
+// adhérents inscrits (une ligne chacun) ; total_participants compte le
+// nombre global de personnes (somme des « nombre » de chaque inscription,
+// invités compris — choix explicite de l'utilisatrice, 29/10/2026).
 $sorties = $pdo->query(
     'SELECT s.*,
-            (SELECT COUNT(*) FROM inscriptions i WHERE i.sortie_id = s.id) AS nb_inscrits
+            (SELECT COUNT(*) FROM inscriptions i WHERE i.sortie_id = s.id) AS nb_inscrits,
+            (SELECT COALESCE(SUM(i.nombre), 0) FROM inscriptions i WHERE i.sortie_id = s.id) AS total_participants
        FROM sorties s
       ORDER BY s.debut ASC'
 )->fetchAll();
 
-// Sur quelles sorties suis-je inscrit ? (rien à calculer pour un visiteur anonyme)
+// Sur quelles sorties suis-je inscrit, et pour combien de personnes ? (rien
+// à calculer pour un visiteur anonyme)
 $mes_inscriptions = [];
+$mon_nombre       = [];
 if ($adherent) {
-    $requete = $pdo->prepare('SELECT sortie_id FROM inscriptions WHERE adherent_id = ?');
+    $requete = $pdo->prepare('SELECT sortie_id, nombre FROM inscriptions WHERE adherent_id = ?');
     $requete->execute([$adherent['id']]);
-    $mes_inscriptions = array_column($requete->fetchAll(), 'sortie_id');
+    foreach ($requete->fetchAll() as $ligne) {
+        $mes_inscriptions[] = $ligne['sortie_id'];
+        $mon_nombre[(int) $ligne['sortie_id']] = (int) $ligne['nombre'];
+    }
 }
 
-// Qui participe à quoi (pour afficher les noms).
+// Qui participe à quoi (pour afficher les noms) — le nombre de personnes
+// est ajouté entre parenthèses dès qu'il dépasse 1 (ex. « Jean Dupont (3) »).
 $participants = [];
 foreach ($pdo->query(
-    'SELECT i.sortie_id, a.nom FROM inscriptions i JOIN adherents a ON a.id = i.adherent_id ORDER BY a.nom'
+    'SELECT i.sortie_id, i.nombre, a.nom FROM inscriptions i JOIN adherents a ON a.id = i.adherent_id ORDER BY a.nom'
 )->fetchAll() as $ligne) {
-    $participants[(int) $ligne['sortie_id']][] = $ligne['nom'];
+    $nom = $ligne['nom'] . ((int) $ligne['nombre'] > 1 ? ' (' . (int) $ligne['nombre'] . ')' : '');
+    $participants[(int) $ligne['sortie_id']][] = $nom;
 }
 
 // Une sortie sur plusieurs jours reste « à venir » tant qu'elle n'est pas
@@ -367,8 +392,15 @@ titre_page("Sorties à venir", "Les prochaines sorties du club, et qui y partici
               <p class="sortie-description"><?= texte_avec_liens_html((string) $sortie['description']) ?></p>
             <?php endif; ?>
 
+            <?php if ((int) $sortie['total_participants'] > 0): ?>
+              <p class="sortie-total-participants" title="Nombre total de personnes inscrites, invités compris">
+                👥 <strong><?= (int) $sortie['total_participants'] ?></strong>
+                participant<?= $sortie['total_participants'] > 1 ? 's' : '' ?> au total
+              </p>
+            <?php endif; ?>
+
             <p class="sortie-detail">
-              <strong><?= (int) $sortie['nb_inscrits'] ?></strong> inscrit<?= $sortie['nb_inscrits'] > 1 ? 's' : '' ?>
+              <strong><?= (int) $sortie['nb_inscrits'] ?></strong> adhérent<?= $sortie['nb_inscrits'] > 1 ? 's' : '' ?> inscrit<?= $sortie['nb_inscrits'] > 1 ? 's' : '' ?>
               <?php if (!empty($participants[(int) $sortie['id']])): ?>
                 : <?= e(implode(', ', $participants[(int) $sortie['id']])) ?>
               <?php endif; ?>
@@ -376,14 +408,25 @@ titre_page("Sorties à venir", "Les prochaines sorties du club, et qui y partici
 
             <div class="sortie-actions">
               <?php if ($adherent): ?>
-                <form method="post">
+                <form method="post" class="sortie-form-nombre">
                   <?= champ_csrf() ?>
                   <input type="hidden" name="id" value="<?= (int) $sortie['id'] ?>">
-                  <input type="hidden" name="action" value="<?= $inscrit ? 'desinscription' : 'inscription' ?>">
+                  <input type="hidden" name="action" value="inscription">
+                  <label class="sortie-label-nombre" for="nombre-<?= (int) $sortie['id'] ?>">Nombre de personnes</label>
+                  <input type="number" id="nombre-<?= (int) $sortie['id'] ?>" name="nombre" min="1" max="20"
+                         value="<?= (int) ($mon_nombre[(int) $sortie['id']] ?? 1) ?>" class="sortie-input-nombre">
                   <button type="submit" class="btn <?= $inscrit ? 'btn-ghost' : 'btn-primary' ?>">
-                    <?= $inscrit ? 'Me désinscrire' : "Je participe" ?>
+                    <?= $inscrit ? 'Mettre à jour' : "Je participe" ?>
                   </button>
                 </form>
+                <?php if ($inscrit): ?>
+                  <form method="post">
+                    <?= champ_csrf() ?>
+                    <input type="hidden" name="id" value="<?= (int) $sortie['id'] ?>">
+                    <input type="hidden" name="action" value="desinscription">
+                    <button type="submit" class="btn btn-ghost">Me désinscrire</button>
+                  </form>
+                <?php endif; ?>
               <?php else: ?>
                 <a class="btn btn-ghost" href="connexion.php">Se connecter pour participer</a>
               <?php endif; ?>

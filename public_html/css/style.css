@@ -2445,6 +2445,43 @@ button.lien-retour {
   margin-top: 16px;
   flex-wrap: wrap;
 }
+
+/* « Petite fenêtre » du nombre global de participants (adhérent + invités
+   de chaque inscription), choix explicite de l'utilisatrice, 29/10/2026 —
+   distincte du nombre d'adhérents inscrits juste en dessous. */
+.sortie-total-participants {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 10px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+/* Champ « Nombre de personnes » accompagnant Je participe/Mettre à jour. */
+.sortie-form-nombre {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.sortie-label-nombre {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+.sortie-input-nombre {
+  width: 56px;
+  padding: 6px 8px;
+  border-radius: var(--radius-btn);
+  border: 1px solid var(--border);
+  background: var(--bg-alt);
+  color: var(--text);
+  font-size: 0.9rem;
+  text-align: center;
+}
 .liste-sorties-passees .sortie-carte {
   opacity: 0.62;
   padding: 14px 20px;

@@ -219,6 +219,10 @@ CREATE TABLE IF NOT EXISTS inscriptions (
   id          INT AUTO_INCREMENT PRIMARY KEY,
   sortie_id   INT NOT NULL,
   adherent_id INT NOT NULL,
+  -- Nombre de personnes couvertes par cette inscription (l'adhérent et ses
+  -- invités — ex. une famille de trois), choix explicite de l'utilisatrice,
+  -- 29/10/2026. Reste à 1 pour une inscription classique, une seule personne.
+  nombre      INT NOT NULL DEFAULT 1,
   cree_le     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY une_seule_inscription (sortie_id, adherent_id),
   CONSTRAINT fk_inscription_sortie   FOREIGN KEY (sortie_id)   REFERENCES sorties(id)   ON DELETE CASCADE,
