@@ -2446,6 +2446,36 @@ button.lien-retour {
   flex-wrap: wrap;
 }
 
+/* Liste des inscrits (nom + e-mail), réservée au responsable et à l'éditeur
+   — choix explicite de l'utilisatrice, 29/10/2026. */
+.sortie-inscrits {
+  margin: 10px 0 0;
+}
+.sortie-inscrits summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--accent-3);
+  text-decoration: underline;
+  list-style: none;
+}
+.sortie-inscrits summary::-webkit-details-marker {
+  display: none;
+}
+.sortie-inscrits-liste {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 10px 14px;
+  background: var(--bg-alt);
+  border-radius: var(--radius-btn);
+  font-size: 0.85rem;
+  display: grid;
+  gap: 6px;
+}
+.sortie-inscrits-liste a {
+  color: var(--accent-3);
+  text-decoration: underline;
+}
+
 /* « Petite fenêtre » du nombre global de participants (adhérent + invités
    de chaque inscription), choix explicite de l'utilisatrice, 29/10/2026 —
    distincte du nombre d'adhérents inscrits juste en dessous. */

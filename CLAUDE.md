@@ -5637,3 +5637,35 @@ inscrits : Alice Martin (3), Bob Durand »), Alice met à jour à 5 sans
 doublon (total 6), Bob se désinscrit (total 5, « 1 adhérent inscrit : Alice
 Martin (5) »). Rendu Chromium (desktop et 390px) sans débordement
 horizontal, boutons qui s'empilent proprement sur mobile.
+
+**Liste des inscrits avec nom et e-mail, réservée au responsable et à
+l'éditeur** (même jour, 29/10/2026 : « je voudrais ... que tu me fasses une
+liste dans ma partie réservée avec les nom des inscrits ou leur mail et que
+ce soit visible par l'éditeur » — « sans » corrigé en « dans » par
+l'utilisatrice elle-même juste après, coquille signalée dans la foulée).
+La ligne publique « {n} adhérent(s) inscrit(s) : {noms} », déjà visible de
+tous, ne montre jamais d'adresse e-mail — nouveau bloc dépliable
+`<details class="sortie-inscrits">` (« Voir les inscrits (nom et e-mail) »)
+juste en dessous, affiché uniquement si `est_gestionnaire()` (responsable
+**ou** éditeur, comme le reste des actions de gestion de cette page) et
+qu'il existe au moins un inscrit sur cette sortie. Chaque ligne reprend le
+nom (avec le nombre de personnes entre parenthèses au-delà de 1, comme la
+ligne publique) et un lien `mailto:` vers son e-mail, ou « pas d'e-mail
+renseigné » si l'adhérent n'en a aucun.
+
+`$inscrits_details` (`sorties-a-venir.php`) n'est calculé **que** si
+`est_gestionnaire()` — jamais pour un visiteur anonyme ou un adhérent
+simple, qui ne voient donc à aucun moment une adresse e-mail dans le HTML
+envoyé, pas seulement masquée en CSS. Requête séparée de `$participants`
+(qui reste public, noms seulement) plutôt que la réutiliser : les deux
+listes servent des publics différents, mélanger les deux aurait obligé à
+calculer les e-mails pour tout le monde puis à les retirer selon le rôle —
+plus risqué qu'une requête distincte jamais exécutée hors gestionnaire.
+
+Testé hors ligne (29/10/2026) avec le même serveur PHP intégré + SQLite :
+un responsable (administrateur) et un éditeur voient tous deux le bloc
+avec le nom, le nombre de personnes et l'e-mail de l'inscrit ; un adhérent
+simple et un visiteur anonyme ne voient ni le bouton « Voir les inscrits »
+ni aucune adresse e-mail dans le code source renvoyé ; une sortie sans
+aucun inscrit n'affiche pas le bloc. Rendu Chromium (desktop et 390px,
+bloc déplié) sans débordement horizontal.

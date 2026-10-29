@@ -281,6 +281,22 @@ foreach ($pdo->query(
     $participants[(int) $ligne['sortie_id']][] = $nom;
 }
 
+// Détail des inscrits (nom + e-mail), réservé au responsable et à l'éditeur
+// — choix explicite de l'utilisatrice, 29/10/2026 : « une liste... avec les
+// noms des inscrits ou leur mail... visible par l'éditeur », pour pouvoir
+// contacter les participants (covoiturage, changement de dernière minute...).
+// L'adresse e-mail d'un adhérent n'est jamais montrée ailleurs sur cette
+// page publique — ce détail reste donc dans le bloc déjà réservé à
+// est_gestionnaire() plus bas, jamais calculé pour un visiteur ordinaire.
+$inscrits_details = [];
+if (est_gestionnaire()) {
+    foreach ($pdo->query(
+        'SELECT i.sortie_id, i.nombre, a.nom, a.email FROM inscriptions i JOIN adherents a ON a.id = i.adherent_id ORDER BY a.nom'
+    )->fetchAll() as $ligne) {
+        $inscrits_details[(int) $ligne['sortie_id']][] = $ligne;
+    }
+}
+
 // Une sortie sur plusieurs jours reste « à venir » tant qu'elle n'est pas
 // terminée, pas seulement tant qu'elle n'a pas commencé (choix explicite de
 // l'utilisatrice, 15/09/2026, avec l'ajout de la date de fin) — sans `fin`,
@@ -405,6 +421,24 @@ titre_page("Sorties à venir", "Les prochaines sorties du club, et qui y partici
                 : <?= e(implode(', ', $participants[(int) $sortie['id']])) ?>
               <?php endif; ?>
             </p>
+
+            <?php if (est_gestionnaire() && !empty($inscrits_details[(int) $sortie['id']])): ?>
+              <details class="sortie-inscrits">
+                <summary>Voir les inscrits (nom et e-mail)</summary>
+                <ul class="sortie-inscrits-liste">
+                  <?php foreach ($inscrits_details[(int) $sortie['id']] as $inscrit): ?>
+                    <li>
+                      <?= e($inscrit['nom']) ?><?= (int) $inscrit['nombre'] > 1 ? ' (' . (int) $inscrit['nombre'] . ' personnes)' : '' ?>
+                      <?php if (!empty($inscrit['email'])): ?>
+                        — <a href="mailto:<?= e($inscrit['email']) ?>"><?= e($inscrit['email']) ?></a>
+                      <?php else: ?>
+                        — <span style="color:var(--text-muted);">pas d'e-mail renseigné</span>
+                      <?php endif; ?>
+                    </li>
+                  <?php endforeach; ?>
+                </ul>
+              </details>
+            <?php endif; ?>
 
             <div class="sortie-actions">
               <?php if ($adherent): ?>
